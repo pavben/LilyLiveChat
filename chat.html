@@ -6,18 +6,32 @@
 	<link href='http://fonts.googleapis.com/css?family=Signika' rel='stylesheet' type='text/css' />
 	<link href='chat.css' rel='stylesheet' type='text/css' />
 	<script src='http://code.jquery.com/jquery-latest.min.js'></script>
+	<script src='chat.js'></script>
 </head>
 <body>
-	<div id="mainbox">
+	<div id="wrapper">
 		<div id="cardrow">
+			<div id="lefticon"></div>
 			<div id="leftcard">
+				<span class="personname">Circular Cat</span>
+				<span class="persontitle">Guest</span>
 			</div>
-			<div id="cardsep">
-			</div>
+			<div></div>
+			<div id="cardsep"></div>
+			<div></div>
 			<div id="rightcard">
+				<span class="personname">Michael</span>
+				<span class="persontitle">Help desk</span>
 			</div>
+			<div id="righticon"></div>
 		</div>
-		Circular Cat
+		<div class="spacer9v"></div>
+		<div id="chatlog">
+		</div>
+		<div class="spacer9v"></div>
+		<div id="chatboxwrapper">
+			<input id="chatbox" type="text" value="" />
+		</div>
 	</div>
 </body>
 </html>

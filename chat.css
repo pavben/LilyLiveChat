@@ -1,32 +1,90 @@
 body {
 	background-color:#E3E3E3;
-	font-family: 'Signika', sans-serif; /* TODO: move to specific components */
-	padding: 9px 9px 9px 9px;
-	margin: 0px 0px 0px 0px;
+	padding:9px 9px 2px 9px;
+	margin:0px 0px 0px 0px;
 }
-#mainbox {
-	/*width:641px;*/
-	height:410px;
+#wrapper {
 }
 #cardrow {
+	display:table;
+	table-layout:fixed;
+	width:100%;
 	height:100px;
 }
-#leftcard {
-	width:320px;
+#lefticon {
+	display:table-cell;
+	width:100px;
 	height:100%;
-	background-color:orange;
-	margin-right:auto;
+	background:url('images/guest-icon.png');
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#leftcard {
+	display:table-cell;
+	width:220px;
+	height:100%;
+	padding:0px 0px 0px 9px;
 }
 #cardsep {
+	display:table-cell;
 	width:1px;
 	height:100%;
-	background-color:black;
+	background-color:#BBBBBB;
 	margin-left:auto;
 	margin-right:auto;
 }
 #rightcard {
-	width:320px;
+	display:table-cell;
+	width:220px;
 	height:100%;
-	background-color:lightgreen;
+	padding:0px 9px 0px 0px;
+	text-align:right;
+}
+#righticon {
+	display:table-cell;
+	width:100px;
+	height:100%;
+	background:url('images/guest-icon.png');
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+.personname {
+	display:block;
+	font-family:'Signika', sans-serif;
+	font-size:150%;
+	color:#085376;
+}
+.persontitle {
+	display:block;
+	font-family:'Signika', sans-serif;
+	font-size:110%;
+	color:#7C7C7C;
+}
+.spacer9v {
+	height:9px;
+}
+#chatlog {
+	height:400px;
+	background-color:#F4F4F4;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#chatboxwrapper {
+	background-color:#F4F4F4;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#chatbox {
+	display:block;
+	width:99%;
+	background-color:#F4F4F4;
 	margin-left:auto;
+	margin-right:auto;
+	font-family:'Signika', sans-serif;
+	font-size:110%;
+	color:#303030;
+}
+input {
+	border:0;
+	outline:none;
 }
