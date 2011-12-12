@@ -1,9 +1,12 @@
 body {
 	background-color:#E3E3E3;
+	color:#303030;
+	font-family:'Signika', sans-serif;
 	padding:9px 9px 2px 9px;
 	margin:0px 0px 0px 0px;
 }
 #wrapper {
+	min-width:641px;
 }
 #cardrow {
 	display:table;
@@ -50,13 +53,11 @@ body {
 }
 .personname {
 	display:block;
-	font-family:'Signika', sans-serif;
 	font-size:150%;
 	color:#085376;
 }
 .persontitle {
 	display:block;
-	font-family:'Signika', sans-serif;
 	font-size:110%;
 	color:#7C7C7C;
 }
@@ -68,6 +69,15 @@ body {
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
+	padding:1px 5px 5px 5px;
+	overflow-x:hidden;
+	overflow-y:auto;
+}
+.msgname {
+	font-size:110%;
+}
+.msgtext {
+	font-size:110%;
 }
 #chatboxwrapper {
 	background-color:#F4F4F4;
@@ -78,13 +88,13 @@ body {
 	display:block;
 	width:99%;
 	background-color:#F4F4F4;
+	color:#303030;
 	margin-left:auto;
 	margin-right:auto;
-	font-family:'Signika', sans-serif;
 	font-size:110%;
-	color:#303030;
 }
 input {
 	border:0;
 	outline:none;
 }
+
