@@ -103,6 +103,7 @@ $(document).ready(function() {
 	}
 
 	// initially, these are invisible
+	$('#currenttab').fadeTo(0, 0);
 	$('#myicon').fadeTo(0, 0);
 	$('#mycard').fadeTo(0, 0);
 	$('#theiricon').fadeTo(0, 0);
@@ -114,6 +115,18 @@ $(document).ready(function() {
 	function generateNewPersonColor() {
 		return '#085376';
 	}
+
+	function changeToTab(tab) {
+		var currentTabDiv = $('#currenttab');
+		if (currentTabDiv.html().length > 0) {
+			currentTabDiv.fadeTo(500, 0);
+		}
+		currentTabDiv.html(tab.html());
+		currentTabDiv.fadeTo(1000, 1);
+	}
+
+	// we start on welcometab
+	changeToTab($('#welcometab'));
 
 	function log(msg) {
 		window.console.log(msg);
@@ -140,6 +153,4 @@ $(document).ready(function() {
 		$('#chatlog').css({height: newChatLogHeight + 'px'});
 		$('#chatbox').focus();
 	}
-
-	updateChatLogHeight();
 });

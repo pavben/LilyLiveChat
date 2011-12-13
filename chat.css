@@ -5,8 +5,11 @@ body {
 	padding:9px 9px 2px 9px;
 	margin:0px 0px 0px 0px;
 }
-#wrapper {
+#currenttab {
 	min-width:641px;
+}
+#welcometab,#chattab {
+	display:none;
 }
 #cardrow {
 	display:table;
