@@ -19,6 +19,7 @@ body {
 	width:100px;
 	height:98px;
 	border:1px solid #BBBBBB;
+	border-radius:5px;
 }
 #mycard {
 	display:table-cell;
