@@ -1,32 +1,48 @@
 $(document).ready(function() {
 	$('#chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
-			writeMessage('Circular Cat', '#085376', $('#chatbox').val());
+			writeMessageToChatLog('Circular Cat', '#085376', $('#chatbox').val());
 			$('#chatbox').val('');
 		}
 	});
 
-	$('#chatlog').scroll(function(e) {
-		log(e);
-	});
-
-	function writeMessage(name, nameColor, msg) {
-		var chatlogDiv = $('#chatlog');
-		chatlogDiv.append(
+	function writeMessageToChatLog(name, nameColor, msg) {
+		writeContentToChatLog(
 			'<span class="msgname" style="color:' + nameColor + '">' + name + '</span>' +
 			'<span class="msgtext">: ' + msg + '</span><br/>'
 		);
+	}
+
+	function writeContentToChatLog(content) {
+		var chatlogDiv = $('#chatlog');
+
+		chatlogDiv.append(content);
+
+		if (this.lastScrollTopTarget && chatlogDiv.scrollTop() >= this.lastScrollTopTarget - 50) {
+			// if they scroll within 200px of the bottom
+			this.scrollLock = false;
+		}
+		else if (this.lastScrollTop && chatlogDiv.scrollTop() < this.lastScrollTop) {
+			// if the user scrolled up the chat log
+			this.scrollLock = true;
+		}
 
 		var scrollTopTarget = getScrollTopTarget(chatlogDiv);
 
-		// here we use a custom "scroll" queue to make sure scrolling does not interfere with other animations
-		// we do this because we are using .stop() and clearing the queue, and we only want scroll tasks cleared
-		chatlogDiv.stop("scroll", true, false)
-		.queue("scroll", function(next) {
-			$(this).animate({scrollTop: scrollTopTarget}, {duration:500, queue:false});
-			next();
-		})
-		.dequeue("scroll");
+		if (!this.scrollLock)
+		{
+			// here we use a custom "scroll" queue to make sure scrolling does not interfere with other animations
+			// we do this because we are using .stop() and clearing the queue, and we only want scroll tasks cleared
+			chatlogDiv.stop('scroll', true, false)
+			.queue('scroll', function(next) {
+				$(this).animate({scrollTop: scrollTopTarget}, {duration:500, queue:false});
+				next();
+			})
+			.dequeue('scroll');
+		}
+
+		this.lastScrollTop = chatlogDiv.scrollTop();
+		this.lastScrollTopTarget = scrollTopTarget;
 
 		function getScrollTopTarget(theDiv) {
 			return theDiv[0].scrollHeight // start with the total scroll height
