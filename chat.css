@@ -14,15 +14,13 @@ body {
 	width:100%;
 	height:100px;
 }
-#lefticon {
+.personicon {
 	display:table-cell;
 	width:100px;
-	height:100%;
-	background:url('images/guest-icon.png');
+	height:98px;
 	border:1px solid #BBBBBB;
-	border-radius:5px;
 }
-#leftcard {
+#mycard {
 	display:table-cell;
 	width:220px;
 	height:100%;
@@ -36,28 +34,17 @@ body {
 	margin-left:auto;
 	margin-right:auto;
 }
-#rightcard {
+#theircard {
 	display:table-cell;
 	width:220px;
 	height:100%;
 	padding:0px 9px 0px 0px;
 	text-align:right;
 }
-#righticon {
-	display:table-cell;
-	width:100px;
-	height:100%;
-	background:url('images/guest-icon.png');
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-}
 .personname {
-	display:block;
 	font-size:150%;
-	color:#085376;
 }
 .persontitle {
-	display:block;
 	font-size:110%;
 	color:#7C7C7C;
 }
@@ -73,11 +60,13 @@ body {
 	overflow-x:hidden;
 	overflow-y:auto;
 }
-.msgname {
+.msgnameline {
 	font-size:110%;
+	color:#9C9C9C;
 }
 .msgtext {
 	font-size:110%;
+	text-indent:15px;
 }
 #chatboxwrapper {
 	background-color:#F4F4F4;

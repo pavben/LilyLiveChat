@@ -1,16 +1,23 @@
 $(document).ready(function() {
+	var lastMessageSenderName = null;
 	$('#chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
-			writeMessageToChatLog('Circular Cat', '#085376', $('#chatbox').val());
+			writeMessageToChatLog(me.name, me.color, $('#chatbox').val());
 			$('#chatbox').val('');
 		}
 	});
 
 	function writeMessageToChatLog(name, nameColor, msg) {
-		writeContentToChatLog(
-			'<span class="msgname" style="color:' + nameColor + '">' + name + '</span>' +
-			'<span class="msgtext">: ' + msg + '</span><br/>'
-		);
+		var content = '';
+		if (!lastMessageSenderName || lastMessageSenderName != name) {
+			content += '<div class="msgnameline"><span style="color:' + nameColor + '">' + name + '</span> says...</div>';
+		}
+
+		lastMessageSenderName = name;
+
+		content += '<div class="msgtext">' + msg + '</div>';
+
+		writeContentToChatLog(content);
 	}
 
 	function writeContentToChatLog(content) {
@@ -50,6 +57,68 @@ $(document).ready(function() {
 				+ parseInt(theDiv.css('border-top-width')) // readd the top border
 				+ parseInt(theDiv.css('border-bottom-width')) // readd the bottom border
 		}
+	}
+
+	var me = null;
+	var they = null;
+
+	function Person(name, color, title, iconUrl) {
+		this.name = name;
+		this.color = color;
+		this.title = title;
+		this.iconUrl = iconUrl;
+	}
+
+	function replaceMeWith(person) {
+		me = person;
+		replaceCardWith(person, $('#myicon'), $('#mycard'), $('#myname'), $('#mytitle'));
+	}
+
+	function replaceThemWith(person) {
+		they = person;
+		replaceCardWith(person, $('#theiricon'), $('#theircard'), $('#theirname'), $('#theirtitle'));
+	}
+
+	function replaceCardWith(person, icon, card, name, title) {
+		var fadeOutTime = 100;
+		if (!me) {
+			fadeOutTime = 0;
+		}
+
+		icon.fadeTo(fadeOutTime, 0);
+		card.fadeTo(fadeOutTime, 0);
+
+		// now both the icon and the card are invisible
+
+		icon.css('background-image', 'none');
+
+		name.html(person.name);
+		name.css('color', person.color);
+
+		var iconCache = new Image();
+		iconCache.onload = function() {
+			icon.css('background-image', 'url(\'' + person.iconUrl + '\')');
+			icon.fadeTo(1000, 1);
+		}
+		iconCache.src = person.iconUrl;
+
+		title.html(person.title);
+
+		card.fadeTo(1000, 1);
+
+	}
+
+	// initially, these are invisible
+	$('#myicon').fadeTo(0, 0);
+	$('#mycard').fadeTo(0, 0);
+	$('#theiricon').fadeTo(0, 0);
+	$('#theircard').fadeTo(0, 0);
+
+	testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/guest-icon.png');
+	replaceMeWith(testperson);
+
+	function generateNewPersonColor() {
+		return '#085376';
 	}
 
 	function log(msg) {
