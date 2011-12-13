@@ -103,7 +103,6 @@ $(document).ready(function() {
 	}
 
 	// initially, these are invisible
-	$('#currenttab').fadeTo(0, 0);
 	$('#myicon').fadeTo(0, 0);
 	$('#mycard').fadeTo(0, 0);
 	$('#theiricon').fadeTo(0, 0);
@@ -116,23 +115,45 @@ $(document).ready(function() {
 		return '#085376';
 	}
 
+	var currentTab = null;
+
 	function changeToTab(tab) {
-		var currentTabDiv = $('#currenttab');
-		if (currentTabDiv.html().length > 0) {
-			currentTabDiv.fadeTo(500, 0);
+		if (currentTab) {
+			$('#' + currentTab).fadeTo(300, 0, function() {
+				$('#' + currentTab).hide();
+
+				onOldTabGone();
+			});
+		} else {
+			onOldTabGone();
 		}
-		currentTabDiv.html(tab.html());
-		currentTabDiv.fadeTo(1000, 1);
+
+		function onOldTabGone() {
+			currentTab = tab;
+			$('#' + currentTab).fadeTo(600, 1);
+
+			onResize();
+		}
 	}
 
 	// we start on welcometab
-	changeToTab($('#welcometab'));
+	changeToTab('welcometab');
+
+	setTimeout(function() {
+		changeToTab('chattab');
+	}, 4000);
 
 	function log(msg) {
 		window.console.log(msg);
 	}
 
-	$(window).resize(updateChatLogHeight);
+	$(window).resize(onResize);
+
+	function onResize() {
+		if (currentTab == 'chattab') {
+			updateChatLogHeight();
+		}
+	}
 
 	function updateChatLogHeight() {
 		// disable scrolling as it interferes with calculations and causes visual glitches
