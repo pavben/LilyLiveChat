@@ -60,13 +60,11 @@ body {
 	overflow-x:hidden;
 	overflow-y:auto;
 }
-.msgnameline {
+.msgname {
 	font-size:110%;
-	color:#9C9C9C;
 }
 .msgtext {
 	font-size:110%;
-	text-indent:15px;
 }
 #chatboxwrapper {
 	background-color:#F4F4F4;

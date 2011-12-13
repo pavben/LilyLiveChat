@@ -1,5 +1,4 @@
 $(document).ready(function() {
-	var lastMessageSenderName = null;
 	$('#chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
 			writeMessageToChatLog(me.name, me.color, $('#chatbox').val());
@@ -9,13 +8,8 @@ $(document).ready(function() {
 
 	function writeMessageToChatLog(name, nameColor, msg) {
 		var content = '';
-		if (!lastMessageSenderName || lastMessageSenderName != name) {
-			content += '<div class="msgnameline"><span style="color:' + nameColor + '">' + name + '</span> says...</div>';
-		}
-
-		lastMessageSenderName = name;
-
-		content += '<div class="msgtext">' + msg + '</div>';
+		content += '<span class="msgname" style="color:' + nameColor + '">' + name + '</span>';
+		content += '<span class="msgtext">: ' + msg + '</span><br/>';
 
 		writeContentToChatLog(content);
 	}
