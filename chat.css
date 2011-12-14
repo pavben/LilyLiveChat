@@ -45,8 +45,10 @@ body {
 	height:200px;
 	margin-left:auto;
 	margin-right:auto;
-	border:1px solid red;
 	padding:9px 9px 9px 9px;
+	background-color:#E3E3E3;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
 }
 #chattab {
 	padding:9px 9px 2px 9px;
