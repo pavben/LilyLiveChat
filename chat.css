@@ -4,6 +4,11 @@ body {
 	font-family:'Signika', sans-serif;
 	padding:0px 0px 0px 0px;
 	margin:0px 0px 0px 0px;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	user-select: none;
 }
 .tab {
 	display:none;
@@ -50,6 +55,9 @@ body {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 }
+#mynamewelcome {
+	color:#063D57;
+}
 #chattab {
 	padding:9px 9px 2px 9px;
 }
@@ -70,7 +78,7 @@ body {
 	display:table-cell;
 	width:220px;
 	height:100%;
-	padding:0px 0px 0px 9px;
+	padding:0px 0px 0px 8px;
 }
 #cardsep {
 	display:table-cell;
@@ -112,12 +120,13 @@ body {
 .msgtext {
 	font-size:110%;
 }
-#chatboxwrapper {
+.inputboxwrapper {
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
+	padding:0px 0px 0px 3px;
 }
-#chatbox {
+.inputbox {
 	display:block;
 	width:99%;
 	background-color:#F4F4F4;
@@ -130,4 +139,25 @@ input {
 	border:0;
 	outline:none;
 }
-
+.basicbutton {
+	display:inline-block;
+	height:26px;
+	background-image:url('images/buttontile.png');
+	background-repeat:repeat-x;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	line-height:27px;
+	text-shadow:1px 1px 0px #f4f4f4;
+	text-align:center;
+	cursor:pointer;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	/*transition: all 0.1s ease-in-out;*/
+}
+.basicbutton:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.basicbutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
