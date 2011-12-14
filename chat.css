@@ -58,6 +58,12 @@ body {
 #mynamewelcome {
 	color:#063D57;
 }
+#chooseanamelabelwelcome {
+	height:34px;
+	box-sizing:border-box;
+	padding-top:4px;
+	text-align:center;
+}
 #chattab {
 	padding:9px 9px 2px 9px;
 }
@@ -121,6 +127,7 @@ body {
 	font-size:110%;
 }
 .inputboxwrapper {
+	height:26px;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
@@ -141,19 +148,21 @@ input {
 }
 .basicbutton {
 	display:inline-block;
-	height:26px;
+	height:25px;
 	background-image:url('images/buttontile.png');
 	background-repeat:repeat-x;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
-	line-height:27px;
 	text-shadow:1px 1px 0px #f4f4f4;
 	text-align:center;
 	cursor:pointer;
+	padding:0px 0px 1px 0px;
 	-webkit-transition: all 0.1s ease-in-out;
 	-moz-transition: all 0.1s ease-in-out;
 	-o-transition: all 0.1s ease-in-out;
-	/*transition: all 0.1s ease-in-out;*/
+	transition: all 0.1s ease-in-out;
+	line-height:26px;
+	vertical-align:top;
 }
 .basicbutton:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
