@@ -1,6 +1,6 @@
 function liberty_launchChat() {
 	var sid = 98323;
-	var wW = 641;
+	var wW = 700;
 	var wH = 641;
 	var wL = (window.screen.width - wW) / 2;
 	var wT = (window.screen.height - wH) / 3;

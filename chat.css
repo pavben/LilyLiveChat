@@ -13,23 +13,16 @@ body {
 	display:table;
 	width:100%;
 }
-#welcomeoutercell {
-	vertical-align:middle;
-	display:table-cell;
-	/*background-color:#d0edf3;*/
-	height:100%;
-}
 #welcomebgtop {
 	height:0px;
-	background:blue;
+	background-color:#76cfe4;
 }
 #welcomebgbot {
 	height:0px;
-	background:red;
+	background-color:#68bd4d;
 }
 #welcomebggradient {
-	background: -webkit-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #63bc4f 100%);
-	border:1px solid red;
+	background: -webkit-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%);
 }
 #welcomebg {
 	width:641px;

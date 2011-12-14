@@ -160,19 +160,19 @@ $(document).ready(function() {
 	function onWelcomeTabResize() {
 		// disable scrolling as it causes visual glitches
 		$('html').css('overflow-y', 'hidden');
-		var welcomeTabDiv = $('#welcometab');
 		var newWelcomeTabHeight = $(window).height();
 		if (newWelcomeTabHeight < 641) {
 			newWelcomeTabHeight = 641;
 			// if the scrollbars are needed, enable them
 			$('html').css('overflow-y', 'auto');
 		}
+		// calculate how much space needs to be filled above and below the background
 		var spaceToFill = newWelcomeTabHeight - $('#welcomebg').outerHeight();
 		var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
 		var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
 		$('#welcomebgtop').css('height', newWelcomeTabBgTopHeight + 'px');
 		$('#welcomebgbot').css('height', newWelcomeTabBgBotHeight + 'px');
-		welcomeTabDiv.css({height: newWelcomeTabHeight + 'px'});
+		$('#welcometab').css('height', newWelcomeTabHeight + 'px');
 	}
 
 	function onChatTabResize() {
@@ -191,7 +191,7 @@ $(document).ready(function() {
 			// if the scrollbars are needed, enable them
 			$('html').css('overflow-y', 'auto');
 		}
-		$('#chatlog').css({height: newChatLogHeight + 'px'});
+		$('#chatlog').css('height', newChatLogHeight + 'px');
 		$('#chatbox').focus();
 	}
 });
