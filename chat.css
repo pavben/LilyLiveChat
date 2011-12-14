@@ -2,14 +2,54 @@ body {
 	background-color:#E3E3E3;
 	color:#303030;
 	font-family:'Signika', sans-serif;
-	padding:9px 9px 2px 9px;
+	padding:0px 0px 0px 0px;
 	margin:0px 0px 0px 0px;
 }
-#welcometab,#chattab {
+.tab {
 	display:none;
 	min-width:641px;
 }
-#cardrow {
+#welcometab {
+	display:table;
+	width:100%;
+}
+#welcomeoutercell {
+	vertical-align:middle;
+	display:table-cell;
+	/*background-color:#d0edf3;*/
+	height:100%;
+}
+#welcomebgtop {
+	height:0px;
+	background:blue;
+}
+#welcomebgbot {
+	height:0px;
+	background:red;
+}
+#welcomebggradient {
+	background: -webkit-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #63bc4f 100%);
+	border:1px solid red;
+}
+#welcomebg {
+	width:641px;
+	height:641px;
+	margin-left:auto;
+	margin-right:auto;
+	background-image: url('images/welcomebg.png');
+}
+#loginbox {
+	width:320px;
+	height:200px;
+	margin-left:auto;
+	margin-right:auto;
+	border:1px solid red;
+	padding:9px 9px 9px 9px;
+}
+#chattab {
+	padding:9px 9px 2px 9px;
+}
+.cardrow {
 	display:table;
 	table-layout:fixed;
 	width:100%;
@@ -22,7 +62,7 @@ body {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 }
-#mycard {
+.mycard {
 	display:table-cell;
 	width:220px;
 	height:100%;
@@ -36,7 +76,7 @@ body {
 	margin-left:auto;
 	margin-right:auto;
 }
-#theircard {
+.theircard {
 	display:table-cell;
 	width:220px;
 	height:100%;

@@ -140,7 +140,7 @@ $(document).ready(function() {
 	changeToTab('welcometab');
 
 	setTimeout(function() {
-		changeToTab('chattab');
+	//	changeToTab('chattab');
 	}, 4000);
 
 	function log(msg) {
@@ -151,13 +151,33 @@ $(document).ready(function() {
 
 	function onResize() {
 		if (currentTab == 'chattab') {
-			updateChatLogHeight();
+			onChatTabResize();
+		} else if (currentTab == 'welcometab') {
+			onWelcomeTabResize();
 		}
 	}
 
-	function updateChatLogHeight() {
+	function onWelcomeTabResize() {
+		// disable scrolling as it causes visual glitches
+		$('html').css('overflow-y', 'hidden');
+		var welcomeTabDiv = $('#welcometab');
+		var newWelcomeTabHeight = $(window).height();
+		if (newWelcomeTabHeight < 641) {
+			newWelcomeTabHeight = 641;
+			// if the scrollbars are needed, enable them
+			$('html').css('overflow-y', 'auto');
+		}
+		var spaceToFill = newWelcomeTabHeight - $('#welcomebg').outerHeight();
+		var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
+		var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
+		$('#welcomebgtop').css('height', newWelcomeTabBgTopHeight + 'px');
+		$('#welcomebgbot').css('height', newWelcomeTabBgBotHeight + 'px');
+		welcomeTabDiv.css({height: newWelcomeTabHeight + 'px'});
+	}
+
+	function onChatTabResize() {
 		// disable scrolling as it interferes with calculations and causes visual glitches
-		$('html').css({overflow:'hidden'});
+		$('html').css('overflow-y', 'hidden');
 		var chatlogDiv = $('#chatlog');
 		var newChatLogHeight = $(window).height() // start with the full height
 			- chatlogDiv.offset().top // remove all up to the start of chatlog
@@ -169,7 +189,7 @@ $(document).ready(function() {
 		if (newChatLogHeight < 200) {
 			newChatLogHeight = 200;
 			// if the scrollbars are needed, enable them
-			$('html').css({overflow:'auto'});
+			$('html').css('overflow-y', 'auto');
 		}
 		$('#chatlog').css({height: newChatLogHeight + 'px'});
 		$('#chatbox').focus();
