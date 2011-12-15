@@ -117,15 +117,15 @@ $(document).ready(function() {
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/guest-icon.png');
 		replaceMeWith(testperson);
-	}, 2000);
+	}, 800);
 
 	function generateNewPersonColor() {
 		return '#085376';
 	}
 
 	// we start on welcometab
-	//changeToTab('welcometab');
-	changeToTab('chattab');
+	changeToTab('welcometab');
+	//changeToTab('chattab');
 	replaceIconWith('images/funshine_bear.png', $('#myiconwelcome'));
 
 	setTimeout(function() {
