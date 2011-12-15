@@ -115,7 +115,7 @@ $(document).ready(function() {
 	$('#theircard').fadeTo(0, 0);
 
 	setTimeout(function() {
-		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/guest-icon.png');
+		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
 	}, 800);
 
@@ -166,7 +166,7 @@ function onResize() {
 
 function onWelcomeTabResize() {
 	// disable scrolling as it causes visual glitches
-	$('html').css('overflow-y', 'hidden');
+	$('html').css('overflow-y', 'hidden'); // TODO: should this be html or perhaps body?
 	var newWelcomeTabHeight = $(window).height();
 	if (newWelcomeTabHeight < 641) {
 		newWelcomeTabHeight = 641;
@@ -177,12 +177,22 @@ function onWelcomeTabResize() {
 	var spaceToFill = newWelcomeTabHeight - $('#welcomebg').outerHeight();
 	var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
 	var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
-	$('#welcomebgtop').css('height', newWelcomeTabBgTopHeight + 'px');
-	$('#welcomebgbot').css('height', newWelcomeTabBgBotHeight + 'px');
-	$('#welcometab').css('height', newWelcomeTabHeight + 'px');
+	$('#welcomebgtop').css('height', newWelcomeTabBgTopHeight);
+	$('#welcomebgbot').css('height', newWelcomeTabBgBotHeight);
+	$('#welcometab').css('height', newWelcomeTabHeight);
 }
 
 function onChatTabResize() {
+	// first, handle the width
+	{
+		var spaceToFill = $('#chattab').width() - 641;
+		log("chattab: " + $('#chattab').width() + " chatcardrow: " + $('#chatcardrow').width());
+		var leftPadding = Math.floor(spaceToFill / 2);
+		var rightPadding = Math.ceil(spaceToFill / 2);
+		log("leftM: " + leftPadding);
+		$('#chatcardsep').css('padding-left', leftPadding).css('padding-right', rightPadding);
+	}
+
 	// disable scrolling as it interferes with calculations and causes visual glitches
 	$('html').css('overflow-y', 'hidden');
 	var chatlogDiv = $('#chatlog');
@@ -196,7 +206,7 @@ function onChatTabResize() {
 		// if the scrollbars are needed, enable them
 		$('html').css('overflow-y', 'auto');
 	}
-	$('#chatlog').css('height', newChatLogHeight + 'px');
+	$('#chatlog').css('height', newChatLogHeight);
 	$('#chatbox').focus();
 }
 
