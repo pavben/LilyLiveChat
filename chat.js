@@ -141,10 +141,10 @@ $(document).ready(function() {
 	}
 
 	// we start on welcometab
-	//changeToTab('welcometab');
+	changeToTab('welcometab');
 
 	setTimeout(function() {
-		changeToTab('chattab');
+		//changeToTab('chattab');
 	}, 500);
 
 	function log(msg) {

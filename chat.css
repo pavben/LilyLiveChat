@@ -37,8 +37,8 @@ body {
 	background: linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%);
 }
 #welcomebg {
-	width:641px;
-	height:641px;
+	width:659px;
+	height:659px;
 	margin-left:auto;
 	margin-right:auto;
 	background-image: url('images/welcomebg.png');
