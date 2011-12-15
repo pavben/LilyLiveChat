@@ -65,23 +65,20 @@ $(document).ready(function() {
 
 	function replaceMeWith(person) {
 		me = person;
-		replaceCardWith(person, $('#myicon'), $('#mycard'), $('#myname'), $('#mytitle'));
+		replaceCardWith(person, $('#mycard'), $('#myname'), $('#mytitle'));
+		replaceIconWith(person.iconUrl, $('#myicon'));
 	}
 
 	function replaceThemWith(person) {
 		they = person;
-		replaceCardWith(person, $('#theiricon'), $('#theircard'), $('#theirname'), $('#theirtitle'));
+		replaceCardWith(person, $('#theircard'), $('#theirname'), $('#theirtitle'));
+		replaceIconWith(person.iconUrl, $('#theiricon'));
 	}
 
-	function replaceCardWith(person, icon, card, name, title) {
+	function replaceCardWith(person, card, name, title) {
 		var fadeOutTime = 100;
-		if (!me) {
-			fadeOutTime = 0;
-		}
 
 		card.fadeTo(fadeOutTime, 0);
-
-		replaceIconWith(icon, person, fadeOutTime);
 
 		name.html(person.name);
 		name.css('color', person.color);
@@ -91,20 +88,27 @@ $(document).ready(function() {
 		card.fadeTo(1000, 1);
 	}
 
-	function replaceIconWith(icon, person, fadeOutTime) {
+	function replaceIconWith(iconUrl, icon) {
+		var fadeOutTime = 100;
+
+		if (icon.css('background-image') == 'none') {
+			fadeOutTime = 0;
+		}
+
 		icon.fadeTo(fadeOutTime, 0);
 
 		icon.css('background-image', 'none');
 
 		var iconCache = new Image();
 		iconCache.onload = function() {
-			icon.css('background-image', 'url(\'' + person.iconUrl + '\')');
+			icon.css('background-image', 'url(\'' + iconUrl + '\')');
 			icon.fadeTo(1000, 1);
 		}
-		iconCache.src = person.iconUrl;
+		iconCache.src = iconUrl;
 	}
 
 	// initially, these are invisible
+	$('#myiconwelcome').fadeTo(0, 0);
 	$('#myicon').fadeTo(0, 0);
 	$('#mycard').fadeTo(0, 0);
 	$('#theiricon').fadeTo(0, 0);
@@ -113,7 +117,7 @@ $(document).ready(function() {
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/guest-icon.png');
 		replaceMeWith(testperson);
-	}, 7000);
+	}, 2000);
 
 	function generateNewPersonColor() {
 		return '#085376';
@@ -142,6 +146,7 @@ $(document).ready(function() {
 
 	// we start on welcometab
 	changeToTab('welcometab');
+	replaceIconWith('images/funshine_bear.png', $('#myiconwelcome'));
 
 	setTimeout(function() {
 		//changeToTab('chattab');
