@@ -15,8 +15,6 @@ body {
 	min-width:641px;
 }
 #welcometab {
-	display:table;
-	width:100%;
 }
 #welcomebgtop {
 	height:0px;
@@ -47,7 +45,6 @@ body {
 }
 #loginbox {
 	width:320px;
-	height:200px;
 	margin-left:auto;
 	margin-right:auto;
 	padding:9px 9px 9px 9px;
@@ -56,7 +53,7 @@ body {
 	border-radius:5px;
 }
 #mynamewelcome {
-	color:#063D57;
+	color:#085376;
 }
 #chooseanamelabelwelcome {
 	height:34px;
@@ -113,6 +110,7 @@ body {
 }
 #chatlog {
 	height:400px;
+	box-sizing:border-box;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;

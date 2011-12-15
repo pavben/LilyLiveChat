@@ -79,15 +79,22 @@ $(document).ready(function() {
 			fadeOutTime = 0;
 		}
 
-		icon.fadeTo(fadeOutTime, 0);
 		card.fadeTo(fadeOutTime, 0);
 
-		// now both the icon and the card are invisible
-
-		icon.css('background-image', 'none');
+		replaceIconWith(icon, person, fadeOutTime);
 
 		name.html(person.name);
 		name.css('color', person.color);
+
+		title.html(person.title);
+
+		card.fadeTo(1000, 1);
+	}
+
+	function replaceIconWith(icon, person, fadeOutTime) {
+		icon.fadeTo(fadeOutTime, 0);
+
+		icon.css('background-image', 'none');
 
 		var iconCache = new Image();
 		iconCache.onload = function() {
@@ -95,11 +102,6 @@ $(document).ready(function() {
 			icon.fadeTo(1000, 1);
 		}
 		iconCache.src = person.iconUrl;
-
-		title.html(person.title);
-
-		card.fadeTo(1000, 1);
-
 	}
 
 	// initially, these are invisible
@@ -108,8 +110,10 @@ $(document).ready(function() {
 	$('#theiricon').fadeTo(0, 0);
 	$('#theircard').fadeTo(0, 0);
 
-	testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/guest-icon.png');
-	replaceMeWith(testperson);
+	setTimeout(function() {
+		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/guest-icon.png');
+		replaceMeWith(testperson);
+	}, 7000);
 
 	function generateNewPersonColor() {
 		return '#085376';
@@ -137,11 +141,11 @@ $(document).ready(function() {
 	}
 
 	// we start on welcometab
-	changeToTab('welcometab');
+	//changeToTab('welcometab');
 
 	setTimeout(function() {
-	//	changeToTab('chattab');
-	}, 4000);
+		changeToTab('chattab');
+	}, 500);
 
 	function log(msg) {
 		window.console.log(msg);
@@ -182,10 +186,8 @@ $(document).ready(function() {
 		var newChatLogHeight = $(window).height() // start with the full height
 			- chatlogDiv.offset().top // remove all up to the start of chatlog
 			- $('.spacer9v').outerHeight() // remove the height of the spacer above the chatbox
-			- $('#chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
-			- $('.spacer9v').height() // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
-			- parseInt(chatlogDiv.css('padding-top')) // paddings are not double-counted in the width
-			- parseInt(chatlogDiv.css('padding-bottom'));
+			- $('.inputboxwrapper').outerHeight() // remove the height of the chatbox wrapper
+			- $('.spacer9v').height(); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
 		if (newChatLogHeight < 200) {
 			newChatLogHeight = 200;
 			// if the scrollbars are needed, enable them
