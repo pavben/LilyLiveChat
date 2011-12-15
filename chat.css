@@ -80,6 +80,15 @@ body {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 }
+.personiconcover {
+	width:98px;
+	height:98px;
+	box-sizing:border-box;
+	background-image: url('images/iconcover.png');
+	border-radius:5px;
+	opacity: 0.25;
+	filter:alpha(opacity=25); /* IE8 and earlier */
+}
 .cardrow {
 	height:100px;
 }
