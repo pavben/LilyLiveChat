@@ -183,16 +183,6 @@ function onWelcomeTabResize() {
 }
 
 function onChatTabResize() {
-	// first, handle the width
-	{
-		var spaceToFill = $('#chattab').width() - 641;
-		log("chattab: " + $('#chattab').width() + " chatcardrow: " + $('#chatcardrow').width());
-		var leftPadding = Math.floor(spaceToFill / 2);
-		var rightPadding = Math.ceil(spaceToFill / 2);
-		log("leftM: " + leftPadding);
-		$('#chatcardsep').css('padding-left', leftPadding).css('padding-right', rightPadding);
-	}
-
 	// disable scrolling as it interferes with calculations and causes visual glitches
 	$('html').css('overflow-y', 'hidden');
 	var chatlogDiv = $('#chatlog');

@@ -75,6 +75,9 @@ body {
 	border-radius:5px;
 	vertical-align:top;
 }
+#chatcardrow {
+	width:100%;
+}
 .cardrow {
 	display:table;
 	table-layout:fixed;
@@ -91,9 +94,6 @@ body {
 #chatcardsep {
 	display:table-cell;
 	width:1px;
-	height:100%;
-}
-#chatcardsepinner {
 	height:100%;
 	background-color:#BBBBBB;
 }
