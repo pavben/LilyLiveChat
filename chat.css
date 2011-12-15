@@ -65,7 +65,7 @@ body {
 	padding:9px 9px 2px 9px;
 }
 .personiconbg {
-	display:inline-block;
+	display:table-cell;
 	width:100px;
 	height:100px;
 	box-sizing:border-box;
@@ -90,10 +90,12 @@ body {
 	filter:alpha(opacity=25); /* IE8 and earlier */
 }
 .cardrow {
+	display:table;
+	table-layout:fixed;
 	height:100px;
 }
 .mycard {
-	display:inline-block;
+	display:table-cell;
 	width:220px;
 	height:100%;
 	box-sizing:border-box;
@@ -101,7 +103,7 @@ body {
 	vertical-align:top;
 }
 #cardsep {
-	display:inline-block;
+	display:table-cell;
 	width:1px;
 	height:100%;
 	background-color:#BBBBBB;
@@ -109,7 +111,7 @@ body {
 	margin-right:auto;
 }
 .theircard {
-	display:inline-block;
+	display:table-cell;
 	width:220px;
 	height:100%;
 	box-sizing:border-box;
