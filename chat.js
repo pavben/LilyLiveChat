@@ -72,7 +72,7 @@ $(document).ready(function() {
 	function replaceThemWith(person) {
 		they = person;
 		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
-		replaceCardTextWith(person, $('#chat_theircard'), $('#chat_theirname'), $('#chat_theirtitle'));
+		replaceCardTextWith(person, $('#chat_theircardrow'), $('#chat_theirname'), $('#chat_theirtitle'));
 	}
 
 	function replaceCardTextWith(person, card, name, title) {
@@ -112,8 +112,8 @@ $(document).ready(function() {
 	$('#chat_myicon').fadeTo(0, 0);
 	$('#chat_theiricon').fadeTo(0, 0);
 	// and these are hidden
-	$('#chat_theircard').hide();
-	$('#chat_inlinecard').hide();
+	$('#chat_theircardrow').hide();
+	$('#chat_inlinecardrow').hide();
 
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
@@ -129,7 +129,7 @@ $(document).ready(function() {
 	//changeToTab('welcome_tab');
 	// DEBUG
 	changeToTab('chat_tab');
-	$('#chat_inlinecard').show();
+	//$('#chat_inlinecardrow').show();
 	// END OF DEBUG
 
 	// set the default person icon
