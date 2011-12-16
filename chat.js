@@ -118,7 +118,7 @@ $(document).ready(function() {
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
-		replaceThemWith(testperson);
+		//replaceThemWith(testperson);
 	}, 800);
 
 	function generateNewPersonColor() {
@@ -126,9 +126,12 @@ $(document).ready(function() {
 	}
 
 	// we start on welcometab
-	changeToTab('welcome_tab');
-	//changeToTab('chattab');
-	
+	//changeToTab('welcome_tab');
+	// DEBUG
+	changeToTab('chat_tab');
+	$('#chat_inlinecard').show();
+	// END OF DEBUG
+
 	// set the default person icon
 	$('#welcome_icon').fadeTo(0, 0);
 	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
