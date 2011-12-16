@@ -9,54 +9,60 @@
 	<script src='chat.js'></script>
 </head>
 <body>
-	<div id="welcometab" class="tab">
-		<div id="welcomebgtop"></div>
-		<div id="welcomebggradient">
-			<div id="welcomebg">
+	<div id="welcome_tab" class="tab">
+		<div id="welcome_bgtop"></div>
+		<div id="welcome_bggradient">
+			<div id="welcome_bg">
 				<div style="height:230px;"></div>
-				<div id="loginbox">
+				<div id="welcome_loginbox">
 					<div class="cardrow">
-						<div id="myiconwelcome" class="personicon"></div>
-						<div id="mycardwelcome" class="mycard">
-							<div id="chooseanamelabelwelcome">
-								Choose a Name
-							</div>
-							<div class="inputboxwrapper">
-								<input id="mynamewelcome" class="inputbox" type="text" placeholder="My name is..." maxlength="20" />
-							</div>
-							<div style="margin-top:10px;">
-								<div class="basicbutton" style="width:120px;">Randomize!</div>
-								<div class="basicbutton" style="width:84px;" onclick="changeToTab('chattab');">OK</div>
+						<div id="welcome_card" class="card">
+							<div id="welcome_icon" class="personicon"></div>
+							<div id="welcome_cardtext" class="leftcardtext">
+								<div id="welcome_chooseanamelabel">
+									Choose a Name
+								</div>
+								<div class="inputboxwrapper">
+									<input id="welcome_myname" class="inputbox" type="text" placeholder="My name is..." maxlength="20" />
+								</div>
+								<div style="margin-top:10px;">
+									<div class="basicbutton" style="width:120px;">Randomize!</div>
+									<div class="basicbutton" style="width:84px;" onclick="changeToTab('chat_tab');">OK</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div id="welcomebgbot"></div>
+		<div id="welcome_bgbot"></div>
 	</div>
-	<div id="chattab" class="tab">
-		<div id="chatcardrow" class="cardrow">
-			<div id="myicon" class="personicon"></div>
-			<div id="mycard" class="mycard">
-				<div id="myname" class="personname"></div>
-				<div id="mytitle" class="persontitle"></div>
+	<div id="chat_tab" class="tab">
+		<div id="chat_cardrow" class="cardrow">
+			<div id="chat_mycard" class="card">
+				<div id="chat_myicon" class="personicon"></div>
+				<div id="chat_mycardtext" class="leftcardtext">
+					<div id="chat_myname" class="personname"></div>
+					<div id="chat_mytitle" class="persontitle"></div>
+				</div>
 			</div>
 			<div></div>
-			<div id="chatcardsep"></div>
+			<div id="chat_cardsep"></div>
 			<div></div>
-			<div id="theircard" class="theircard">
-				<span id="theirname" class="personname"></span>
-				<span id="theirtitle" class="persontitle"></span>
+			<div id="chat_theircard" class="card">
+				<div id="chat_theircardtext" class="rightcardtext">
+					<div id="chat_theirname" class="personname"></div>
+					<div id="chat_theirtitle" class="persontitle"></div>
+				</div>
+				<div id="chat_theiricon" class="personicon"></div>
 			</div>
-			<div id="theiricon" class="personicon"></div>
 		</div>
 		<div class="spacer9v"></div>
-		<div id="chatlog">
+		<div id="chat_chatlog">
 		</div>
 		<div class="spacer9v"></div>
 		<div class="inputboxwrapper">
-			<input id="chatbox" class="inputbox" type="text" value="" />
+			<input id="chat_chatbox" class="inputbox" type="text" value="" />
 		</div>
 	</div>
 </body>

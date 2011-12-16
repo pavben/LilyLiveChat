@@ -15,7 +15,7 @@ $(document).ready(function() {
 	}
 
 	function writeContentToChatLog(content) {
-		var chatlogDiv = $('#chatlog');
+		var chatlogDiv = $('#chat_chatlog');
 
 		chatlogDiv.append(content);
 
@@ -65,17 +65,17 @@ $(document).ready(function() {
 
 	function replaceMeWith(person) {
 		me = person;
-		replaceCardWith(person, $('#mycard'), $('#myname'), $('#mytitle'));
-		replaceIconWith(person.iconUrl, $('#myicon'));
+		replaceIconWith(person.iconUrl, $('#chat_myicon'));
+		replaceCardTextWith(person, $('#chat_mycard'), $('#chat_myname'), $('#chat_mytitle'));
 	}
 
 	function replaceThemWith(person) {
 		they = person;
-		replaceCardWith(person, $('#theircard'), $('#theirname'), $('#theirtitle'));
-		replaceIconWith(person.iconUrl, $('#theiricon'));
+		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
+		replaceCardTextWith(person, $('#chat_theircard'), $('#chat_theirname'), $('#chat_theirtitle'));
 	}
 
-	function replaceCardWith(person, card, name, title) {
+	function replaceCardTextWith(person, card, name, title) {
 		var fadeOutTime = 100;
 
 		card.fadeTo(fadeOutTime, 0);
@@ -108,15 +108,15 @@ $(document).ready(function() {
 	}
 
 	// initially, these are invisible
-	$('#myiconwelcome').fadeTo(0, 0);
-	$('#myicon').fadeTo(0, 0);
-	$('#mycard').fadeTo(0, 0);
-	$('#theiricon').fadeTo(0, 0);
-	$('#theircard').fadeTo(0, 0);
+	$('#chat_mycard').fadeTo(0, 0);
+	$('#chat_myicon').fadeTo(0, 0);
+	$('#chat_theircard').fadeTo(0, 0);
+	$('#chat_theiricon').fadeTo(0, 0);
 
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
+		replaceThemWith(testperson);
 	}, 800);
 
 	function generateNewPersonColor() {
@@ -124,9 +124,12 @@ $(document).ready(function() {
 	}
 
 	// we start on welcometab
-	changeToTab('welcometab');
+	changeToTab('welcome_tab');
 	//changeToTab('chattab');
-	replaceIconWith('images/funshine_bear.png', $('#myiconwelcome'));
+	
+	// set the default person icon
+	$('#welcome_icon').fadeTo(0, 0);
+	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
 
 	setTimeout(function() {
 		//changeToTab('chattab');
@@ -157,9 +160,9 @@ function changeToTab(tab) {
 $(window).resize(onResize);
 
 function onResize() {
-	if (currentTab == 'chattab') {
+	if (currentTab == 'chat_tab') {
 		onChatTabResize();
-	} else if (currentTab == 'welcometab') {
+	} else if (currentTab == 'welcome_tab') {
 		onWelcomeTabResize();
 	}
 }
@@ -174,18 +177,18 @@ function onWelcomeTabResize() {
 		$('html').css('overflow-y', 'auto');
 	}
 	// calculate how much space needs to be filled above and below the background
-	var spaceToFill = newWelcomeTabHeight - $('#welcomebg').outerHeight();
+	var spaceToFill = newWelcomeTabHeight - $('#welcome_bg').outerHeight();
 	var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
 	var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
-	$('#welcomebgtop').css('height', newWelcomeTabBgTopHeight);
-	$('#welcomebgbot').css('height', newWelcomeTabBgBotHeight);
-	$('#welcometab').css('height', newWelcomeTabHeight);
+	$('#welcome_bgtop').css('height', newWelcomeTabBgTopHeight);
+	$('#welcome_bgbot').css('height', newWelcomeTabBgBotHeight);
+	$('#welcome_tab').css('height', newWelcomeTabHeight);
 }
 
 function onChatTabResize() {
 	// disable scrolling as it interferes with calculations and causes visual glitches
 	$('html').css('overflow-y', 'hidden');
-	var chatlogDiv = $('#chatlog');
+	var chatlogDiv = $('#chat_chatlog');
 	var newChatLogHeight = $(window).height() // start with the full height
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
 		- $('.spacer9v').outerHeight() // remove the height of the spacer above the chatbox
@@ -196,8 +199,8 @@ function onChatTabResize() {
 		// if the scrollbars are needed, enable them
 		$('html').css('overflow-y', 'auto');
 	}
-	$('#chatlog').css('height', newChatLogHeight);
-	$('#chatbox').focus();
+	$('#chat_chatlog').css('height', newChatLogHeight);
+	$('#chat_chatbox').focus();
 }
 
 function log(msg) {

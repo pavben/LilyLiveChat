@@ -15,55 +15,15 @@ body {
 	box-sizing:border-box;
 	min-width:659px;
 }
-#welcometab {
+.cardrow {
+	display:table;
+	table-layout:fixed;
+	height:100px;
 }
-#welcomebgtop {
-	height:0px;
-	background-color:#76cfe4;
-}
-#welcomebgbot {
-	height:0px;
-	background-color:#68bd4d;
-}
-#welcomebggradient {
-	/* BEGIN browser-specific crap */
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#ffffff'); /* IE6 & IE7 */  
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#ffffff')"; /* IE8+ */  
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #76cfe4), color-stop(100%, #68bd4d)); /* Safari 4+, Chrome 2+ */  
-	background: -moz-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* FF 3.6+ */  
-	background: -ms-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* IE10 */  
-	background: -o-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* Opera 11.10 */  
-	background: -webkit-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* Safari 5.1+, Chrome 10+ */
-	/* END browser-specific crap */
-	background: linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%);
-}
-#welcomebg {
-	width:659px;
-	height:659px;
-	margin-left:auto;
-	margin-right:auto;
-	background-image: url('images/welcomebg.png');
-}
-#loginbox {
+.card {
+	display:table-cell;
 	width:320px;
-	margin-left:auto;
-	margin-right:auto;
-	padding:9px 9px 9px 9px;
-	background-color:#E3E3E3;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-}
-#mynamewelcome {
-	color:#3B4797;
-}
-#chooseanamelabelwelcome {
-	height:34px;
-	box-sizing:border-box;
-	padding-top:4px;
-	text-align:center;
-}
-#chattab {
-	padding:9px 9px 2px 9px;
+	height:100%;
 }
 .personicon {
 	display:table-cell;
@@ -75,29 +35,14 @@ body {
 	border-radius:5px;
 	vertical-align:top;
 }
-#chatcardrow {
-	width:100%;
-}
-.cardrow {
-	display:table;
-	table-layout:fixed;
-	height:100px;
-}
-.mycard {
+.leftcardtext {
 	display:table-cell;
 	width:220px;
 	height:100%;
 	box-sizing:border-box;
 	padding:0px 0px 0px 8px;
-	vertical-align:top;
 }
-#chatcardsep {
-	display:table-cell;
-	width:1px;
-	height:100%;
-	background-color:#BBBBBB;
-}
-.theircard {
+.rightcardtext {
 	display:table-cell;
 	width:220px;
 	height:100%;
@@ -114,16 +59,6 @@ body {
 }
 .spacer9v {
 	height:9px;
-}
-#chatlog {
-	height:400px;
-	box-sizing:border-box;
-	background-color:#F4F4F4;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-	padding:1px 10px 3px 6px;
-	overflow-x:hidden;
-	overflow-y:auto;
 }
 .msgname {
 	font-size:110%;
@@ -174,4 +109,77 @@ input {
 }
 .basicbutton:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+
+/* welcome tab */
+
+#welcome_bgtop {
+	height:0px;
+	background-color:#76cfe4;
+}
+#welcome_bgbot {
+	height:0px;
+	background-color:#68bd4d;
+}
+#welcome_bggradient {
+	/* BEGIN browser-specific crap */
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#ffffff'); /* IE6 & IE7 */
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#ffffff')"; /* IE8+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #76cfe4), color-stop(100%, #68bd4d)); /* Safari 4+, Chrome 2+ */
+	background: -moz-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* FF 3.6+ */
+	background: -ms-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* IE10 */
+	background: -o-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* Opera 11.10 */
+	background: -webkit-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* Safari 5.1+, Chrome 10+ */
+	/* END browser-specific crap */
+	background: linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%);
+}
+#welcome_bg {
+	width:659px;
+	height:659px;
+	margin-left:auto;
+	margin-right:auto;
+	background-image: url('images/welcomebg.png');
+}
+#welcome_loginbox {
+	width:320px;
+	margin-left:auto;
+	margin-right:auto;
+	padding:9px 9px 9px 9px;
+	background-color:#E3E3E3;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#welcome_myname {
+	color:#3B4797;
+}
+#welcome_chooseanamelabel {
+	height:34px;
+	box-sizing:border-box;
+	padding-top:4px;
+	text-align:center;
+}
+
+/* chat tab */
+
+#chat_tab {
+	padding:9px 9px 2px 9px;
+}
+#chat_cardsep {
+	display:table-cell;
+	width:1px;
+	height:100%;
+	background-color:#BBBBBB;
+}
+#chat_cardrow {
+	width:100%;
+}
+#chat_chatlog {
+	height:400px;
+	box-sizing:border-box;
+	background-color:#F4F4F4;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	padding:1px 10px 3px 6px;
+	overflow-x:hidden;
+	overflow-y:auto;
 }
