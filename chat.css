@@ -23,7 +23,8 @@ body {
 .card {
 	display:table-cell;
 	width:320px;
-	height:100%;
+	height:100px;
+	vertical-align:top;
 }
 .personicon {
 	display:table-cell;

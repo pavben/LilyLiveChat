@@ -110,8 +110,10 @@ $(document).ready(function() {
 	// initially, these are invisible
 	$('#chat_mycard').fadeTo(0, 0);
 	$('#chat_myicon').fadeTo(0, 0);
-	$('#chat_theircard').fadeTo(0, 0);
 	$('#chat_theiricon').fadeTo(0, 0);
+	// and these are hidden
+	$('#chat_theircard').hide();
+	$('#chat_inlinecard').hide();
 
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
