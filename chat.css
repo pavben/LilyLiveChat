@@ -57,9 +57,6 @@ body {
 	font-size:110%;
 	color:#7C7C7C;
 }
-.spacer9v {
-	height:9px;
-}
 .msgname {
 	font-size:110%;
 }
@@ -180,6 +177,11 @@ input {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 	padding:1px 10px 3px 6px;
+	margin-top:9px;
 	overflow-x:hidden;
 	overflow-y:auto;
 }
+#chat_chatboxwrapper {
+	margin-top:9px;
+}
+

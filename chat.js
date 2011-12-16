@@ -1,8 +1,8 @@
 $(document).ready(function() {
-	$('#chatbox').keypress(function(e) {
+	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
-			writeMessageToChatLog(me.name, me.color, $('#chatbox').val());
-			$('#chatbox').val('');
+			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val());
+			$('#chat_chatbox').val('');
 		}
 	});
 
@@ -19,7 +19,7 @@ $(document).ready(function() {
 
 		chatlogDiv.append(content);
 
-		if (this.lastScrollTopTarget && chatlogDiv.scrollTop() >= this.lastScrollTopTarget - 50) {
+		if (this.lastScrollTopTarget && chatlogDiv.scrollTop() >= this.lastScrollTopTarget - 30) {
 			// if they scroll within 200px of the bottom
 			this.scrollLock = false;
 		}
@@ -191,9 +191,9 @@ function onChatTabResize() {
 	var chatlogDiv = $('#chat_chatlog');
 	var newChatLogHeight = $(window).height() // start with the full height
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
-		- $('.spacer9v').outerHeight() // remove the height of the spacer above the chatbox
-		- $('.inputboxwrapper').outerHeight() // remove the height of the chatbox wrapper
-		- $('.spacer9v').height(); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
+		- stripPx($('#chat_chatboxwrapper').css('margin-top')) // remove the height of the spacer above the chatbox
+		- $('#chat_chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
+		- stripPx($('#chat_chatboxwrapper').css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
 	if (newChatLogHeight < 200) {
 		newChatLogHeight = 200;
 		// if the scrollbars are needed, enable them
@@ -201,6 +201,10 @@ function onChatTabResize() {
 	}
 	$('#chat_chatlog').css('height', newChatLogHeight);
 	$('#chat_chatbox').focus();
+}
+
+function stripPx(text) {
+	return text.replace('px', '');
 }
 
 function log(msg) {
