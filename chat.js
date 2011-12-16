@@ -129,12 +129,13 @@ $(document).ready(function() {
 	//changeToTab('welcome_tab');
 	// DEBUG
 	changeToTab('chat_tab');
-	//$('#chat_inlinecardrow').show();
+	$('#chat_inlinecardrow').fadeIn();
 	// END OF DEBUG
 
 	// set the default person icon
 	$('#welcome_icon').fadeTo(0, 0);
 	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
+	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 
 	setTimeout(function() {
 		//changeToTab('chattab');

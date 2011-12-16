@@ -24,18 +24,21 @@ body {
 .cardrow {
 	display:table-row;
 }
-.card {
+.card, .card320, .card220, .card100 {
 	display:table-cell;
 	height:100px;
 	vertical-align:top;
 }
-.fixedcard {
-	display:table-cell;
+.card320 {
 	width:320px;
-	height:100px;
-	vertical-align:top;
 }
-.personicon {
+.card220 {
+	width:220px;
+}
+.card100 {
+	width:100px;
+}
+.framedicon {
 	display:table-cell;
 	width:100px;
 	height:98px;
