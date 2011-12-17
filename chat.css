@@ -163,8 +163,7 @@ input {
 	color:#3B4797;
 }
 #welcome_chooseanamelabel {
-	height:34px;
-	box-sizing:border-box;
+	height:30px;
 	padding-top:4px;
 	text-align:center;
 }

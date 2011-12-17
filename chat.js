@@ -191,9 +191,9 @@ $(document).ready(function() {
 	}
 
 	// we start on welcometab
-	//changeTabTo(welcomeTab);
+	changeTabTo(welcomeTab);
 	// DEBUG
-	changeTabTo(chatTab);
+	//changeTabTo(chatTab);
 	// END OF DEBUG
 
 	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
