@@ -16,7 +16,7 @@
 				<div style="height:230px;"></div>
 				<div id="welcome_loginbox">
 					<div class="cardrowtable">
-						<div id="welcome_card" class="card320">
+						<div id="welcome_card" class="cardrow">
 							<div id="welcome_icon" class="framedicon"></div>
 							<div id="welcome_cardtext" class="leftcardtext">
 								<div id="welcome_chooseanamelabel">
@@ -25,9 +25,10 @@
 								<div class="inputboxwrapper">
 									<input id="welcome_myname" class="inputbox" type="text" placeholder="My name is..." maxlength="20" />
 								</div>
-								<div style="margin-top:10px;">
+								<div style="display:table; table-layout:fixed; margin-top:10px; width:100%;">
 									<div class="basicbutton" style="width:120px;">Randomize!</div>
-									<div class="basicbutton" style="width:84px;" onclick="changeTabTo(chatTab);">OK</div>
+									<div style="display:table-cell;"></div>
+									<div class="basicbutton" style="width:82px;" onclick="changeTabTo(chatTab);">OK</div>
 								</div>
 							</div>
 						</div>
@@ -41,10 +42,12 @@
 		<div class="cardrowtable">
 			<div class="card">
 				<div id="chat_mycard" class="card320">
-					<div id="chat_myicon" class="framedicon"></div>
-					<div id="chat_mycardtext" class="leftcardtext">
-						<div id="chat_myname" class="personname"></div>
-						<div id="chat_mytitle" class="persontitle"></div>
+					<div class="cardrowtable">
+						<div id="chat_myicon" class="framedicon"></div>
+						<div id="chat_mycardtext" class="leftcardtext">
+							<div id="chat_myname" class="personname"></div>
+							<div id="chat_mytitle" class="persontitle"></div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -54,28 +57,22 @@
 					<div id="chat_theircardrow" class="cardrow">
 						<div class="card"></div>
 						<div class="card320">
-							<div id="chat_theircardtext" class="rightcardtext">
-								<div id="chat_theirname" class="personname"></div>
-								<div id="chat_theirtitle" class="persontitle"></div>
+							<div class="cardrowtable">
+								<div id="chat_theircardtext" class="rightcardtext">
+									<div id="chat_theirname" class="personname"></div>
+									<div id="chat_theirtitle" class="persontitle"></div>
+								</div>
+								<div id="chat_theiricon" class="framedicon"></div>
 							</div>
-							<div id="chat_theiricon" class="framedicon"></div>
 						</div>
 					</div>
 					<div id="chat_inlinecardrow" class="cardrow">
 						<div class="card">
-							<div class="cardrowtable">
-								<div class="cardrow">
-									<div class="card220">
-										<div class="chat_inlinecardtext">You are</div>
-										<div id="chat_inlinepos" class="chat_rightcardtext2"></div>
-										<div class="chat_inlinecardtext">in line</div>
-									</div>
-								</div>
-							</div>
+							<div class="chat_inlinecardtext">You are</div>
+							<div id="chat_inlinepos" class="chat_rightcardtext2"></div>
+							<div class="chat_inlinecardtext">in line</div>
 						</div>
-						<div class="card100">
-							<div id="chat_waiticon" class="framedicon"></div>
-						</div>
+						<div id="chat_waiticon" class="framedicon"></div>
 					</div>
 				</div>
 			</div>

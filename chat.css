@@ -22,16 +22,13 @@ body {
 .cardrow {
 	display:table-row;
 }
-.card, .card320, .card220, .card100 {
+.card, .card320, .card100 {
 	display:table-cell;
 	height:100px;
 	vertical-align:top;
 }
 .card320 {
 	width:320px;
-}
-.card220 {
-	width:220px;
 }
 .card100 {
 	width:100px;
@@ -48,14 +45,14 @@ body {
 .leftcardtext {
 	display:table-cell;
 	width:212px;
-	padding:0px 0px 0px 8px;
+	padding-left:8px;
 	height:100%;
 }
 .rightcardtext {
 	display:table-cell;
 	width:212px;
 	height:100%;
-	padding:0px 9px 0px 0px;
+	padding-right:8px;
 	text-align:right;
 }
 .personname {
@@ -92,7 +89,7 @@ input {
 	outline:none;
 }
 .basicbutton {
-	display:inline-block;
+	display:table-cell;
 	height:25px;
 	background-image:url('images/buttontile.png');
 	background-repeat:repeat-x;

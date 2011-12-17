@@ -194,6 +194,7 @@ $(document).ready(function() {
 	changeTabTo(welcomeTab);
 	// DEBUG
 	//changeTabTo(chatTab);
+	updatePositionInLine(5);
 	// END OF DEBUG
 
 	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
@@ -264,6 +265,8 @@ function onChatTabResize() {
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
 		- stripPx($('#chat_chatlog').css('padding-top')) // top and bottom paddings are not counted in the height
 		- stripPx($('#chat_chatlog').css('padding-bottom'))
+		- stripPx($('#chat_chatlog').css('border-top-width')) // same for border
+		- stripPx($('#chat_chatlog').css('border-bottom-width'))
 		- stripPx($('#chat_chatboxwrapper').css('margin-top')) // remove the height of the spacer above the chatbox
 		- $('#chat_chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
 		- stripPx($('#chat_chatboxwrapper').css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
