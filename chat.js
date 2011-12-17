@@ -71,21 +71,26 @@ $(document).ready(function() {
 
 	function replaceThemWith(person) {
 		they = person;
-		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
-		replaceCardTextWith(person, $('#chat_theircardrow'), $('#chat_theirname'), $('#chat_theirtitle'));
+		changeRightSpaceDivTo('chat_theircardrow', function() {
+			replaceIconWith(person.iconUrl, $('#chat_theiricon'));
+			replaceCardTextWith(person, null, $('#chat_theirname'), $('#chat_theirtitle'));
+		});
 	}
 
 	function replaceCardTextWith(person, card, name, title) {
-		var fadeOutTime = 100;
-
-		card.fadeTo(fadeOutTime, 0);
-
+		// if card is provided, perform the fadeout & fadein
+		// otherwise, change the fields instantly
+		if (card) {
+			card.fadeTo(100, 0);
+		}
 		name.html(person.name);
 		name.css('color', person.color);
 
 		title.html(person.title);
 
-		card.fadeTo(1000, 1);
+		if (card) {
+			card.fadeTo(1000, 1);
+		}
 	}
 
 	function replaceIconWith(iconUrl, icon) {
@@ -107,6 +112,30 @@ $(document).ready(function() {
 		iconCache.src = iconUrl;
 	}
 
+	var currentRightSpaceDiv = null;
+
+	function changeRightSpaceDivTo(rightSpaceDiv, contentReplaceFunction) {
+		if (currentRightSpaceDiv) {
+			$('#' + currentRightSpaceDiv).fadeTo(300, 0, function() {
+				$('#' + currentRightSpaceDiv).hide();
+
+				onOldRightSpaceDivGone();
+			});
+		} else {
+			onOldRightSpaceDivGone();
+		}
+
+		function onOldRightSpaceDivGone() {
+			currentRightSpaceDiv = rightSpaceDiv;
+
+			if (contentReplaceFunction) {
+				contentReplaceFunction();
+			}
+
+			$('#' + currentRightSpaceDiv).fadeTo(600, 1);
+		}
+	}
+
 	// initially, these are invisible
 	$('#chat_mycard').fadeTo(0, 0);
 	$('#chat_myicon').fadeTo(0, 0);
@@ -119,7 +148,7 @@ $(document).ready(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
 		//replaceThemWith(testperson);
-	}, 800);
+	}, 3000);
 
 	function generateNewPersonColor() {
 		return '#085376';
@@ -129,7 +158,8 @@ $(document).ready(function() {
 	//changeToTab('welcome_tab');
 	// DEBUG
 	changeToTab('chat_tab');
-	$('#chat_inlinecardrow').fadeIn();
+	//$('#chat_inlinecardrow').fadeIn();
+	changeRightSpaceDivTo('chat_inlinecardrow');
 	// END OF DEBUG
 
 	// set the default person icon
