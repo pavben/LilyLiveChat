@@ -262,6 +262,8 @@ function onChatTabResize() {
 	var chatlogDiv = $('#chat_chatlog');
 	var newChatLogHeight = $(window).height() // start with the full height
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
+		- stripPx($('#chat_chatlog').css('padding-top')) // top and bottom paddings are not counted in the height
+		- stripPx($('#chat_chatlog').css('padding-bottom'))
 		- stripPx($('#chat_chatboxwrapper').css('margin-top')) // remove the height of the spacer above the chatbox
 		- $('#chat_chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
 		- stripPx($('#chat_chatboxwrapper').css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
