@@ -140,7 +140,39 @@ $(document).ready(function() {
 		}
 	}
 
+	function getOrdinalSuffixFor(number) {
+		if ((number % 100) >= 11 && (number % 100) <= 19) {
+			return 'th';
+		}
+
+		switch (number % 10) {
+			case 1:
+				return 'st';
+			case 2:
+				return 'nd';
+			case 3:
+				return 'rd';
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			case 9:
+			case 0:
+				return 'th';
+		}
+	}
+
+	function updatePositionInLine(position) {
+		var newContent = position + '<sup>' + getOrdinalSuffixFor(position) + '</sup>';
+
+		changeRightSpaceDivTo($('#chat_inlinecardrow'), function() {
+			$('#chat_inlinepos').html(newContent);
+		});
+	}
+
 	// initially, these are invisible
+	$('#welcome_icon').fadeTo(0, 0);
 	$('#chat_mycard').fadeTo(0, 0);
 	$('#chat_myicon').fadeTo(0, 0);
 	$('#chat_theiricon').fadeTo(0, 0);
@@ -159,15 +191,11 @@ $(document).ready(function() {
 	}
 
 	// we start on welcometab
-	changeTabTo(welcomeTab);
+	//changeTabTo(welcomeTab);
 	// DEBUG
-	//changeTabTo(chatTab);
-	//$('#chat_inlinecardrow').fadeIn();
-	changeRightSpaceDivTo($('#chat_inlinecardrow'));
+	changeTabTo(chatTab);
 	// END OF DEBUG
 
-	// set the default person icon
-	$('#welcome_icon').fadeTo(0, 0);
 	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
 	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 

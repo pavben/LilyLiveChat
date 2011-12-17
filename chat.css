@@ -194,15 +194,16 @@ input {
 #chat_chatboxwrapper {
 	margin-top:9px;
 }
-.chat_rightcardtext1 {
+.chat_inlinecardtext {
 	font-size:150%;
 	text-align:center;
 }
-.chat_rightcardtext2 {
+#chat_inlinepos {
 	font-size:255%;
 	line-height:32px;
 	text-align:center;
 }
-.chat_rightcardtext2 sup {
+#chat_inlinepos sup {
 	font-size:50%;
 }
+
