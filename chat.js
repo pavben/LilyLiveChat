@@ -1,4 +1,8 @@
 $(document).ready(function() {
+	// set these globals
+	welcomeTab = $('#welcome_tab');
+	chatTab = $('#chat_tab');
+
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
 			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val());
@@ -71,7 +75,7 @@ $(document).ready(function() {
 
 	function replaceThemWith(person) {
 		they = person;
-		changeRightSpaceDivTo('chat_theircardrow', function() {
+		changeRightSpaceDivTo($('#chat_theircardrow'), function() {
 			replaceIconWith(person.iconUrl, $('#chat_theiricon'));
 			replaceCardTextWith(person, null, $('#chat_theirname'), $('#chat_theirtitle'));
 		});
@@ -116,8 +120,8 @@ $(document).ready(function() {
 
 	function changeRightSpaceDivTo(rightSpaceDiv, contentReplaceFunction) {
 		if (currentRightSpaceDiv) {
-			$('#' + currentRightSpaceDiv).fadeTo(300, 0, function() {
-				$('#' + currentRightSpaceDiv).hide();
+			currentRightSpaceDiv.fadeTo(300, 0, function() {
+				currentRightSpaceDiv.hide();
 
 				onOldRightSpaceDivGone();
 			});
@@ -132,7 +136,7 @@ $(document).ready(function() {
 				contentReplaceFunction();
 			}
 
-			$('#' + currentRightSpaceDiv).fadeTo(600, 1);
+			currentRightSpaceDiv.fadeTo(600, 1);
 		}
 	}
 
@@ -148,18 +152,18 @@ $(document).ready(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
 		//replaceThemWith(testperson);
-	}, 3000);
+	}, 800);
 
 	function generateNewPersonColor() {
 		return '#085376';
 	}
 
 	// we start on welcometab
-	//changeToTab('welcome_tab');
+	changeTabTo(welcomeTab);
 	// DEBUG
-	changeToTab('chat_tab');
+	//changeTabTo(chatTab);
 	//$('#chat_inlinecardrow').fadeIn();
-	changeRightSpaceDivTo('chat_inlinecardrow');
+	changeRightSpaceDivTo($('#chat_inlinecardrow'));
 	// END OF DEBUG
 
 	// set the default person icon
@@ -168,16 +172,19 @@ $(document).ready(function() {
 	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 
 	setTimeout(function() {
-		//changeToTab('chattab');
+		//changeTabTo('chattab');
 	}, 500);
 });
 
 var currentTab = null;
 
-function changeToTab(tab) {
+var welcomeTab = null;
+var chatTab = null;
+
+function changeTabTo(tab) {
 	if (currentTab) {
-		$('#' + currentTab).fadeTo(300, 0, function() {
-			$('#' + currentTab).hide();
+		currentTab.fadeTo(300, 0, function() {
+			currentTab.hide();
 
 			onOldTabGone();
 		});
@@ -187,7 +194,7 @@ function changeToTab(tab) {
 
 	function onOldTabGone() {
 		currentTab = tab;
-		$('#' + currentTab).fadeTo(600, 1);
+		currentTab.fadeTo(600, 1);
 
 		onResize();
 	}
@@ -196,10 +203,10 @@ function changeToTab(tab) {
 $(window).resize(onResize);
 
 function onResize() {
-	if (currentTab == 'chat_tab') {
-		onChatTabResize();
-	} else if (currentTab == 'welcome_tab') {
+	if (currentTab == welcomeTab) {
 		onWelcomeTabResize();
+	} else if (currentTab == chatTab) {
+		onChatTabResize();
 	}
 }
 
