@@ -118,9 +118,9 @@ $(document).ready(function() {
 	});
 
 	$('#welcome_btn_ok').click(function(e) {
-		var myName = $('#welcome_myname').val();
+		var myName = $.trim($('#welcome_myname').val());
 		// if no valid name was entered, generate one
-		if (myName.replace(/[\t ]/g, '').length == 0) {
+		if (myName.length == 0) {
 			myName = generateName();
 		}
 		var myColor = $('#welcome_myname').css('color');
