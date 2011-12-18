@@ -10,22 +10,30 @@ body {
 	font-family:'Signika', sans-serif;
 	padding:0px 0px 0px 0px;
 	margin:0px 0px 0px 0px;
+	line-height:1;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
 	-moz-user-select: none;
 	-o-user-select: none;
 	user-select: none;
 }
+input {
+	border:0;
+	padding:0;
+	outline:none;
+}
 .tab {
 	display:none;
 }
-.cardrowtable {
+.fixedtable, .cardrowtable {
 	display:table;
 	table-layout:fixed;
 	width:100%;
+}
+.cardrowtable {
 	height:100px;
 }
-.cardrow {
+.tablerow, .cardrow {
 	display:table-row;
 }
 .card, .card320, .card100 {
@@ -62,37 +70,27 @@ body {
 	text-align:right;
 }
 .personname {
-	font-size:150%;
+	font-size:24px;
 }
 .persontitle {
-	font-size:110%;
+	font-size:18px;
+	line-height:140%;
 	color:#7C7C7C;
-}
-.msgname {
-	font-size:110%;
-}
-.msgtext {
-	font-size:110%;
 }
 .inputboxwrapper {
 	height:26px;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
-	padding:0px 0px 0px 3px;
+	padding:0px 0px 0px 2px;
 }
 .inputbox {
 	display:block;
 	width:99%;
+	margin:3px auto 3px auto;
 	background-color:#F4F4F4;
 	color:#303030;
-	margin-left:auto;
-	margin-right:auto;
 	font-size:110%;
-}
-input {
-	border:0;
-	outline:none;
 }
 .basicbutton {
 	display:table-cell;
@@ -191,16 +189,29 @@ input {
 	overflow-x:hidden;
 	overflow-y:auto;
 }
+.chat_msgtext {
+	font-size:18px;
+	line-height:120%;
+}
 #chat_chatboxwrapper {
 	margin-top:9px;
 }
-.chat_inlinecardtext {
-	font-size:150%;
+.chat_inlinecardtexttop, .chat_inlinecardtextbot {
+	display:table-cell;
+	font-size:24px;
 	text-align:center;
 }
+.chat_inlinecardtexttop {
+	vertical-align:top;
+}
+.chat_inlinecardtextbot {
+	vertical-align:bottom;
+}
 #chat_inlinepos {
-	font-size:255%;
-	line-height:32px;
+	display:table-cell;
+	height:52px;
+	vertical-align:middle;
+	font-size:38px;
 	text-align:center;
 }
 #chat_inlinepos sup {

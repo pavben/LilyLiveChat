@@ -67,9 +67,17 @@
 					</div>
 					<div id="chat_inlinecardrow" class="cardrow">
 						<div class="card">
-							<div class="chat_inlinecardtext">You are</div>
-							<div id="chat_inlinepos" class="chat_rightcardtext2"></div>
-							<div class="chat_inlinecardtext">in line</div>
+							<div class="fixedtable">
+								<div class="tablerow" style="">
+									<div class="chat_inlinecardtexttop">You are</div>
+								</div>
+								<div class="tablerow">
+									<div id="chat_inlinepos"></div>
+								</div>
+								<div class="tablerow">
+									<div class="chat_inlinecardtextbot">in line</div>
+								</div>
+							</div>
 						</div>
 						<div id="chat_waiticon" class="framedicon"></div>
 					</div>
@@ -79,7 +87,7 @@
 		<div id="chat_chatlog">
 		</div>
 		<div id="chat_chatboxwrapper" class="inputboxwrapper">
-			<input id="chat_chatbox" class="inputbox" type="text" value="" />
+			<input id="chat_chatbox" class="inputbox chat_msgtext" type="text" value="" />
 		</div>
 	</div>
 </body>

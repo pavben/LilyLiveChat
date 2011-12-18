@@ -12,8 +12,8 @@ $(document).ready(function() {
 
 	function writeMessageToChatLog(name, nameColor, msg) {
 		var content = '';
-		content += '<span class="msgname" style="color:' + nameColor + '">' + name + '</span>';
-		content += '<span class="msgtext">: ' + msg + '</span><br/>';
+		content += '<span class="chat_msgtext" style="color:' + nameColor + '">' + name + '</span>';
+		content += '<span class="chat_msgtext">: ' + msg + '</span><br/>';
 
 		writeContentToChatLog(content);
 	}
