@@ -1,7 +1,121 @@
 $(document).ready(function() {
-	// set these globals
-	welcomeTab = $('#welcome_tab');
-	chatTab = $('#chat_tab');
+	var currentTab = null;
+
+	var welcomeTab = $('#welcome_tab');
+	var chatTab = $('#chat_tab');
+
+	function changeTabTo(tab) {
+		if (currentTab) {
+			currentTab.fadeTo(300, 0, function() {
+				currentTab.hide();
+
+				onOldTabGone();
+			});
+		} else {
+			onOldTabGone();
+		}
+
+		function onOldTabGone() {
+			currentTab = tab;
+			currentTab.fadeTo(600, 1);
+
+			onResize();
+		}
+	}
+
+	$('#welcome_btn_randomize').click(function(e) {
+		var descriptive = [
+			"Mystical",
+			"Scholarly",
+			"Dramatic",
+			"Objective",
+			"Esoteric",
+			"Subjective",
+			"Symbolic",
+			"Humanistic",
+			"Pragmatic",
+			"Utilitarian",
+			"Humorous",
+			"Profound",
+			"Radical",
+			"Exquisite",
+			"Pretty",
+			"Adept",
+			"Fair",
+			"Ravishing",
+			"Adroit",
+			"Fascinating",
+			"Robust",
+			"Agile",
+			"Graceful",
+			"Skillful",
+			"Handsome",
+			"Spirited",
+			"Hardy",
+			"Charming",
+			"Immaculate",
+			"Lively",
+			"Strong",
+			"Delicate",
+			"Muscular",
+			"Dexterous",
+			"Vivacious",
+			"Elegant",
+			"Nimble",
+			"Winsome",
+			"Astute",
+			"Observant",
+			"Capable",
+			"Precocious",
+			"Clever",
+			"Prudent",
+			"Competent",
+			"Rational",
+			"Crafty",
+			"Reasonable",
+			"Cunning",
+			"Educated",
+			"Sensible",
+			"Gifted",
+			"Shrewd",
+			"Ingenious",
+			"Subtle",
+			"Intellectual",
+			"Intelligent",
+			"Inventive",
+			"Wise",
+			"Affable",
+			"Amiable",
+			"Amicable",
+			"Cheerful",
+			"Cordial",
+			"Courteous",
+			"Elegant",
+			"Gracious",
+			"Jolly",
+			"Jovial",
+			"Sociable",
+			"Suave",
+			"Tactful",
+			"Benevolent"
+		];
+
+		var newName;
+		do {
+			descriptiveVal = descriptive[Math.floor(Math.random() * descriptive.length)];
+			newName = descriptiveVal + ' Bear';
+		} while (newName == $('#welcome_myname').val()); // loop until unique
+
+		$('#welcome_myname').fadeTo(100, 0, function() {
+			$('#welcome_myname').val(newName);
+		});
+		$('#welcome_myname').fadeTo(100, 1);
+	});
+
+	$('#welcome_btn_ok').click(function(e) {
+		replaceMeWith(new Person($('#welcome_myname').val(), generateNewPersonColor(), 'Guest', 'images/funshine_bear.png'));
+		changeTabTo(chatTab);
+	});
 
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
@@ -180,11 +294,13 @@ $(document).ready(function() {
 	$('#chat_theircardrow').hide();
 	$('#chat_inlinecardrow').hide();
 
+	/*
 	setTimeout(function() {
 		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
 		//replaceThemWith(testperson);
 	}, 800);
+	*/
 
 	function generateNewPersonColor() {
 		return '#085376';
@@ -203,85 +319,61 @@ $(document).ready(function() {
 	setTimeout(function() {
 		//changeTabTo('chattab');
 	}, 500);
+
+	$(window).resize(onResize);
+
+	function onResize() {
+		if (currentTab == welcomeTab) {
+			onWelcomeTabResize();
+		} else if (currentTab == chatTab) {
+			onChatTabResize();
+		}
+	}
+
+	function onWelcomeTabResize() {
+		// disable scrolling as it causes visual glitches
+		$('html').css('overflow-y', 'hidden'); // TODO: should this be html or perhaps body?
+		var newWelcomeTabHeight = $(window).height();
+		if (newWelcomeTabHeight < 641) {
+			newWelcomeTabHeight = 641;
+			// if the scrollbars are needed, enable them
+			$('html').css('overflow-y', 'auto');
+		}
+		// calculate how much space needs to be filled above and below the background
+		var spaceToFill = newWelcomeTabHeight - $('#welcome_bg').outerHeight();
+		var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
+		var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
+		$('#welcome_bgtop').css('height', newWelcomeTabBgTopHeight);
+		$('#welcome_bgbot').css('height', newWelcomeTabBgBotHeight);
+		$('#welcome_tab').css('height', newWelcomeTabHeight);
+	}
+
+	function onChatTabResize() {
+		// disable scrolling as it interferes with calculations and causes visual glitches
+		$('html').css('overflow-y', 'hidden');
+		var chatlogDiv = $('#chat_chatlog');
+		var newChatLogHeight = $(window).height() // start with the full height
+			- chatlogDiv.offset().top // remove all up to the start of chatlog
+			- stripPx($('#chat_chatlog').css('padding-top')) // top and bottom paddings are not counted in the height
+			- stripPx($('#chat_chatlog').css('padding-bottom'))
+			- stripPx($('#chat_chatlog').css('border-top-width')) // same for border
+			- stripPx($('#chat_chatlog').css('border-bottom-width'))
+			- stripPx($('#chat_chatboxwrapper').css('margin-top')) // remove the height of the spacer above the chatbox
+			- $('#chat_chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
+			- stripPx($('#chat_chatboxwrapper').css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
+		if (newChatLogHeight < 200) {
+			newChatLogHeight = 200;
+			// if the scrollbars are needed, enable them
+			$('html').css('overflow-y', 'auto');
+		}
+		$('#chat_chatlog').css('height', newChatLogHeight);
+		$('#chat_chatbox').focus();
+	}
+
+	function stripPx(text) {
+		return text.replace('px', '');
+	}
 });
-
-var currentTab = null;
-
-var welcomeTab = null;
-var chatTab = null;
-
-function changeTabTo(tab) {
-	if (currentTab) {
-		currentTab.fadeTo(300, 0, function() {
-			currentTab.hide();
-
-			onOldTabGone();
-		});
-	} else {
-		onOldTabGone();
-	}
-
-	function onOldTabGone() {
-		currentTab = tab;
-		currentTab.fadeTo(600, 1);
-
-		onResize();
-	}
-}
-
-$(window).resize(onResize);
-
-function onResize() {
-	if (currentTab == welcomeTab) {
-		onWelcomeTabResize();
-	} else if (currentTab == chatTab) {
-		onChatTabResize();
-	}
-}
-
-function onWelcomeTabResize() {
-	// disable scrolling as it causes visual glitches
-	$('html').css('overflow-y', 'hidden'); // TODO: should this be html or perhaps body?
-	var newWelcomeTabHeight = $(window).height();
-	if (newWelcomeTabHeight < 641) {
-		newWelcomeTabHeight = 641;
-		// if the scrollbars are needed, enable them
-		$('html').css('overflow-y', 'auto');
-	}
-	// calculate how much space needs to be filled above and below the background
-	var spaceToFill = newWelcomeTabHeight - $('#welcome_bg').outerHeight();
-	var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
-	var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
-	$('#welcome_bgtop').css('height', newWelcomeTabBgTopHeight);
-	$('#welcome_bgbot').css('height', newWelcomeTabBgBotHeight);
-	$('#welcome_tab').css('height', newWelcomeTabHeight);
-}
-
-function onChatTabResize() {
-	// disable scrolling as it interferes with calculations and causes visual glitches
-	$('html').css('overflow-y', 'hidden');
-	var chatlogDiv = $('#chat_chatlog');
-	var newChatLogHeight = $(window).height() // start with the full height
-		- chatlogDiv.offset().top // remove all up to the start of chatlog
-		- stripPx($('#chat_chatlog').css('padding-top')) // top and bottom paddings are not counted in the height
-		- stripPx($('#chat_chatlog').css('padding-bottom'))
-		- stripPx($('#chat_chatlog').css('border-top-width')) // same for border
-		- stripPx($('#chat_chatlog').css('border-bottom-width'))
-		- stripPx($('#chat_chatboxwrapper').css('margin-top')) // remove the height of the spacer above the chatbox
-		- $('#chat_chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
-		- stripPx($('#chat_chatboxwrapper').css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
-	if (newChatLogHeight < 200) {
-		newChatLogHeight = 200;
-		// if the scrollbars are needed, enable them
-		$('html').css('overflow-y', 'auto');
-	}
-	$('#chat_chatlog').css('height', newChatLogHeight);
-	$('#chat_chatbox').focus();
-}
-
-function stripPx(text) {
-	return text.replace('px', '');
-}
 
 function log(msg) {
 	window.console.log(msg);
