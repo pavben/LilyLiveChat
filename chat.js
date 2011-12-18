@@ -23,7 +23,8 @@ $(document).ready(function() {
 		}
 	}
 
-	$('#welcome_btn_randomize').click(function(e) {
+	function generateName(justNot)
+	{
 		var descriptive = [
 			"Mystical",
 			"Scholarly",
@@ -43,7 +44,6 @@ $(document).ready(function() {
 			"Adept",
 			"Fair",
 			"Ravishing",
-			"Adroit",
 			"Fascinating",
 			"Robust",
 			"Agile",
@@ -104,16 +104,27 @@ $(document).ready(function() {
 		do {
 			descriptiveVal = descriptive[Math.floor(Math.random() * descriptive.length)];
 			newName = descriptiveVal + ' Bear';
-		} while (newName == $('#welcome_myname').val()); // loop until unique
+		} while (justNot && newName == justNot); // loop until unique
 
+		return newName;
+	}
+
+	$('#welcome_btn_randomize').click(function(e) {
 		$('#welcome_myname').fadeTo(100, 0, function() {
-			$('#welcome_myname').val(newName);
+			$('#welcome_myname').val(generateName($('#welcome_myname').val()));
+			$('#welcome_myname').css('color', generatePersonColor());
 		});
 		$('#welcome_myname').fadeTo(100, 1);
 	});
 
 	$('#welcome_btn_ok').click(function(e) {
-		replaceMeWith(new Person($('#welcome_myname').val(), generateNewPersonColor(), 'Guest', 'images/funshine_bear.png'));
+		var myName = $('#welcome_myname').val();
+		// if no valid name was entered, generate one
+		if (myName.replace(/[\t ]/g, '').length == 0) {
+			myName = generateName();
+		}
+		var myColor = $('#welcome_myname').css('color');
+		replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
 		changeTabTo(chatTab);
 	});
 
@@ -294,16 +305,29 @@ $(document).ready(function() {
 	$('#chat_theircardrow').hide();
 	$('#chat_inlinecardrow').hide();
 
+	$('#welcome_myname').css('color', generatePersonColor());
+
 	/*
 	setTimeout(function() {
-		testperson = new Person('Circular Cat', generateNewPersonColor(), 'Guest', 'images/funshine_bear.png');
+		testperson = new Person('Circular Cat', generatePersonColor(), 'Guest', 'images/funshine_bear.png');
 		replaceMeWith(testperson);
 		//replaceThemWith(testperson);
 	}, 800);
 	*/
 
-	function generateNewPersonColor() {
-		return '#085376';
+	function generatePersonColor() {
+		var lowOffset = 50;
+		var highOffset = 100;
+
+		return ('#' + getRandomComponent() + getRandomComponent() + getRandomComponent());
+
+		function getRandomComponent() {
+			return (0x100 +
+				(
+					Math.floor(lowOffset + Math.random() * (256 - lowOffset - highOffset)) / 256 * 0xff
+				)
+			).toString(16).substr(1,2);
+		}
 	}
 
 	// we start on welcometab
