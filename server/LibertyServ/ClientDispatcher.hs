@@ -1,7 +1,9 @@
 module LibertyServ.ClientDispatcher (
   runClientDispatcher
 ) where
+import Control.Concurrent
 import Network.Socket
+import LibertyServ.Client
 
 runClientDispatcher :: IO ()
 runClientDispatcher = do
@@ -20,6 +22,9 @@ initializeListenerSocket portNumber = do
 
 acceptLoop :: Socket -> IO ()
 acceptLoop listenerSocket = do
+  -- TODO: Handle exceptions
   (clientSocket, clientSockAddr) <- accept listenerSocket
-  --_ <- forkIO $ initializeClient clientSocket
-  sClose clientSocket
+  putStrLn $ "Client connected with address: " ++ show clientSockAddr
+  _ <- forkIO $ initializeClient clientSocket
+  -- and loop around
+  acceptLoop listenerSocket
