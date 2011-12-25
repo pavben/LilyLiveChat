@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module LibertyServ.NetworkMessage (
+  MessageType,
   createMessage,
   parseMessage
 ) where
@@ -50,19 +51,17 @@ fromIntegralCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = No
 -- parseMessage and dependencies
 data ReadNextChunk = Chunk Text | NothingToRead | InvalidInput
 
+-- Exceptions handled by caller
 parseMessage :: ByteString -> (Maybe (MessageType, [Text]), ByteString)
 parseMessage buffer =
   let
     f = do
-      -- TODO: exceptions
       maybeMessageType <- safeGet 1 getWord8
       case maybeMessageType of
         Just messageType -> do
           maybeTexts <- readTexts
           case maybeTexts of
-            Just texts -> do
-              bytesRead' <- bytesRead
-              return (Just (messageType, texts), LBS.drop bytesRead' buffer)
+            Just texts -> bytesRead >>= \bytesRead' -> return (Just (messageType, texts), LBS.drop bytesRead' buffer)
             Nothing -> return (Nothing, buffer)
         Nothing -> return (Nothing, buffer)
   in runGet f buffer

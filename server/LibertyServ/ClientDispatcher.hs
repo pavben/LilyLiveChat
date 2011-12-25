@@ -5,6 +5,7 @@ import Control.Concurrent
 import Control.Exception
 import Network.Socket
 import Prelude hiding (catch)
+
 import LibertyServ.Client
 
 runClientDispatcher :: IO ()
