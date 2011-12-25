@@ -6,9 +6,17 @@ import Network.Socket
 import LibertyServ.Client
 
 runClientDispatcher :: IO ()
-runClientDispatcher = do
-  listenerSocket <- initializeListenerSocket 9801
-  acceptLoop listenerSocket
+runClientDispatcher = catch toRun onException
+  where
+    toRun = do
+      listenerSocket <- initializeListenerSocket 9801
+      acceptLoop listenerSocket
+    onException e = do
+      putStrLn $ "Error in listen/bind/accept: " ++ show e
+      putStrLn "Retrying in 5 seconds..."
+      -- on failure, wait and try binding again
+      threadDelay (5000 * 1000)
+      runClientDispatcher
 
 initializeListenerSocket :: PortNumber -> IO Socket
 initializeListenerSocket portNumber = do

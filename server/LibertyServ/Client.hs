@@ -15,8 +15,9 @@ initializeClient clientSocket = do
 
 clientSocketLoop :: Socket -> IO ()
 clientSocketLoop clientSocket = do
+  -- TODO: Exception
   recvResult <- recv clientSocket 2048
   putStrLn $ "Len: " ++ show (LBS.length recvResult)
   putStrLn $ show $ parseMessage recvResult
-  --clientSocketLoop clientSocket
+  clientSocketLoop clientSocket
 
