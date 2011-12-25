@@ -118,11 +118,27 @@ $(document).ready(function() {
 	});
 
 	$('#welcome_btn_ok').click(function(e) {
+		// TODO: check for Enter press in the name box
 		var myName = $.trim($('#welcome_myname').val());
 		// if no valid name was entered, generate one
 		if (myName.length == 0) {
 			myName = generateName();
 		}
+		//////////
+		$.ajaxSetup({ scriptCharset: "utf-8" ,contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
+		$.ajax({
+			type: "POST",
+			url: "http://www.virtivia.com/liberty/test.php",
+			data: myName,
+			success: function() {
+				alert("Sent: " + myName);
+			},
+			error: function(request, textStatus, errorThrown) {
+				alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+			}
+		});
+		return;
+		//////////
 		var myColor = $('#welcome_myname').css('color');
 		replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
 		changeTabTo(chatTab);
