@@ -2,6 +2,7 @@ module LibertyServ.Client (
   initializeClient
 ) where
 import Control.Exception
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
@@ -11,22 +12,20 @@ import LibertyServ.NetworkMessage
 
 initializeClient :: Socket -> IO ()
 initializeClient clientSocket = do
-  putStrLn "client init"
-  clientSocketLoop clientSocket
+  clientSocketLoop clientSocket LBS.empty
 
-clientSocketLoop :: Socket -> IO ()
-clientSocketLoop clientSocket = catch
+-- TODO: DoS vulnerability: Filling the buffer until out of memory
+clientSocketLoop :: Socket -> ByteString -> IO ()
+clientSocketLoop clientSocket buffer = catch
   (do
-    recvResult <- recv clientSocket 2048
+    recvResult <- recv clientSocket 2
     if not $ LBS.null recvResult then do
       putStrLn $ "Len: " ++ show (LBS.length recvResult)
-      let maybeMessage = parseMessage recvResult
+      let (maybeMessage, newBuffer) = parseMessage $ LBS.append buffer recvResult
       case maybeMessage of
         Just (messageType, texts) -> putStrLn $ "MsgType: " ++ show messageType ++ " - Texts: " ++ show texts
-        Nothing -> do
-          putStrLn $ "Client disconnecting -- sent an invalid message"
-          sClose clientSocket
-      clientSocketLoop clientSocket
+        Nothing -> putStrLn $ "No valid message in current buffer"
+      clientSocketLoop clientSocket newBuffer
     else do
       putStrLn $ "Client disconnecting -- recv returned nothing"
       sClose clientSocket

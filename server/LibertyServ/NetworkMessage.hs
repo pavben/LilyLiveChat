@@ -50,8 +50,8 @@ fromIntegralCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = No
 -- parseMessage and dependencies
 data ReadNextChunk = Chunk Text | NothingToRead | InvalidInput
 
-parseMessage :: ByteString -> Maybe (MessageType, [Text])
-parseMessage message =
+parseMessage :: ByteString -> (Maybe (MessageType, [Text]), ByteString)
+parseMessage buffer =
   let
     f = do
       -- TODO: exceptions
@@ -60,10 +60,12 @@ parseMessage message =
         Just messageType -> do
           maybeTexts <- readTexts
           case maybeTexts of
-            Just texts -> return $ Just (messageType, texts)
-            Nothing -> return Nothing
-        Nothing -> return Nothing
-  in runGet f message
+            Just texts -> do
+              bytesRead' <- bytesRead
+              return (Just (messageType, texts), LBS.drop bytesRead' buffer)
+            Nothing -> return (Nothing, buffer)
+        Nothing -> return (Nothing, buffer)
+  in runGet f buffer
 
 readTexts :: Get (Maybe [Text])
 readTexts = do
