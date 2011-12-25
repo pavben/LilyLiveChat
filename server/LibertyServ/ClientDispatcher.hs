@@ -12,16 +12,15 @@ runClientDispatcher = do
   eitherListenerSocket <- try $ socket AF_INET Stream 0 -- create the socket
   case eitherListenerSocket of
     Right listenerSocket ->
-      finally
-      (
-        catch
+      catch
+      (finally
         (do
           initializeListenerSocket listenerSocket 9801
           acceptLoop listenerSocket
         )
-        (\ex -> handleException ex)
+        (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
-      (sClose listenerSocket) -- close the listener socket regardless of exception being raised
+      (\ex -> handleException ex)
     Left ex -> handleException ex
   where
     handleException ex = do
