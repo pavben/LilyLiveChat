@@ -36,9 +36,8 @@ clientSocketLoop clientSocket buffer = catch
       sClose clientSocket
   )
   (\ex -> do
-    --let _ = ex :: IOException
     let _ = ex :: SomeException
-    --putStrLn $ "Client disconnecting due to IO exception: " ++ show ex
+    putStrLn $ "Client disconnecting due to exception: " ++ show ex
     sClose clientSocket
   )
 

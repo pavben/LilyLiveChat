@@ -24,8 +24,8 @@ runClientDispatcher = do
       (\ex -> handleException ex)
     Left ex -> handleException ex
   where
+    handleException :: SomeException -> IO ()
     handleException ex = do
-      let _ = ex :: IOException
       putStrLn $ "Error in listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
