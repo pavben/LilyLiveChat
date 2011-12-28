@@ -16,6 +16,6 @@ main = do
   _ <- forkIO runClientDispatcher
   -- go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
   threadDelay $ 5000 * 1000
-  notifyDatabaseFailure databaseHandleTVar
+  -- TODO
   forever $ threadDelay (10000 * 1000)
 

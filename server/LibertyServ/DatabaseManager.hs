@@ -3,8 +3,7 @@
 module LibertyServ.DatabaseManager (
   DatabaseHandle,
   initializeDatabaseManager,
-  runDatabaseManager,
-  notifyDatabaseFailure -- temp
+  runDatabaseManager
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
@@ -21,6 +20,7 @@ initializeDatabaseManager = atomically $ newTVar $ Nothing -- initially, no conn
 
 runDatabaseManager :: TVar (Maybe DatabaseHandle) -> IO ()
 runDatabaseManager databaseHandleTVar = do
+  _ <- forkIO $ connectionKeepAliveLoop databaseHandleTVar
   databaseManagerLoop databaseHandleTVar
 
 databaseManagerLoop :: TVar (Maybe DatabaseHandle) -> IO ()
@@ -47,16 +47,16 @@ databaseManagerLoop databaseHandleTVar = do
 
 notifyDatabaseFailure :: TVar (Maybe DatabaseHandle) -> IO ()
 notifyDatabaseFailure databaseHandleTVar = do
-  handleToMaybeClose <- atomically $ do
+  pipeToMaybeClose <- atomically $ do
     maybeHandle <- readTVar databaseHandleTVar
     case maybeHandle of
-      Just (DatabaseHandle handle) -> do
+      Just (DatabaseHandle pipe) -> do
         writeTVar databaseHandleTVar Nothing
-        return $ Just handle
+        return $ Just pipe
       Nothing -> return Nothing
 
-  case handleToMaybeClose of
-    Just handle -> close handle
+  case pipeToMaybeClose of
+    Just pipe -> close pipe
     Nothing -> return () -- someone already reported this failure, so they would have closed the pipe
 
 connectToDatabase :: IO (Maybe DatabaseHandle)
@@ -71,27 +71,46 @@ connectToDatabase =
     return Nothing
   )
 
-{-
-conn = do
-  pipe <- runIOE $ connect (host "127.0.0.1")
-  e <- access pipe master "libertyusers" run
-  close pipe
-  case e of
-    Left f -> do
-      putStrLn "failboat"
-      return []
-    Right v -> do
-      print v
-      close pipe
-      return v
+connectionKeepAliveLoop :: TVar (Maybe DatabaseHandle) -> IO ()
+connectionKeepAliveLoop databaseHandleTVar = do
+  res <- runQuery databaseHandleTVar run
+  case res of
+    Just doc -> putStrLn "Keepalive succeeded"
+    Nothing -> putStrLn "Keepalive failed!"
 
-printDocs docs = liftIO $ mapM_ print docs
+  -- wait 5 seconds and loop
+  threadDelay $ 5000 * 1000
+  connectionKeepAliveLoop databaseHandleTVar
+
+runQuery :: TVar (Maybe DatabaseHandle) -> Action IO a -> IO (Maybe a)
+runQuery databaseHandleTVar action = do
+  databaseHandle <- atomically $ do
+    maybeDatabaseHandle <- readTVar databaseHandleTVar
+    case maybeDatabaseHandle of
+      Just handle -> return handle
+      Nothing -> retry -- wait until there is a handle available
+
+  case databaseHandle of
+    DatabaseHandle pipe -> do
+      isClosed' <- isClosed pipe
+      if not isClosed' then do
+        result <- access pipe master "libertyusers" action
+        case result of
+          Right res -> return $ Just res
+          Left f -> do
+            putStrLn $ "Query failure: " ++ show f
+            notifyDatabaseFailure databaseHandleTVar
+            return Nothing
+      else do
+        putStrLn "Database pipe appears to be closed"
+        notifyDatabaseFailure databaseHandleTVar
+        return Nothing
 
 --run = find (select [] "users") >>= rest >>= printDocs
+run :: Action IO [Document]
 run = do
   findRet <- find (select [] "users")
   restRet <- rest findRet
   --printDocs restRet
   return restRet
--}
 
