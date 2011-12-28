@@ -73,44 +73,35 @@ connectToDatabase =
 
 connectionKeepAliveLoop :: TVar (Maybe DatabaseHandle) -> IO ()
 connectionKeepAliveLoop databaseHandleTVar = do
-  res <- runQuery databaseHandleTVar run
-  case res of
-    Just doc -> putStrLn "Keepalive succeeded"
-    Nothing -> putStrLn "Keepalive failed!"
+  -- wait 5 seconds before checking
+  threadDelay $ 30000 * 1000
 
-  -- wait 5 seconds and loop
-  threadDelay $ 5000 * 1000
+  res <- runQuery databaseHandleTVar keepAliveAction
+  case res of
+    Just _ -> putStrLn "Keepalive succeeded"
+    Nothing -> putStrLn "Keepalive failed!"
   connectionKeepAliveLoop databaseHandleTVar
+  where
+    keepAliveAction = find (select [] "keepalive")
 
 runQuery :: TVar (Maybe DatabaseHandle) -> Action IO a -> IO (Maybe a)
 runQuery databaseHandleTVar action = do
-  databaseHandle <- atomically $ do
-    maybeDatabaseHandle <- readTVar databaseHandleTVar
-    case maybeDatabaseHandle of
-      Just handle -> return handle
-      Nothing -> retry -- wait until there is a handle available
-
-  case databaseHandle of
-    DatabaseHandle pipe -> do
-      isClosed' <- isClosed pipe
-      if not isClosed' then do
-        result <- access pipe master "libertyusers" action
-        case result of
-          Right res -> return $ Just res
-          Left f -> do
-            putStrLn $ "Query failure: " ++ show f
-            notifyDatabaseFailure databaseHandleTVar
-            return Nothing
-      else do
-        putStrLn "Database pipe appears to be closed"
-        notifyDatabaseFailure databaseHandleTVar
-        return Nothing
-
---run = find (select [] "users") >>= rest >>= printDocs
-run :: Action IO [Document]
-run = do
-  findRet <- find (select [] "users")
-  restRet <- rest findRet
-  --printDocs restRet
-  return restRet
+  maybeDatabaseHandle <- atomically $ readTVar databaseHandleTVar
+  case maybeDatabaseHandle of
+    Just databaseHandle -> case databaseHandle of
+      DatabaseHandle pipe -> do
+        isClosed' <- isClosed pipe
+        if not isClosed' then do
+          result <- access pipe master "libertyusers" action
+          case result of
+            Right res -> return $ Just res
+            Left f -> do
+              putStrLn $ "Query failure: " ++ show f
+              notifyDatabaseFailure databaseHandleTVar
+              return Nothing
+        else do
+          putStrLn "Database pipe appears to be closed"
+          notifyDatabaseFailure databaseHandleTVar
+          return Nothing
+    Nothing -> return Nothing
 
