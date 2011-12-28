@@ -1,7 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module LibertyServ.NetworkMessage (
-  MessageType,
+  MessageType(..),
+  messageTypeToId,
+  messageIdToType,
   createMessage,
   parseMessage
 ) where
@@ -15,12 +17,21 @@ import qualified Data.Text.Lazy.Encoding as LE
 import Data.Word
 
 -- common
-type MessageType = Word8
+data MessageType = GuestJoinMessage
+
+messageTypeToId :: MessageType -> Word8
+messageTypeToId messageType = case messageType of
+  GuestJoinMessage -> 1
+
+messageIdToType :: Word8 -> Maybe MessageType
+messageIdToType messageId = case messageId of
+  1 -> Just GuestJoinMessage
+  _ -> Nothing
 
 -- createMessage and dependencies
 createMessage :: MessageType -> [Text] -> Maybe ByteString
 createMessage messageType params = case sequence $ map textToBytestringWithLen params of
-  Just encodedParams -> Just $ LBS.concat [LBS.singleton messageType, LBS.concat encodedParams, LBS.replicate 4 0]
+  Just encodedParams -> Just $ LBS.concat [LBS.singleton (messageTypeToId messageType), LBS.concat encodedParams, LBS.replicate 4 0]
   Nothing -> Nothing
 
 textToBytestringWithLen :: Text -> Maybe ByteString
@@ -52,16 +63,16 @@ fromIntegralCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = No
 data ReadNextChunk = Chunk Text | NothingToRead | InvalidInput
 
 -- Exceptions handled by caller
-parseMessage :: ByteString -> (Maybe (MessageType, [Text]), ByteString)
+parseMessage :: ByteString -> (Maybe (Word8, [Text]), ByteString)
 parseMessage buffer =
   let
     f = do
-      maybeMessageType <- safeGet 1 getWord8
-      case maybeMessageType of
-        Just messageType -> do
+      maybeMessageTypeId <- safeGet 1 getWord8
+      case maybeMessageTypeId of
+        Just messageTypeId -> do
           maybeTexts <- readTexts
           case maybeTexts of
-            Just texts -> bytesRead >>= \bytesRead' -> return (Just (messageType, texts), LBS.drop bytesRead' buffer)
+            Just texts -> bytesRead >>= \bytesRead' -> return (Just (messageTypeId, texts), LBS.drop bytesRead' buffer)
             Nothing -> return (Nothing, buffer)
         Nothing -> return (Nothing, buffer)
   in runGet f buffer

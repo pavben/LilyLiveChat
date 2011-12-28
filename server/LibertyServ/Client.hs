@@ -26,9 +26,11 @@ clientSocketLoop clientSocket buffer = catch
       putStrLn $ "Len: " ++ show (LBS.length recvResult)
       let (maybeMessage, newBuffer) = parseMessage $ LBS.append buffer recvResult
       case maybeMessage of
-        Just (messageType, texts) -> do
-          putStrLn $ "MsgType: " ++ show messageType ++ " - Texts: " ++ show texts
-          handleMessage messageType texts
+        Just (messageTypeId, texts) -> do
+          putStrLn $ "MsgType: " ++ show messageTypeId ++ " - Texts: " ++ show texts
+          case messageIdToType messageTypeId of
+            Just messageType -> handleMessage messageType texts
+            Nothing -> putStrLn $ "Received a message with an invalid type!"
         Nothing -> putStrLn $ "No valid message in current buffer"
       clientSocketLoop clientSocket newBuffer
     else do
@@ -44,6 +46,6 @@ clientSocketLoop clientSocket buffer = catch
 handleMessage :: MessageType -> [Text] -> IO ()
 handleMessage messageType params =
   case (messageType,params) of
-    (1,[x,y]) -> LTI.putStrLn $ LT.append x y
+    (GuestJoinMessage,[x,y]) -> LTI.putStrLn $ LT.append x y
     _ -> putStrLn "No match"
 

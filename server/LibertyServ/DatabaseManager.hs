@@ -82,6 +82,7 @@ connectionKeepAliveLoop databaseHandleTVar = do
     Nothing -> putStrLn "Keepalive failed!"
   connectionKeepAliveLoop databaseHandleTVar
   where
+    -- just some random query
     keepAliveAction = find (select [] "keepalive")
 
 runQuery :: TVar (Maybe DatabaseHandle) -> Action IO a -> IO (Maybe a)
