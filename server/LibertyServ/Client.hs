@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module LibertyServ.Client (
   initializeClient
 ) where
@@ -7,11 +9,12 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.IO as LTI
+import qualified Data.Text.Lazy.Read as LTR
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
-
 import LibertyServ.NetworkMessage
+import LibertyServ.Utils
 
 initializeClient :: Socket -> IO ()
 initializeClient clientSocket = do
@@ -46,6 +49,14 @@ clientSocketLoop clientSocket buffer = catch
 handleMessage :: MessageType -> [Text] -> IO ()
 handleMessage messageType params =
   case (messageType,params) of
-    (GuestJoinMessage,[x,y]) -> LTI.putStrLn $ LT.append x y
+    (GuestJoinMessage,[siteIdT,name,color]) -> do
+      case parseIntegralCheckBounds siteIdT of
+        Just siteId -> handleGuestJoin siteId name color
+        Nothing -> putStrLn "Numeric conversion failed!"
     _ -> putStrLn "No match"
+
+handleGuestJoin :: Int -> Text -> Text -> IO ()
+handleGuestJoin siteId name color =
+  putStrLn $ "Hey: " ++ show siteId
+
 

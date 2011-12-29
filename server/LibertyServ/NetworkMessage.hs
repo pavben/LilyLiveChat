@@ -15,6 +15,7 @@ import Data.Int (Int64)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding as LE
 import Data.Word
+import LibertyServ.Utils
 
 -- common
 data MessageType = GuestJoinMessage
@@ -51,13 +52,6 @@ textToBytestringAndLen text =
     case maybeLen of
       Just len -> Just (bytestring, len)
       Nothing -> Nothing
-
-fromIntegralCheckBounds :: (Integral a, Integral b, Bounded b) => a -> Maybe b
-fromIntegralCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = Nothing
-                    | toInteger (minBound `asTypeOf` i) > toInteger x = Nothing
-                    | otherwise = Just i
-  where
-    i = fromIntegral x
 
 -- parseMessage and dependencies
 data ReadNextChunk = Chunk Text | NothingToRead | InvalidInput
