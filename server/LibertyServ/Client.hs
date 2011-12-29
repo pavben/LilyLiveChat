@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module LibertyServ.Client (
   initializeClient
 ) where
@@ -13,6 +11,7 @@ import qualified Data.Text.Lazy.Read as LTR
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
+import LibertyServ.DatabaseManager
 import LibertyServ.NetworkMessage
 import LibertyServ.Utils
 
@@ -58,5 +57,4 @@ handleMessage messageType params =
 handleGuestJoin :: Int -> Text -> Text -> IO ()
 handleGuestJoin siteId name color =
   putStrLn $ "Hey: " ++ show siteId
-
 

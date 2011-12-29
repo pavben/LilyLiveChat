@@ -4,9 +4,9 @@ import Control.Concurrent.STM.TVar
 import Control.Monad.STM
 import Data.Map (Map)
 import qualified Data.Map as Map
+import LibertyServ.Site
 
-type SiteId = Integer
-data SiteEntry = SiteData | SiteLoading
+data SiteEntry = SiteEntryLoaded SiteData | SiteEntryLoading
   deriving (Show)
 
 initializeSiteMap :: IO (TVar (Map SiteId (TVar SiteEntry)))

@@ -93,7 +93,7 @@ runQuery databaseHandleTVar action = do
       DatabaseHandle pipe -> do
         isClosed' <- isClosed pipe
         if not isClosed' then do
-          result <- access pipe master "libertyusers" action
+          result <- access pipe master "liberty" action
           case result of
             Right res -> return $ Just res
             Left f -> do
