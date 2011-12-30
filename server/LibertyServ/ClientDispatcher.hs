@@ -5,11 +5,12 @@ import Control.Concurrent
 import Control.Exception
 import Network.Socket
 import Prelude hiding (catch)
-
 import LibertyServ.Client
+import LibertyServ.DatabaseManager
+import LibertyServ.SiteMap
 
-runClientDispatcher :: IO ()
-runClientDispatcher = do
+runClientDispatcher :: DatabaseHandleTVar -> SiteMapTVar -> IO ()
+runClientDispatcher databaseHandleTVar siteMapTVar = do
   eitherListenerSocket <- try $ socket AF_INET Stream 0 -- create the socket
   case eitherListenerSocket of
     Right listenerSocket ->
@@ -17,7 +18,7 @@ runClientDispatcher = do
       (finally
         (do
           initializeListenerSocket listenerSocket 9801
-          acceptLoop listenerSocket
+          acceptLoop listenerSocket databaseHandleTVar siteMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -30,7 +31,7 @@ runClientDispatcher = do
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
-      runClientDispatcher
+      runClientDispatcher databaseHandleTVar siteMapTVar
 
 -- Exceptions handled by caller
 initializeListenerSocket :: Socket -> PortNumber -> IO ()
@@ -41,11 +42,11 @@ initializeListenerSocket listenerSocket portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> IO ()
-acceptLoop listenerSocket = do
+acceptLoop :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+acceptLoop listenerSocket databaseHandleTVar siteMapTVar = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ initializeClient clientSocket
+  _ <- forkIO $ initializeClient clientSocket databaseHandleTVar siteMapTVar
   -- and loop around
-  acceptLoop listenerSocket
+  acceptLoop listenerSocket databaseHandleTVar siteMapTVar
 

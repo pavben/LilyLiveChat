@@ -5,7 +5,7 @@ module LibertyServ.Site (
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 
-type SiteId = Integer
+type SiteId = Int
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text

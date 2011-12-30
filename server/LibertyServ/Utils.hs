@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification #-}
+
 module LibertyServ.Utils (
   parseIntegralCheckBounds,
   fromIntegralCheckBounds
@@ -6,7 +8,7 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Read as LTR
 
-parseIntegralCheckBounds :: (Integral a, Bounded a) => Text -> Maybe a
+parseIntegralCheckBounds :: forall a . (Integral a, Bounded a) => Text -> Maybe a
 parseIntegralCheckBounds text =
   case LTR.decimal text of
     Right (parsedI, textRemaining) ->
@@ -17,7 +19,7 @@ parseIntegralCheckBounds text =
         Nothing
     Left _ -> Nothing
 
-fromIntegralCheckBounds :: (Integral a, Integral b, Bounded b) => a -> Maybe b
+fromIntegralCheckBounds :: forall a b . (Integral a, Integral b, Bounded b) => a -> Maybe b
 fromIntegralCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = Nothing
                     | toInteger (minBound `asTypeOf` i) > toInteger x = Nothing
                     | otherwise = Just i

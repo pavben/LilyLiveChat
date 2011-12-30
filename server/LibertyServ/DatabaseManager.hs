@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module LibertyServ.DatabaseManager (
-  DatabaseHandle,
+  DatabaseHandleTVar,
+  LookupFailureReason(..),
   initializeDatabaseManager,
-  runDatabaseManager
+  runDatabaseManager,
+  getSiteDataFromDb
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
@@ -12,18 +14,24 @@ import Control.Monad.STM
 import Control.Monad.Trans (liftIO)
 import Database.MongoDB
 import Prelude hiding (catch)
+import LibertyServ.Site
 
+-- public data
+type DatabaseHandleTVar = TVar (Maybe DatabaseHandle)
+data LookupFailureReason = LookupFailureNotExist | LookupFailureTechnicalError
+
+-- private data
 data DatabaseHandle = DatabaseHandle Pipe
 
-initializeDatabaseManager :: IO (TVar (Maybe DatabaseHandle))
+initializeDatabaseManager :: IO (DatabaseHandleTVar)
 initializeDatabaseManager = atomically $ newTVar $ Nothing -- initially, no connection
 
-runDatabaseManager :: TVar (Maybe DatabaseHandle) -> IO ()
+runDatabaseManager :: DatabaseHandleTVar -> IO ()
 runDatabaseManager databaseHandleTVar = do
   _ <- forkIO $ connectionKeepAliveLoop databaseHandleTVar
   databaseManagerLoop databaseHandleTVar
 
-databaseManagerLoop :: TVar (Maybe DatabaseHandle) -> IO ()
+databaseManagerLoop :: DatabaseHandleTVar -> IO ()
 databaseManagerLoop databaseHandleTVar = do
   atomically $ do
     databaseHandle <- readTVar databaseHandleTVar
@@ -45,7 +53,7 @@ databaseManagerLoop databaseHandleTVar = do
   -- loop around and keep monitoring the connection state
   databaseManagerLoop databaseHandleTVar
 
-notifyDatabaseFailure :: TVar (Maybe DatabaseHandle) -> IO ()
+notifyDatabaseFailure :: DatabaseHandleTVar -> IO ()
 notifyDatabaseFailure databaseHandleTVar = do
   pipeToMaybeClose <- atomically $ do
     maybeHandle <- readTVar databaseHandleTVar
@@ -71,7 +79,7 @@ connectToDatabase =
     return Nothing
   )
 
-connectionKeepAliveLoop :: TVar (Maybe DatabaseHandle) -> IO ()
+connectionKeepAliveLoop :: DatabaseHandleTVar -> IO ()
 connectionKeepAliveLoop databaseHandleTVar = do
   -- wait 5 seconds before checking
   threadDelay $ 30000 * 1000
@@ -85,7 +93,7 @@ connectionKeepAliveLoop databaseHandleTVar = do
     -- just some random query
     keepAliveAction = find (select [] "keepalive")
 
-runQuery :: TVar (Maybe DatabaseHandle) -> Action IO a -> IO (Maybe a)
+runQuery :: DatabaseHandleTVar -> Action IO a -> IO (Maybe a)
 runQuery databaseHandleTVar action = do
   maybeDatabaseHandle <- atomically $ readTVar databaseHandleTVar
   case maybeDatabaseHandle of
@@ -105,4 +113,17 @@ runQuery databaseHandleTVar action = do
           notifyDatabaseFailure databaseHandleTVar
           return Nothing
     Nothing -> return Nothing
+
+getSiteDataFromDb :: DatabaseHandleTVar -> SiteId -> IO (Either LookupFailureReason SiteData)
+getSiteDataFromDb databaseHandleTVar siteId =
+  let
+    action = (find $ select ["id" =: siteId] "sites") >>= rest
+  in do
+    res <- runQuery databaseHandleTVar action
+    case res of
+      Just docs -> do
+        putStrLn $ "found " ++ show (length docs) ++ " docs"
+        mapM_ print docs
+        return $ Left $ LookupFailureTechnicalError
+      Nothing -> return $ Left $ LookupFailureTechnicalError
 

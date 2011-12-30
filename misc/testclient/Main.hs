@@ -24,7 +24,7 @@ main = do
   hostAddr <- inet_addr "127.0.0.1"
   connect s (SockAddrInet 9801 hostAddr)
   putStrLn "Connected"
-  case createMessage 1 [LE.decodeUtf8 (LC8.pack "17"), LE.decodeUtf8 (LC8.pack "Angry Bear"), LE.decodeUtf8 (LC8.pack "#111111")] of
+  case createMessage 1 [LE.decodeUtf8 (LC8.pack "1"), LE.decodeUtf8 (LC8.pack "Angry Bear"), LE.decodeUtf8 (LC8.pack "#111111")] of
     Just x -> sendAll s x
 
 createMessage :: MessageType -> [Text] -> Maybe ByteString

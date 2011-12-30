@@ -5,6 +5,7 @@ import Control.Concurrent
 import Control.Monad (forever)
 import LibertyServ.ClientDispatcher
 import LibertyServ.DatabaseManager
+import LibertyServ.SiteMap
 
 main :: IO ()
 main = do
@@ -12,8 +13,10 @@ main = do
   -- database
   databaseHandleTVar <- initializeDatabaseManager
   _ <- forkIO $ runDatabaseManager databaseHandleTVar
+  -- site map
+  siteMap <- initializeSiteMap
   -- client dispatcher
-  _ <- forkIO runClientDispatcher
+  _ <- forkIO $ runClientDispatcher databaseHandleTVar siteMap
   -- go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
   threadDelay $ 5000 * 1000
   -- TODO
