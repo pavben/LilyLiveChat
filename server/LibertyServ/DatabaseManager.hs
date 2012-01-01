@@ -12,6 +12,8 @@ import Control.Concurrent.STM.TVar
 import Control.Exception (SomeException, catch)
 import Control.Monad.STM
 import Control.Monad.Trans (liftIO)
+import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as LT
 import Database.MongoDB
 import Prelude hiding (catch)
 import LibertyServ.Site
@@ -123,7 +125,17 @@ getSiteDataFromDb databaseHandleTVar siteId =
     case res of
       Just docs -> do
         putStrLn $ "found " ++ show (length docs) ++ " docs"
-        mapM_ print docs
-        return $ Left $ LookupFailureTechnicalError
+        if length docs == 1 then
+          let
+            firstDoc = head $ docs
+            siteId' = "id" `at` firstDoc :: SiteId
+            siteNameStr = "name" `at` firstDoc :: String
+          in do
+            putStrLn "Ok :)"
+            mapM_ print docs
+            return $ Right $ SiteData siteId' (LT.pack siteNameStr)
+        else do
+          putStrLn "Wrong num of rows"
+          return $ Left $ LookupFailureTechnicalError
       Nothing -> return $ Left $ LookupFailureTechnicalError
 
