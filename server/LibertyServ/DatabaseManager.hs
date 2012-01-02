@@ -9,13 +9,13 @@ module LibertyServ.DatabaseManager (
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Exception (SomeException, catch)
+import Control.Exception (SomeException, catch, throwIO)
 import Control.Monad.STM
 import Control.Monad.Trans (liftIO)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Database.MongoDB
-import Prelude hiding (catch)
+import Prelude hiding (catch, lookup)
 import LibertyServ.Site
 
 -- public data
@@ -124,18 +124,18 @@ getSiteDataFromDb databaseHandleTVar siteId =
     res <- runQuery databaseHandleTVar action
     case res of
       Just docs -> do
-        putStrLn $ "found " ++ show (length docs) ++ " docs"
-        if length docs == 1 then
-          let
-            firstDoc = head $ docs
-            siteId' = "id" `at` firstDoc :: SiteId
-            siteNameStr = "name" `at` firstDoc :: String
-          in do
-            putStrLn "Ok :)"
-            mapM_ print docs
-            return $ Right $ SiteData siteId' (LT.pack siteNameStr)
-        else do
-          putStrLn "Wrong num of rows"
+        putStrLn $ "num docs: " ++ show (length docs)
+        if length docs == 1 then do
+          let firstDoc = head $ docs
+          case combineMaybes (lookup "id" firstDoc :: Maybe SiteId) (lookup "name" firstDoc :: Maybe String) of
+            Just (siteId', siteNameStr) -> return $ Right $ SiteData siteId' (LT.pack siteNameStr)
+            Nothing -> return $ Left $ LookupFailureTechnicalError
+        else
           return $ Left $ LookupFailureTechnicalError
       Nothing -> return $ Left $ LookupFailureTechnicalError
+
+
+combineMaybes :: Maybe a -> Maybe b -> Maybe (a, b)
+combineMaybes (Just a) (Just b) = Just (a, b)
+combineMaybes _ _ = Nothing
 

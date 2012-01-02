@@ -23,24 +23,37 @@ initializeSiteMap = atomically $ newTVar $ Map.empty
 
 lookupSite :: DatabaseHandleTVar -> SiteMapTVar -> SiteId -> IO (Either LookupFailureReason SiteData)
 lookupSite databaseHandleTVar siteMapTVar siteId = do
-  siteEntryTVar <- atomically $ do
+  (threadResponsibleForLoading, siteEntryTVar) <- atomically $ do
+    -- lookup siteId in siteMap
     siteMap <- readTVar siteMapTVar
     case Map.lookup siteId siteMap of
-      Just siteEntryTVar -> return siteEntryTVar
+      Just siteEntryTVar -> do
+        -- if found, read it
+        siteEntry <- readTVar siteEntryTVar
+        case siteEntry of
+          -- if it currently has a failed value, set it to loading and signal that a load is to be performed
+          SiteEntryLoadFailed _ -> do
+            writeTVar siteEntryTVar $ SiteEntryLoading
+            return (True, siteEntryTVar)
+          _ -> return (False, siteEntryTVar)
       Nothing -> do
         newSiteEntryTVar <- newTVar $ SiteEntryLoading
         writeTVar siteMapTVar $ Map.insert siteId newSiteEntryTVar siteMap
-        return newSiteEntryTVar
+        return (True, newSiteEntryTVar)
   
-  _ <- forkIO $ loadSiteDataFromDb databaseHandleTVar siteId siteEntryTVar
+  if threadResponsibleForLoading then do
+    _ <- forkIO $ loadSiteDataFromDb databaseHandleTVar siteId siteEntryTVar
+    return ()
+  else
+    return ()
 
-  siteEntryAfterLoadAttempt <- atomically $ do
-    siteEntry <- readTVar siteEntryTVar
-    case siteEntry of
+  siteEntry <- atomically $ do
+    siteEntry' <- readTVar siteEntryTVar
+    case siteEntry' of
       SiteEntryLoading -> retry -- try again when this entry updates (is loaded or fails to load)
-      _ -> return siteEntry
+      _ -> return siteEntry'
 
-  case siteEntryAfterLoadAttempt of
+  case siteEntry of
     SiteEntryLoaded siteData -> return $ Right siteData
     SiteEntryLoadFailed lookupFailureReason -> return $ Left lookupFailureReason
     SiteEntryLoading -> error "Unexpected siteEntry value of SiteEntryLoading -- concurrency error"
