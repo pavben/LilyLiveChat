@@ -19,11 +19,11 @@ import LibertyServ.Utils
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar = do
-  clientSocketLoop clientSocket LBS.empty databaseHandleTVar siteMapTVar
+  clientSocketReadLoop clientSocket LBS.empty databaseHandleTVar siteMapTVar
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
-clientSocketLoop :: Socket -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-clientSocketLoop clientSocket buffer databaseHandleTVar siteMapTVar = catch
+clientSocketReadLoop :: Socket -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+clientSocketReadLoop clientSocket buffer databaseHandleTVar siteMapTVar = catch
   (do
     recvResult <- recv clientSocket 2048
     if not $ LBS.null recvResult then do
@@ -36,7 +36,7 @@ clientSocketLoop clientSocket buffer databaseHandleTVar siteMapTVar = catch
             Just messageType -> handleMessage messageType texts databaseHandleTVar siteMapTVar
             Nothing -> putStrLn $ "Received a message with an invalid type!"
         Nothing -> putStrLn $ "No valid message in current buffer"
-      clientSocketLoop clientSocket newBuffer databaseHandleTVar siteMapTVar
+      clientSocketReadLoop clientSocket newBuffer databaseHandleTVar siteMapTVar
     else do
       putStrLn $ "Client disconnecting -- recv returned nothing"
       sClose clientSocket
@@ -58,10 +58,10 @@ handleMessage messageType params databaseHandleTVar siteMapTVar =
 
 handleGuestJoin :: SiteId -> Text -> Text -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleGuestJoin siteId name color databaseHandleTVar siteMapTVar = do
-  putStrLn $ "About to perform the lookup for site id: " ++ show siteId
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
-    Right siteData -> putStrLn $ "got site data: " ++ show siteData
+    Right siteData -> do
+      putStrLn $ "got site data: " ++ show siteData
     Left _ -> putStrLn "Error in lookup"
   return ()
 

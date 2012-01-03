@@ -9,5 +9,6 @@ type SiteId = Int
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text
+--  sdSiteOps :: [SiteOp]
 } deriving (Show)
 
