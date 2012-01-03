@@ -2,6 +2,8 @@
 
 module LibertyServ.NetworkMessage (
   MessageType(..),
+  Message,
+  EncodedMessage,
   messageTypeToId,
   messageIdToType,
   createMessage,
@@ -19,6 +21,10 @@ import LibertyServ.Utils
 
 -- common
 data MessageType = GuestJoinMessage
+  deriving (Show)
+
+type Message = (MessageType, [Text])
+type EncodedMessage = ByteString
 
 messageTypeToId :: MessageType -> Word8
 messageTypeToId messageType = case messageType of
@@ -30,8 +36,8 @@ messageIdToType messageId = case messageId of
   _ -> Nothing
 
 -- createMessage and dependencies
-createMessage :: MessageType -> [Text] -> Maybe ByteString
-createMessage messageType params = case sequence $ map textToBytestringWithLen params of
+createMessage :: Message -> Maybe EncodedMessage
+createMessage (messageType, params) = case sequence $ map textToBytestringWithLen params of
   Just encodedParams -> Just $ LBS.concat [LBS.singleton (messageTypeToId messageType), LBS.concat encodedParams, LBS.replicate 4 0]
   Nothing -> Nothing
 
@@ -57,18 +63,20 @@ textToBytestringAndLen text =
 data ReadNextChunk = Chunk Text | NothingToRead | InvalidInput
 
 -- Exceptions handled by caller
-parseMessage :: ByteString -> (Maybe (Word8, [Text]), ByteString)
+parseMessage :: ByteString -> Maybe (Maybe Message, ByteString)
 parseMessage buffer =
   let
     f = do
       maybeMessageTypeId <- safeGet 1 getWord8
       case maybeMessageTypeId of
-        Just messageTypeId -> do
-          maybeTexts <- readTexts
-          case maybeTexts of
-            Just texts -> bytesRead >>= \bytesRead' -> return (Just (messageTypeId, texts), LBS.drop bytesRead' buffer)
-            Nothing -> return (Nothing, buffer)
-        Nothing -> return (Nothing, buffer)
+        Just messageTypeId -> case messageIdToType messageTypeId of
+          Just messageType -> do
+            maybeTexts <- readTexts
+            case maybeTexts of
+              Just texts -> bytesRead >>= \bytesRead' -> return $ Just (Just (messageType, texts), LBS.drop bytesRead' buffer)
+              Nothing -> return $ Just (Nothing, buffer) -- not received all the texts yet
+          Nothing -> return $ Nothing -- invalid message type / protocol not followed
+        Nothing -> return $ Just (Nothing, buffer) -- messageTypeId byte not yet received
   in runGet f buffer
 
 readTexts :: Get (Maybe [Text])

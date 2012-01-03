@@ -1,7 +1,10 @@
 module LibertyServ.Client (
   initializeClient
 ) where
+import Control.Concurrent
+import Control.Concurrent.STM.TChan
 import Control.Exception
+import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Text.Lazy (Text)
@@ -12,6 +15,7 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import LibertyServ.DatabaseManager
+import LibertyServ.Messages.ClientChan
 import LibertyServ.NetworkMessage
 import LibertyServ.Site
 import LibertyServ.SiteMap
@@ -19,36 +23,58 @@ import LibertyServ.Utils
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar = do
-  clientSocketReadLoop clientSocket LBS.empty databaseHandleTVar siteMapTVar
+  clientChan <- atomically $ newTChan
+  _ <- forkIO $ clientChanLoop clientChan clientSocket
+  clientSocketReadLoop clientSocket LBS.empty clientChan databaseHandleTVar siteMapTVar
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
-clientSocketReadLoop :: Socket -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-clientSocketReadLoop clientSocket buffer databaseHandleTVar siteMapTVar = catch
+clientSocketReadLoop :: Socket -> ByteString -> ClientChan -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+clientSocketReadLoop clientSocket buffer clientChan databaseHandleTVar siteMapTVar = catch
   (do
     recvResult <- recv clientSocket 2048
     if not $ LBS.null recvResult then do
       putStrLn $ "Len: " ++ show (LBS.length recvResult)
-      let (maybeMessage, newBuffer) = parseMessage $ LBS.append buffer recvResult
-      case maybeMessage of
-        Just (messageTypeId, texts) -> do
-          putStrLn $ "MsgType: " ++ show messageTypeId ++ " - Texts: " ++ show texts
-          case messageIdToType messageTypeId of
-            Just messageType -> handleMessage messageType texts databaseHandleTVar siteMapTVar
-            Nothing -> putStrLn $ "Received a message with an invalid type!"
-        Nothing -> putStrLn $ "No valid message in current buffer"
-      clientSocketReadLoop clientSocket newBuffer databaseHandleTVar siteMapTVar
+      let parseResult = parseMessage $ LBS.append buffer recvResult
+      case parseResult of
+        Just (maybeMessage, newBuffer) -> do
+          case maybeMessage of
+            Just message -> do
+              putStrLn $ "Msg: " ++ show message
+              handleMessage message databaseHandleTVar siteMapTVar
+            Nothing -> putStrLn $ "No valid message in current buffer"
+          clientSocketReadLoop clientSocket newBuffer clientChan databaseHandleTVar siteMapTVar
+        Nothing -> do
+          putStrLn $ "Message parse failed due to protocol error"
+          atomically $ writeTChan clientChan $ Disconnect
     else do
       putStrLn $ "Client disconnecting -- recv returned nothing"
-      sClose clientSocket
+      atomically $ writeTChan clientChan $ Disconnect
   )
   (\ex -> do
     let _ = ex :: SomeException
     putStrLn $ "Client disconnecting due to exception: " ++ show ex
-    sClose clientSocket
+    atomically $ writeTChan clientChan $ Disconnect
   )
+  -- TODO: use finally for Disconnect msg
 
-handleMessage :: MessageType -> [Text] -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleMessage messageType params databaseHandleTVar siteMapTVar =
+clientChanLoop :: ClientChan -> Socket -> IO ()
+clientChanLoop clientChan clientSocket = do
+  msg <- atomically $ readTChan clientChan
+  shouldLoop <- case msg of
+    SendMessageToClient encodedMessage -> do
+      putStrLn "SendMessageToClient not implemented"
+      return True
+    Disconnect -> do
+      sClose clientSocket
+      putStrLn "Client socket closed"
+      return False
+
+  case shouldLoop of
+    True -> clientChanLoop clientChan clientSocket
+    False -> return ()
+
+handleMessage :: Message -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleMessage (messageType, params) databaseHandleTVar siteMapTVar =
   case (messageType,params) of
     (GuestJoinMessage,[siteIdT,name,color]) -> do
       case parseIntegralCheckBounds siteIdT of
