@@ -4,8 +4,6 @@ module LibertyServ.NetworkMessage (
   MessageType(..),
   Message,
   EncodedMessage,
-  messageTypeToId,
-  messageIdToType,
   createMessage,
   parseMessage
 ) where
@@ -21,6 +19,12 @@ import LibertyServ.Utils
 
 -- common
 data MessageType = GuestJoinMessage
+                 | InLinePositionUpdateMessage
+                 | NowTalkingToMessage
+                 | ChatMessage
+                 | AppendToChatLogMessage
+                 | EndChatMessage
+                 | SomethingWentWrongMessage
   deriving (Show)
 
 type Message = (MessageType, [Text])
@@ -29,10 +33,22 @@ type EncodedMessage = ByteString
 messageTypeToId :: MessageType -> Word8
 messageTypeToId messageType = case messageType of
   GuestJoinMessage -> 1
+  InLinePositionUpdateMessage -> 2
+  NowTalkingToMessage -> 3
+  ChatMessage -> 4
+  AppendToChatLogMessage -> 5
+  EndChatMessage -> 6
+  SomethingWentWrongMessage -> 7
 
 messageIdToType :: Word8 -> Maybe MessageType
 messageIdToType messageId = case messageId of
   1 -> Just GuestJoinMessage
+  2 -> Just InLinePositionUpdateMessage
+  3 -> Just NowTalkingToMessage
+  4 -> Just ChatMessage
+  5 -> Just AppendToChatLogMessage
+  6 -> Just EndChatMessage
+  7 -> Just SomethingWentWrongMessage
   _ -> Nothing
 
 -- createMessage and dependencies

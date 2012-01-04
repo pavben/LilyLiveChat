@@ -88,14 +88,14 @@ clientChanLoop clientRef = do
 handleMessage :: Message -> ClientRef -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleMessage (messageType, params) clientRef databaseHandleTVar siteMapTVar =
   case (messageType,params) of
-    (GuestJoinMessage,[siteIdT,name,color]) -> do
+    (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
       case parseIntegralCheckBounds siteIdT of
-        Just siteId -> handleGuestJoin siteId name color databaseHandleTVar siteMapTVar
+        Just siteId -> handleGuestJoin siteId name color icon databaseHandleTVar siteMapTVar
         Nothing -> putStrLn "Numeric conversion failed!"
     _ -> putStrLn "No match"
 
-handleGuestJoin :: SiteId -> Text -> Text -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleGuestJoin siteId name color databaseHandleTVar siteMapTVar = do
+handleGuestJoin :: SiteId -> Text -> Text -> Text -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleGuestJoin siteId name color icon databaseHandleTVar siteMapTVar = do
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteData -> do
