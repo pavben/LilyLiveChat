@@ -21,19 +21,26 @@ import LibertyServ.Site
 import LibertyServ.SiteMap
 import LibertyServ.Utils
 
+-- local data
+data ClientRef = ClientRef {
+  crClientChan :: ClientChan,
+  crClientSocket :: Socket
+}
+
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar = do
   clientChan <- atomically $ newTChan
-  _ <- forkIO $ clientChanLoop clientChan clientSocket
-  clientSocketReadLoop clientSocket LBS.empty clientChan databaseHandleTVar siteMapTVar
+  let clientRef = ClientRef clientChan clientSocket
+  _ <- forkIO $ clientChanLoop clientRef
+  clientSocketReadLoop clientRef LBS.empty databaseHandleTVar siteMapTVar
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
-clientSocketReadLoop :: Socket -> ByteString -> ClientChan -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-clientSocketReadLoop clientSocket buffer clientChan databaseHandleTVar siteMapTVar =
+clientSocketReadLoop :: ClientRef -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+clientSocketReadLoop clientRef buffer databaseHandleTVar siteMapTVar =
   finally
     (catch
       (do
-        recvResult <- recv clientSocket 2048
+        recvResult <- recv (crClientSocket clientRef) 2048
         if not $ LBS.null recvResult then do
           putStrLn $ "Len: " ++ show (LBS.length recvResult)
           let parseResult = parseMessage $ LBS.append buffer recvResult
@@ -42,9 +49,9 @@ clientSocketReadLoop clientSocket buffer clientChan databaseHandleTVar siteMapTV
               case maybeMessage of
                 Just message -> do
                   putStrLn $ "Msg: " ++ show message
-                  handleMessage message databaseHandleTVar siteMapTVar
+                  handleMessage message clientRef databaseHandleTVar siteMapTVar
                 Nothing -> putStrLn $ "No valid message in current buffer yet"
-              clientSocketReadLoop clientSocket newBuffer clientChan databaseHandleTVar siteMapTVar
+              clientSocketReadLoop clientRef newBuffer databaseHandleTVar siteMapTVar
             Nothing -> do
               putStrLn $ "Message parse failed due to protocol error"
         else do
@@ -54,32 +61,32 @@ clientSocketReadLoop clientSocket buffer clientChan databaseHandleTVar siteMapTV
         putStrLn $ "Client disconnecting due to exception: " ++ show ex
       )
     )
-    (atomically $ writeTChan clientChan $ Disconnect)
+    (atomically $ writeTChan (crClientChan clientRef) $ Disconnect)
 
-clientChanLoop :: ClientChan -> Socket -> IO ()
-clientChanLoop clientChan clientSocket = do
-  msg <- atomically $ readTChan clientChan
+clientChanLoop :: ClientRef -> IO ()
+clientChanLoop clientRef = do
+  msg <- atomically $ readTChan (crClientChan clientRef)
   shouldLoop <- case msg of
     SendMessageToClient encodedMessage -> do
       catch
-        (sendAll clientSocket encodedMessage)
+        (sendAll (crClientSocket clientRef) encodedMessage)
         (\(SomeException ex) -> do
           -- disconnect on exception
           putStrLn "Error on send"
-          atomically $ writeTChan clientChan $ Disconnect
+          atomically $ writeTChan (crClientChan clientRef) $ Disconnect
         )
       return True
     Disconnect -> do
-      sClose clientSocket
+      sClose (crClientSocket clientRef)
       putStrLn "Client socket closed"
       return False
 
   case shouldLoop of
-    True -> clientChanLoop clientChan clientSocket
+    True -> clientChanLoop clientRef
     False -> return ()
 
-handleMessage :: Message -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleMessage (messageType, params) databaseHandleTVar siteMapTVar =
+handleMessage :: Message -> ClientRef -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleMessage (messageType, params) clientRef databaseHandleTVar siteMapTVar =
   case (messageType,params) of
     (GuestJoinMessage,[siteIdT,name,color]) -> do
       case parseIntegralCheckBounds siteIdT of
