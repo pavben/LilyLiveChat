@@ -125,11 +125,17 @@ $(document).ready(function() {
 			myName = generateName();
 		}
 		//////////
+		var str = '';
+		//str += Utf8.encode(myName);
+		str += myName;
 		$.ajaxSetup({ scriptCharset: "utf-8" ,contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 		$.ajax({
 			type: "POST",
-			url: "http://www.virtivia.com/liberty/test.php",
-			data: myName,
+			url: "http://localhost:9802/liberty/test.php",
+			data: {
+				"messageType": 1,
+				"name": [myName,"Yo"]
+			},
 			success: function() {
 				alert("Sent: " + myName);
 			},
@@ -417,5 +423,73 @@ $(document).ready(function() {
 
 function log(msg) {
 	window.console.log(msg);
+}
+
+//========================== EXTERNAL JS ==========================//
+/**
+*
+*  UTF-8 data encode / decode
+*  http://www.webtoolkit.info/
+*
+**/
+
+var Utf8 = {
+	// public method for url encoding
+	encode : function (string) {
+		string = string.replace(/\r\n/g,"\n");
+		var utftext = "";
+ 
+		for (var n = 0; n < string.length; n++) {
+ 
+			var c = string.charCodeAt(n);
+ 
+			if (c < 128) {
+				utftext += String.fromCharCode(c);
+			}
+			else if((c > 127) && (c < 2048)) {
+				utftext += String.fromCharCode((c >> 6) | 192);
+				utftext += String.fromCharCode((c & 63) | 128);
+			}
+			else {
+				utftext += String.fromCharCode((c >> 12) | 224);
+				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+				utftext += String.fromCharCode((c & 63) | 128);
+			}
+ 
+		}
+ 
+		return utftext;
+	},
+ 
+	// public method for url decoding
+	decode : function (utftext) {
+		var string = "";
+		var i = 0;
+		var c = c1 = c2 = 0;
+ 
+		while ( i < utftext.length ) {
+ 
+			c = utftext.charCodeAt(i);
+ 
+			if (c < 128) {
+				string += String.fromCharCode(c);
+				i++;
+			}
+			else if((c > 191) && (c < 224)) {
+				c2 = utftext.charCodeAt(i+1);
+				string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+				i += 2;
+			}
+			else {
+				c2 = utftext.charCodeAt(i+1);
+				c3 = utftext.charCodeAt(i+2);
+				string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+				i += 3;
+			}
+ 
+		}
+ 
+		return string;
+	}
 }
 
