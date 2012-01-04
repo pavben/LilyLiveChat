@@ -1,9 +1,9 @@
-module LibertyServ.Messages.ClientChan (
+module Liberty.Server.Messages.ClientChan (
   ClientChanMessage(..),
   ClientChan
 ) where
 import Control.Concurrent.STM.TChan
-import LibertyCommon.NetworkMessage
+import Liberty.Common.NetworkMessage
 
 data ClientChanMessage = SendMessageToClient EncodedMessage | Disconnect
 type ClientChan = TChan ClientChanMessage

@@ -1,13 +1,13 @@
-module LibertyServ.ClientDispatcher (
+module Liberty.Server.ClientDispatcher (
   runClientDispatcher
 ) where
 import Control.Concurrent
 import Control.Exception
 import Network.Socket
 import Prelude hiding (catch)
-import LibertyServ.Client
-import LibertyServ.DatabaseManager
-import LibertyServ.SiteMap
+import Liberty.Server.Client
+import Liberty.Server.DatabaseManager
+import Liberty.Server.SiteMap
 
 runClientDispatcher :: DatabaseHandleTVar -> SiteMapTVar -> IO ()
 runClientDispatcher databaseHandleTVar siteMapTVar = do

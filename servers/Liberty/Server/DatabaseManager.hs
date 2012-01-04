@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LibertyServ.DatabaseManager (
+module Liberty.Server.DatabaseManager (
   DatabaseHandleTVar,
   LookupFailureReason(..),
   initializeDatabaseManager,
@@ -16,7 +16,7 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Database.MongoDB
 import Prelude hiding (catch, lookup)
-import LibertyServ.Site
+import Liberty.Server.Site
 
 -- public data
 type DatabaseHandleTVar = TVar (Maybe DatabaseHandle)

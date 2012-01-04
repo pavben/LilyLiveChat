@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 
-module LibertyCommon.Utils (
+module Liberty.Common.Utils (
   parseIntegralCheckBounds,
   fromIntegralCheckBounds
 ) where

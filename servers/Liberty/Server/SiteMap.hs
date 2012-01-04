@@ -1,4 +1,4 @@
-module LibertyServ.SiteMap (
+module Liberty.Server.SiteMap (
   SiteMapTVar,
   initializeSiteMap,
   lookupSite
@@ -9,8 +9,8 @@ import Control.Monad.STM
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Text.Lazy as LT
-import LibertyServ.DatabaseManager
-import LibertyServ.Site
+import Liberty.Server.DatabaseManager
+import Liberty.Server.Site
 
 -- public data
 type SiteMapTVar = TVar (Map SiteId (TVar SiteEntry))

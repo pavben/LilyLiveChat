@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy.IO as LTI
 import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
-import LibertyCommon.NetworkMessage
+import Liberty.Common.NetworkMessage
 
 main :: IO ()
 main = do

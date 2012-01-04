@@ -1,4 +1,4 @@
-module LibertyServ.Client (
+module Liberty.Server.Client (
   initializeClient
 ) where
 import Control.Concurrent
@@ -14,12 +14,12 @@ import qualified Data.Text.Lazy.Read as LTR
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
-import LibertyCommon.NetworkMessage
-import LibertyCommon.Utils
-import LibertyServ.DatabaseManager
-import LibertyServ.Messages.ClientChan
-import LibertyServ.Site
-import LibertyServ.SiteMap
+import Liberty.Common.NetworkMessage
+import Liberty.Common.Utils
+import Liberty.Server.DatabaseManager
+import Liberty.Server.Messages.ClientChan
+import Liberty.Server.Site
+import Liberty.Server.SiteMap
 
 -- local data
 data ClientRef = ClientRef {

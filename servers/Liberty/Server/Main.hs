@@ -1,15 +1,15 @@
-module Main (
+module Liberty.Server.Main (
   main
 ) where
 import Control.Concurrent
 import Control.Monad (forever)
-import LibertyServ.ClientDispatcher
-import LibertyServ.DatabaseManager
-import LibertyServ.SiteMap
+import Liberty.Server.ClientDispatcher
+import Liberty.Server.DatabaseManager
+import Liberty.Server.SiteMap
 
 main :: IO ()
 main = do
-  putStrLn "LibertyServ starting..."
+  putStrLn "Server starting..."
   -- database
   databaseHandleTVar <- initializeDatabaseManager
   _ <- forkIO $ runDatabaseManager databaseHandleTVar

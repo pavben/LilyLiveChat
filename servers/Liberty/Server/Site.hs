@@ -1,4 +1,4 @@
-module LibertyServ.Site (
+module Liberty.Server.Site (
   SiteId,
   SiteData(..)
 ) where
