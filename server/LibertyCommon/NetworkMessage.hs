@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module LibertyServ.NetworkMessage (
+module LibertyCommon.NetworkMessage (
   MessageType(..),
   Message,
   EncodedMessage,
@@ -15,7 +15,7 @@ import Data.Int (Int64)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding as LE
 import Data.Word
-import LibertyServ.Utils
+import LibertyCommon.Utils
 
 -- common
 data MessageType = GuestJoinMessage

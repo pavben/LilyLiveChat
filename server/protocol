@@ -1,0 +1,14 @@
+Guest to Server
+================================================================
+1 [siteId, name, color, icon] - Guest join
+4 [text] - Send message
+6 - End chat
+
+Server to Guest
+================================================================
+2 [position] - In line count
+3 [name, color, icon] - Now talking to
+5 [name, text] - Append to message log
+6 - End chat
+7 - Something went wrong
+
