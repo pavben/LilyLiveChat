@@ -29,40 +29,45 @@ initializeClient clientSocket databaseHandleTVar siteMapTVar = do
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
 clientSocketReadLoop :: Socket -> ByteString -> ClientChan -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-clientSocketReadLoop clientSocket buffer clientChan databaseHandleTVar siteMapTVar = catch
-  (do
-    recvResult <- recv clientSocket 2048
-    if not $ LBS.null recvResult then do
-      putStrLn $ "Len: " ++ show (LBS.length recvResult)
-      let parseResult = parseMessage $ LBS.append buffer recvResult
-      case parseResult of
-        Just (maybeMessage, newBuffer) -> do
-          case maybeMessage of
-            Just message -> do
-              putStrLn $ "Msg: " ++ show message
-              handleMessage message databaseHandleTVar siteMapTVar
-            Nothing -> putStrLn $ "No valid message in current buffer"
-          clientSocketReadLoop clientSocket newBuffer clientChan databaseHandleTVar siteMapTVar
-        Nothing -> do
-          putStrLn $ "Message parse failed due to protocol error"
-          atomically $ writeTChan clientChan $ Disconnect
-    else do
-      putStrLn $ "Client disconnecting -- recv returned nothing"
-      atomically $ writeTChan clientChan $ Disconnect
-  )
-  (\ex -> do
-    let _ = ex :: SomeException
-    putStrLn $ "Client disconnecting due to exception: " ++ show ex
-    atomically $ writeTChan clientChan $ Disconnect
-  )
-  -- TODO: use finally for Disconnect msg
+clientSocketReadLoop clientSocket buffer clientChan databaseHandleTVar siteMapTVar =
+  finally
+    (catch
+      (do
+        recvResult <- recv clientSocket 2048
+        if not $ LBS.null recvResult then do
+          putStrLn $ "Len: " ++ show (LBS.length recvResult)
+          let parseResult = parseMessage $ LBS.append buffer recvResult
+          case parseResult of
+            Just (maybeMessage, newBuffer) -> do
+              case maybeMessage of
+                Just message -> do
+                  putStrLn $ "Msg: " ++ show message
+                  handleMessage message databaseHandleTVar siteMapTVar
+                Nothing -> putStrLn $ "No valid message in current buffer yet"
+              clientSocketReadLoop clientSocket newBuffer clientChan databaseHandleTVar siteMapTVar
+            Nothing -> do
+              putStrLn $ "Message parse failed due to protocol error"
+        else do
+          putStrLn $ "Client disconnecting -- recv returned nothing"
+      )
+      (\(SomeException ex) -> do
+        putStrLn $ "Client disconnecting due to exception: " ++ show ex
+      )
+    )
+    (atomically $ writeTChan clientChan $ Disconnect)
 
 clientChanLoop :: ClientChan -> Socket -> IO ()
 clientChanLoop clientChan clientSocket = do
   msg <- atomically $ readTChan clientChan
   shouldLoop <- case msg of
     SendMessageToClient encodedMessage -> do
-      putStrLn "SendMessageToClient not implemented"
+      catch
+        (sendAll clientSocket encodedMessage)
+        (\(SomeException ex) -> do
+          -- disconnect on exception
+          putStrLn "Error on send"
+          atomically $ writeTChan clientChan $ Disconnect
+        )
       return True
     Disconnect -> do
       sClose clientSocket
