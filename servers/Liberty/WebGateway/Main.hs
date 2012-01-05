@@ -1,4 +1,5 @@
 module Liberty.WebGateway.Main (
+  main
 ) where
 import Control.Concurrent
 import Control.Monad (forever)

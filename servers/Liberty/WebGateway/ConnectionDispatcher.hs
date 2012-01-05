@@ -3,8 +3,10 @@ module Liberty.WebGateway.ConnectionDispatcher (
 ) where
 import Control.Concurrent
 import Control.Exception
+import qualified Data.ByteString.Lazy.Char8 as C8
 import Network.Socket
 import Prelude hiding (catch)
+import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
 import Liberty.WebGateway.Connection
 
 runConnectionDispatcher :: IO ()
@@ -15,8 +17,9 @@ runConnectionDispatcher = do
       catch
       (finally
         (do
+          httpRegex <- getHttpRegex
           initializeListenerSocket listenerSocket 9802
-          acceptLoop listenerSocket
+          acceptLoop listenerSocket httpRegex
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -25,7 +28,7 @@ runConnectionDispatcher = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in listen/bind/accept/getHttpRegex: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
@@ -40,11 +43,18 @@ initializeListenerSocket listenerSocket portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> IO ()
-acceptLoop listenerSocket = do
+acceptLoop :: Socket -> PCRE.Regex -> IO ()
+acceptLoop listenerSocket httpRegex = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ processConnection clientSocket
+  _ <- forkIO $ processConnection clientSocket httpRegex
   -- and loop around
-  acceptLoop listenerSocket
+  acceptLoop listenerSocket httpRegex
+
+getHttpRegex :: IO (PCRE.Regex)
+getHttpRegex = do
+  compileResult <- PCRE.compile PCRE.compDotAll PCRE.execBlank (C8.pack "^(.*?) /(.*?) HTTP.*?[Cc][Oo][Nn][Tt][Ee][Nn][Tt]-[Ll][Ee][Nn][Gg][Tt][Hh]:\\W*?(\\d+)\\W*?\r\n.*?\r\n\r\n")
+  case compileResult of
+    Right regex -> return regex
+    Left _ -> error "Error compiling HTTP RegEx"
 
