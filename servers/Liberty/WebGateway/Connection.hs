@@ -6,6 +6,10 @@ import Control.Exception
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
+import qualified Data.Text.Lazy.Encoding as LE
+import qualified Data.Text.Lazy.IO as LIO
+import Data.List
+import Data.Ord
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
@@ -40,6 +44,13 @@ socketLoop clientSocket httpRegex buffer =
                       if LBS.length textRemainder == fromIntegral contentLength then do
                         -- got all data
                         putStrLn "Got all data"
+                        let urlEncodedArgs = map (\(x, y) -> y) $ sortBy (comparing fst) $ map (\s -> (C8.takeWhile (/= '=') s, LBS.drop 1 $ C8.dropWhile (/= '=') s)) $ C8.split '&' textRemainder
+                        case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
+                          Just rawArgs ->
+                            case mapM decodeUtf8Maybe rawArgs of
+                              Just textArgs -> mapM_ LIO.putStrLn textArgs
+                              Nothing -> putStrLn "Error decoding UTF-8 args"
+                          Nothing -> putStrLn "Unable to URL-decode args"
                         return False
                       else do
                         putStrLn "Got the request header, but not all of the data has arrived yet"
@@ -63,6 +74,15 @@ socketLoop clientSocket httpRegex buffer =
         False -> return ()
     )
     (\(SomeException ex) -> putStrLn $ "Client disconnecting due to exception: " ++ show ex)
+  where
+    convertToLBSMaybe maybeUrlDecodedListOfWord8 =
+      case maybeUrlDecodedListOfWord8 of
+        Just listOfWord8 -> Just $ LBS.pack listOfWord8
+        Nothing -> Nothing
+    decodeUtf8Maybe s = do
+      case LE.decodeUtf8' s of
+        Right decodedStr -> Just decodedStr
+        Left _ -> Nothing
 
 readMaybeInt :: ByteString -> Maybe Int
 readMaybeInt s = do

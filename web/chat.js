@@ -133,8 +133,10 @@ $(document).ready(function() {
 			type: "POST",
 			url: "http://localhost:9802/liberty/test.php",
 			data: {
-				"messageType": 1,
-				"name": [myName,"Yo"]
+				"0": 1,
+				"1": myName,
+				"2": '#000000',
+				"3": 'images/happy-bear.png'
 			},
 			success: function() {
 				alert("Sent: " + myName);
