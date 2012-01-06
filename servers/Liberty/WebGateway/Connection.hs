@@ -6,8 +6,11 @@ import Control.Exception
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
+import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LE
 import qualified Data.Text.Lazy.IO as LIO
+import qualified Data.Text.Lazy.Read as LTR
 import Data.List
 import Data.Ord
 import Network.Socket hiding (recv)
@@ -48,7 +51,7 @@ socketLoop clientSocket httpRegex buffer =
                         case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
                           Just rawArgs ->
                             case mapM decodeUtf8Maybe rawArgs of
-                              Just textArgs -> mapM_ LIO.putStrLn textArgs
+                              Just textArgs -> processClientRequest textArgs
                               Nothing -> putStrLn "Error decoding UTF-8 args"
                           Nothing -> putStrLn "Unable to URL-decode args"
                         return False
@@ -83,6 +86,19 @@ socketLoop clientSocket httpRegex buffer =
       case LE.decodeUtf8' s of
         Right decodedStr -> Just decodedStr
         Left _ -> Nothing
+
+processClientRequest :: [Text] -> IO ()
+processClientRequest texts =
+  case texts of
+    [singleText] -> putStrLn "Single text"
+    sessionId:messageTypeStr:args -> do
+      putStr "Session ID: "
+      LIO.putStrLn sessionId
+      putStr "Msg Type: "
+      LIO.putStrLn messageTypeStr
+      putStrLn "Args: "
+      mapM_ LIO.putStrLn args
+    _ -> putStrLn "Invalid message"
 
 readMaybeInt :: ByteString -> Maybe Int
 readMaybeInt s = do

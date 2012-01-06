@@ -132,12 +132,7 @@ $(document).ready(function() {
 		$.ajax({
 			type: "POST",
 			url: "http://localhost:9802/liberty/test.php",
-			data: {
-				"0": 1,
-				"1": myName,
-				"2": '#000000',
-				"3": 'images/happy-bear.png'
-			},
+			data: uriEncodeArray(["SESSION-8345423", 1, myName, '#000000', 'images/happy-bear.png']),
 			success: function() {
 				alert("Sent: " + myName);
 			},
@@ -151,6 +146,13 @@ $(document).ready(function() {
 		replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
 		changeTabTo(chatTab);
 	});
+
+	function uriEncodeArray(arr) {
+		var str = [];
+		for (var p in arr)
+			str.push(p + "=" + encodeURIComponent(arr[p]));
+		return str.join("&");
+	}
 
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
