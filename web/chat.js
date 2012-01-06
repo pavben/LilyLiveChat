@@ -132,9 +132,12 @@ $(document).ready(function() {
 		$.ajax({
 			type: "POST",
 			url: "http://localhost:9802/liberty/test.php",
-			data: uriEncodeArray(["SESSION-8345423", 1, myName, '#000000', 'images/happy-bear.png']),
-			success: function() {
-				alert("Sent: " + myName);
+			data: uriEncodeArray(["NEW"]),
+			dataType: 'json',
+			//data: uriEncodeArray(["SESSION-8345423", 1, myName, '#000000', 'images/happy-bear.png']),
+			success: function(data, textStatus, jqXHR) {
+				alert("Received response.");
+				log(data);
 			},
 			error: function(request, textStatus, errorThrown) {
 				alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);

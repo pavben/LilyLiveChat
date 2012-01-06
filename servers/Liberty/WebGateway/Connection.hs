@@ -52,10 +52,10 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                         case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
                           Just rawArgs ->
                             case mapM decodeUtf8Maybe rawArgs of
-                              Just textArgs -> processClientRequest textArgs sessionMapTVar
+                              Just textArgs -> processClientRequest textArgs clientSocket sessionMapTVar
                               Nothing -> putStrLn "Error decoding UTF-8 args"
                           Nothing -> putStrLn "Unable to URL-decode args"
-                        return False
+                        return False -- just bail and close the connection
                       else do
                         putStrLn "Got the request header, but not all of the data has arrived yet"
                         return True
@@ -88,10 +88,23 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
         Right decodedStr -> Just decodedStr
         Left _ -> Nothing
 
-processClientRequest :: [Text] -> SessionMapTVar -> IO ()
-processClientRequest texts sessionMapTVar =
+processClientRequest :: [Text] -> Socket -> SessionMapTVar -> IO ()
+processClientRequest texts clientSocket sessionMapTVar =
   case texts of
-    [singleText] -> putStrLn "Single text"
+    [singleText] ->
+      if singleText == LT.pack "NEW" then do
+        putStrLn "Request for a new session"
+        maybeSessionId <- createSession sessionMapTVar clientSocket
+        case maybeSessionId of
+          Just sessionId -> do
+            putStrLn "Created new session"
+            sendHttpResponse clientSocket $ LT.concat [LT.pack "{ \"sessionId\": \"", sessionId, LT.pack "\" }"]
+            return ()
+          Nothing -> do
+            putStrLn "Failed to create a new session"
+            return ()
+      else
+        putStrLn "Long poll connection"
     sessionId:messageTypeStr:args -> do
       putStr "Session ID: "
       LIO.putStrLn sessionId
@@ -100,6 +113,19 @@ processClientRequest texts sessionMapTVar =
       putStrLn "Args: "
       mapM_ LIO.putStrLn args
     _ -> putStrLn "Invalid message"
+
+sendHttpResponse :: Socket -> Text -> IO ()
+sendHttpResponse clientSocket text = do
+  let encodedText = LE.encodeUtf8 text
+  sendAll clientSocket $ LBS.concat [
+    C8.pack (
+      "HTTP/1.1 200 OK" ++
+      "Server: Liberty.WebGateway\r\n" ++
+      "Access-Control-Allow-Origin: *\r\n" ++
+      "Content-Length: " ++ show (LBS.length encodedText) ++ "\r\n" ++
+      "Content-Type: application/json\r\n\r\n"
+    ),
+    encodedText]
 
 readMaybeInt :: ByteString -> Maybe Int
 readMaybeInt s = do

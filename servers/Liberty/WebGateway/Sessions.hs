@@ -1,5 +1,7 @@
 module Liberty.WebGateway.Sessions (
   SessionId,
+  SessionData(..),
+  SessionEntryTVar,
   SessionMapTVar,
   createSessionMapTVar,
   createSession
@@ -12,15 +14,18 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as LT
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Liberty.WebGateway.RandomString
 import Liberty.Common.NetworkMessage
 
-type SessionId = ByteString
+type SessionId = Text
 data ProxyConnectionState = ProxyConnectionActive | ProxyConnectionClosed
 data SessionData = SessionData {
+  sdCurrentWaiterSocket :: Maybe Socket,
   sdProxySocket :: Socket,
   sdProxyConnectionState :: ProxyConnectionState,
   sdMessagesWaiting :: [Message]
@@ -44,13 +49,13 @@ createSession sessionMapTVar clientSocket = do
 
 tryCreateSessionUntilSuccess :: SessionMapTVar -> Socket -> IO SessionId
 tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
-  newSessionId <- getRandomByteString128
+  newSessionId <- getRandomText128
   createResult <- atomically $ do
     sessionMap <- readTVar sessionMapTVar
     case Map.lookup newSessionId sessionMap of
       Just _ -> return False
       Nothing -> do
-        newSessionEntry <- newTVar $ SessionData proxySocket ProxyConnectionActive []
+        newSessionEntry <- newTVar $ SessionData Nothing proxySocket ProxyConnectionActive []
         writeTVar sessionMapTVar $ Map.insert newSessionId newSessionEntry sessionMap
         return True
 
