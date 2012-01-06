@@ -16,6 +16,7 @@ import Data.Ord
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
+import qualified Text.JSON as JSON
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
 import Liberty.WebGateway.Sessions
 
@@ -98,7 +99,7 @@ processClientRequest texts clientSocket sessionMapTVar =
         case maybeSessionId of
           Just sessionId -> do
             putStrLn "Created new session"
-            sendHttpResponse clientSocket $ LT.concat [LT.pack "{ \"sessionId\": \"", sessionId, LT.pack "\" }"]
+            sendJsonResponse clientSocket $ JSON.toJSObject [("sessionId", JSON.showJSON $ LE.encodeUtf8 sessionId)]
             return ()
           Nothing -> do
             putStrLn "Failed to create a new session"
@@ -114,18 +115,18 @@ processClientRequest texts clientSocket sessionMapTVar =
       mapM_ LIO.putStrLn args
     _ -> putStrLn "Invalid message"
 
-sendHttpResponse :: Socket -> Text -> IO ()
-sendHttpResponse clientSocket text = do
-  let encodedText = LE.encodeUtf8 text
+sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
+sendJsonResponse clientSocket jsObject = do
+  let encodedData = C8.pack $ JSON.encode jsObject
   sendAll clientSocket $ LBS.concat [
     C8.pack (
       "HTTP/1.1 200 OK" ++
       "Server: Liberty.WebGateway\r\n" ++
       "Access-Control-Allow-Origin: *\r\n" ++
-      "Content-Length: " ++ show (LBS.length encodedText) ++ "\r\n" ++
+      "Content-Length: " ++ show (LBS.length encodedData) ++ "\r\n" ++
       "Content-Type: application/json\r\n\r\n"
     ),
-    encodedText]
+    encodedData]
 
 readMaybeInt :: ByteString -> Maybe Int
 readMaybeInt s = do

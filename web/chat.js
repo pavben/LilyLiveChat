@@ -124,31 +124,50 @@ $(document).ready(function() {
 		if (myName.length == 0) {
 			myName = generateName();
 		}
-		//////////
-		var str = '';
-		//str += Utf8.encode(myName);
-		str += myName;
-		$.ajaxSetup({ scriptCharset: "utf-8" ,contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
+		currentOnClick = $(this).attr('onclick');
+		$(this).attr('onclick', '');
+		ajaxJson(
+			['NEW'],
+			function(data) {
+				if (data.sessionId) {
+					alert("Got session ID: " + data.sessionId);
+					var myColor = $('#welcome_myname').css('color');
+					ajaxJson(
+						[data.sessionId, 1, myName, myColor, 'images/funshine_bear.png'],
+						function(guestJoinResponse) {
+							replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
+							changeTabTo(chatTab);
+						},
+						function() {
+							alert("Failed to join");
+							$(this).attr('onclick', currentOnClick);
+						}
+					);
+				}
+			},
+			function() {
+				alert("Failed to acquire Session ID");
+				$(this).attr('onclick', currentOnClick);
+			}
+		);
+	});
+
+	function ajaxJson(data, successFunction, errorFunction) {
+		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 		$.ajax({
 			type: "POST",
 			url: "http://localhost:9802/liberty/test.php",
-			data: uriEncodeArray(["NEW"]),
+			data: uriEncodeArray(data),
 			dataType: 'json',
-			//data: uriEncodeArray(["SESSION-8345423", 1, myName, '#000000', 'images/happy-bear.png']),
 			success: function(data, textStatus, jqXHR) {
-				alert("Received response.");
-				log(data);
+				successFunction(data);
 			},
 			error: function(request, textStatus, errorThrown) {
-				alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+				//alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+				errorFunction();
 			}
 		});
-		return;
-		//////////
-		var myColor = $('#welcome_myname').css('color');
-		replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
-		changeTabTo(chatTab);
-	});
+	}
 
 	function uriEncodeArray(arr) {
 		var str = [];
