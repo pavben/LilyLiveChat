@@ -1,9 +1,11 @@
 module Liberty.WebGateway.Sessions (
   SessionId,
+  SessionMapTVar,
   createSessionMapTVar,
   createSession
 ) where
 import Control.Concurrent.STM.TVar
+import Control.Exception
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
@@ -12,6 +14,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
+import Prelude hiding (catch)
 import Liberty.WebGateway.RandomString
 import Liberty.Common.NetworkMessage
 
@@ -33,7 +36,7 @@ createSession sessionMapTVar clientSocket = do
   maybeProxySocket <- establishProxyConnection
   case maybeProxySocket of
     Just proxySocket -> do
-      sessionId <- tryCreateSessionUntilSuccess
+      sessionId <- tryCreateSessionUntilSuccess sessionMapTVar proxySocket
       return $ Just sessionId
     Nothing -> do
       putStrLn "Failed to establish proxy connection -- session will not be issued"
@@ -47,12 +50,12 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
     case Map.lookup newSessionId sessionMap of
       Just _ -> return False
       Nothing -> do
-        Map.insert newSessionId (newTVar (SessionData proxySocket ProxyConnectionActive [])) sessionMap
-        writeTVar sessionMapTVar sessionMap
+        newSessionEntry <- newTVar $ SessionData proxySocket ProxyConnectionActive []
+        writeTVar sessionMapTVar $ Map.insert newSessionId newSessionEntry sessionMap
         return True
 
   case createResult of
-    True -> newSessionId
+    True -> return newSessionId
     False -> tryCreateSessionUntilSuccess sessionMapTVar proxySocket
 
 establishProxyConnection :: IO (Maybe Socket)

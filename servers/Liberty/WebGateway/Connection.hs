@@ -17,16 +17,17 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
+import Liberty.WebGateway.Sessions
 
 -- TODO: DoS vulnerability: memory exhaustion by sending tons of random crap to buffer
-processConnection :: Socket -> PCRE.Regex -> IO ()
-processConnection clientSocket httpRegex =
+processConnection :: Socket -> SessionMapTVar -> PCRE.Regex -> IO ()
+processConnection clientSocket sessionMapTVar httpRegex =
   finally
-    (socketLoop clientSocket httpRegex LBS.empty)
+    (socketLoop clientSocket sessionMapTVar httpRegex LBS.empty)
     (sClose clientSocket)
 
-socketLoop :: Socket -> PCRE.Regex -> ByteString -> IO ()
-socketLoop clientSocket httpRegex buffer =
+socketLoop :: Socket -> SessionMapTVar -> PCRE.Regex -> ByteString -> IO ()
+socketLoop clientSocket sessionMapTVar httpRegex buffer =
   catch
     (do
       recvResult <- recv clientSocket 2048
@@ -51,7 +52,7 @@ socketLoop clientSocket httpRegex buffer =
                         case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
                           Just rawArgs ->
                             case mapM decodeUtf8Maybe rawArgs of
-                              Just textArgs -> processClientRequest textArgs
+                              Just textArgs -> processClientRequest textArgs sessionMapTVar
                               Nothing -> putStrLn "Error decoding UTF-8 args"
                           Nothing -> putStrLn "Unable to URL-decode args"
                         return False
@@ -73,7 +74,7 @@ socketLoop clientSocket httpRegex buffer =
         return False
 
       case shouldContinue of
-        True -> socketLoop clientSocket httpRegex newBuffer
+        True -> socketLoop clientSocket sessionMapTVar httpRegex newBuffer
         False -> return ()
     )
     (\(SomeException ex) -> putStrLn $ "Client disconnecting due to exception: " ++ show ex)
@@ -87,8 +88,8 @@ socketLoop clientSocket httpRegex buffer =
         Right decodedStr -> Just decodedStr
         Left _ -> Nothing
 
-processClientRequest :: [Text] -> IO ()
-processClientRequest texts =
+processClientRequest :: [Text] -> SessionMapTVar -> IO ()
+processClientRequest texts sessionMapTVar =
   case texts of
     [singleText] -> putStrLn "Single text"
     sessionId:messageTypeStr:args -> do

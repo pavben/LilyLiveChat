@@ -8,9 +8,10 @@ import Network.Socket
 import Prelude hiding (catch)
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
 import Liberty.WebGateway.Connection
+import Liberty.WebGateway.Sessions
 
-runConnectionDispatcher :: IO ()
-runConnectionDispatcher = do
+runConnectionDispatcher :: SessionMapTVar -> IO ()
+runConnectionDispatcher sessionMapTVar = do
   eitherListenerSocket <- try $ socket AF_INET Stream 0 -- create the socket
   case eitherListenerSocket of
     Right listenerSocket ->
@@ -19,7 +20,7 @@ runConnectionDispatcher = do
         (do
           httpRegex <- getHttpRegex
           initializeListenerSocket listenerSocket 9802
-          acceptLoop listenerSocket httpRegex
+          acceptLoop listenerSocket sessionMapTVar httpRegex
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -32,7 +33,7 @@ runConnectionDispatcher = do
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
-      runConnectionDispatcher
+      runConnectionDispatcher sessionMapTVar
 
 -- Exceptions handled by caller
 initializeListenerSocket :: Socket -> PortNumber -> IO ()
@@ -43,13 +44,13 @@ initializeListenerSocket listenerSocket portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> PCRE.Regex -> IO ()
-acceptLoop listenerSocket httpRegex = do
+acceptLoop :: Socket -> SessionMapTVar -> PCRE.Regex -> IO ()
+acceptLoop listenerSocket sessionMapTVar httpRegex = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ processConnection clientSocket httpRegex
+  _ <- forkIO $ processConnection clientSocket sessionMapTVar httpRegex
   -- and loop around
-  acceptLoop listenerSocket httpRegex
+  acceptLoop listenerSocket sessionMapTVar httpRegex
 
 getHttpRegex :: IO (PCRE.Regex)
 getHttpRegex = do
