@@ -4,6 +4,12 @@ $(document).ready(function() {
 	var welcomeTab = $('#welcome_tab');
 	var chatTab = $('#chat_tab');
 
+	var myColor = null;
+
+	var mySessionId = 'NEW';
+	var lastInSequence = null;
+	var nextOutSequence = 0;
+
 	function changeTabTo(tab) {
 		if (currentTab) {
 			currentTab.fadeTo(300, 0, function() {
@@ -112,7 +118,8 @@ $(document).ready(function() {
 	$('#welcome_btn_randomize').click(function(e) {
 		$('#welcome_myname').fadeTo(100, 0, function() {
 			$('#welcome_myname').val(generateName($('#welcome_myname').val()));
-			$('#welcome_myname').css('color', generatePersonColor());
+			myColor = generatePersonColor();
+			$('#welcome_myname').css('color', myColor);
 		});
 		$('#welcome_myname').fadeTo(100, 1);
 	});
@@ -126,14 +133,17 @@ $(document).ready(function() {
 		}
 		currentOnClick = $(this).attr('onclick');
 		$(this).attr('onclick', '');
-		ajaxJson(
-			['NEW'],
-			function(data) {
-				if (data.sessionId) {
-					alert("Got session ID: " + data.sessionId);
-					var myColor = $('#welcome_myname').css('color');
-					ajaxJson(
-						[data.sessionId, 1, myName, myColor, 'images/funshine_bear.png'],
+		ajaxJsonGetSessionId(
+			function(getSessionIdResponse) {
+				if (getSessionIdResponse.sessionId) {
+					// set the session ID to use in future requests
+					mySessionId = getSessionIdResponse.sessionId;
+					lastInSequence = 0; // initialize this to 0
+					alert("Got session ID: " + getSessionIdResponse.sessionId);
+					queueAjaxCommand([1, myName, myColor, 'images/funshine_bear.png']);
+					// begin long-polling
+					//ajaxJsonLongPoll();
+					/*
 						function(guestJoinResponse) {
 							replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
 							changeTabTo(chatTab);
@@ -142,15 +152,109 @@ $(document).ready(function() {
 							alert("Failed to join");
 							$(this).attr('onclick', currentOnClick);
 						}
-					);
+					*/
 				}
 			},
 			function() {
 				alert("Failed to acquire Session ID");
+				// TODO: Make sure the disabing of onClick is working properly.. also consider just having a busy variable for it
 				$(this).attr('onclick', currentOnClick);
+				nextOutSequence = 0; // reset this to 0
 			}
 		);
 	});
+
+	function ajaxJsonGetSessionId(successFunction, errorFunction) {
+		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
+		$.ajax({
+			type: "POST",
+			url: "http://localhost:9802/liberty/test.php",
+			data: uriEncodeArray(['NEW', nextOutSequence++]),
+			dataType: 'json',
+			success: function(data, textStatus, jqXHR) {
+				successFunction(data);
+			},
+			error: function(request, textStatus, errorThrown) {
+				//alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+				errorFunction();
+			}
+		});
+	}
+
+	var ajaxCommandQueue = [];
+	var ajaxCommandSendInProgress = false;
+
+	function queueAjaxCommand(data) {
+		if (!mySessionId) {
+			log("queueAjaxCommand not allowed due to !mySessionId");
+			return;
+		}
+		ajaxCommandQueue.push([nextOutSequence++].concat(data));
+
+		if (!ajaxCommandSendInProgress) {
+			setTimeout(sendAjaxCommands, 0);
+		}
+	}
+
+	function sendAjaxCommands() {
+		if (!ajaxCommandSendInProgress && ajaxCommandQueue.length > 0) {
+			ajaxCommandSendInProgress = true;
+
+			currentCommand = ajaxCommandQueue.shift();
+
+			$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
+			$.ajax({
+				type: "POST",
+				url: "http://localhost:9802/liberty/test.php",
+				data: uriEncodeArray([mySessionId].concat(currentCommand)), // mySessionId,nextOutSequence,...
+				dataType: 'json',
+				success: function(data, textStatus, jqXHR) {
+					log("ajax command sent successfully");
+					ajaxCommandSendInProgress = false;
+					// immediately after, send the next entry (if any)
+					setTimeout(sendAjaxCommands, 0);
+				},
+				error: function(request, textStatus, errorThrown) {
+					log("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+					// re-add the command to the beginning to retry when possible
+					ajaxCommandQueue.unshift(currentCommand);
+					ajaxCommandSendInProgress = false;
+					setTimeout(sendAjaxCommands, 5000); // schedule a retry in 5 seconds
+				}
+			});
+		}
+	}
+
+	function ajaxJsonLongPoll() {
+		if (!mySessionId) {
+			log("ajaxJsonLongPoll not allowed due to !mySessionId");
+			return;
+		}
+		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
+		$.ajax({
+			type: "POST",
+			url: "http://localhost:9802/liberty/test.php",
+			data: uriEncodeArray([mySessionId, lastInSequence]),
+			dataType: 'json',
+			success: function(data, textStatus, jqXHR) {
+				for (var i in data.commands) {
+					var command = data.commands[i];
+					// advance the sequence, removing it from the command
+					if (lastInSequence <= int(command[0])) {
+						alert("lastInSequence is " + lastInSequence + ", but command[0] is " + command[0]);
+					}
+					lastInSequence = int(command.shift());
+					log("NewSeq: " + lastInSequence + "- Received command: ");
+					log(command);
+					setTimeout(ajaxJsonLongPoll, 0);
+				}
+			},
+			error: function(request, textStatus, errorThrown) {
+				log("Long Poll Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+				setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
+			}
+		});
+	}
 
 	function ajaxJson(data, successFunction, errorFunction) {
 		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
@@ -353,15 +457,13 @@ $(document).ready(function() {
 	$('#chat_theircardrow').hide();
 	$('#chat_inlinecardrow').hide();
 
-	$('#welcome_myname').css('color', generatePersonColor());
+	// generate an initial color and set it
+	myColor = generatePersonColor();
+	$('#welcome_myname').css('color', myColor);
 
-	/*
-	setTimeout(function() {
-		testperson = new Person('Circular Cat', generatePersonColor(), 'Guest', 'images/funshine_bear.png');
-		replaceMeWith(testperson);
-		//replaceThemWith(testperson);
-	}, 800);
-	*/
+	// set the icons
+	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
+	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 
 	function generatePersonColor() {
 		var lowOffset = 50;
@@ -382,15 +484,8 @@ $(document).ready(function() {
 	changeTabTo(welcomeTab);
 	// DEBUG
 	//changeTabTo(chatTab);
-	updatePositionInLine(5);
+	//updatePositionInLine(5);
 	// END OF DEBUG
-
-	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
-	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
-
-	setTimeout(function() {
-		//changeTabTo('chattab');
-	}, 500);
 
 	$(window).resize(onResize);
 
@@ -450,72 +545,3 @@ $(document).ready(function() {
 function log(msg) {
 	window.console.log(msg);
 }
-
-//========================== EXTERNAL JS ==========================//
-/**
-*
-*  UTF-8 data encode / decode
-*  http://www.webtoolkit.info/
-*
-**/
-
-var Utf8 = {
-	// public method for url encoding
-	encode : function (string) {
-		string = string.replace(/\r\n/g,"\n");
-		var utftext = "";
- 
-		for (var n = 0; n < string.length; n++) {
- 
-			var c = string.charCodeAt(n);
- 
-			if (c < 128) {
-				utftext += String.fromCharCode(c);
-			}
-			else if((c > 127) && (c < 2048)) {
-				utftext += String.fromCharCode((c >> 6) | 192);
-				utftext += String.fromCharCode((c & 63) | 128);
-			}
-			else {
-				utftext += String.fromCharCode((c >> 12) | 224);
-				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-				utftext += String.fromCharCode((c & 63) | 128);
-			}
- 
-		}
- 
-		return utftext;
-	},
- 
-	// public method for url decoding
-	decode : function (utftext) {
-		var string = "";
-		var i = 0;
-		var c = c1 = c2 = 0;
- 
-		while ( i < utftext.length ) {
- 
-			c = utftext.charCodeAt(i);
- 
-			if (c < 128) {
-				string += String.fromCharCode(c);
-				i++;
-			}
-			else if((c > 191) && (c < 224)) {
-				c2 = utftext.charCodeAt(i+1);
-				string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-				i += 2;
-			}
-			else {
-				c2 = utftext.charCodeAt(i+1);
-				c3 = utftext.charCodeAt(i+2);
-				string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-				i += 3;
-			}
- 
-		}
- 
-		return string;
-	}
-}
-

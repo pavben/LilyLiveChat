@@ -13,11 +13,13 @@ import qualified Data.Text.Lazy.IO as LIO
 import qualified Data.Text.Lazy.Read as LTR
 import Data.List
 import Data.Ord
+import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import qualified Text.JSON as JSON
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
+import Liberty.Common.Utils
 import Liberty.WebGateway.Sessions
 
 -- TODO: DoS vulnerability: memory exhaustion by sending tons of random crap to buffer
@@ -92,28 +94,46 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
 processClientRequest :: [Text] -> Socket -> SessionMapTVar -> IO ()
 processClientRequest texts clientSocket sessionMapTVar =
   case texts of
-    [singleText] ->
-      if singleText == LT.pack "NEW" then do
-        putStrLn "Request for a new session"
-        maybeSessionId <- createSession sessionMapTVar clientSocket
-        case maybeSessionId of
-          Just sessionId -> do
-            putStrLn "Created new session"
-            sendJsonResponse clientSocket $ JSON.toJSObject [("sessionId", JSON.showJSON $ LE.encodeUtf8 sessionId)]
-            return ()
-          Nothing -> do
-            putStrLn "Failed to create a new session"
-            return ()
-      else
-        putStrLn "Long poll connection"
-    sessionId:messageTypeStr:args -> do
-      putStr "Session ID: "
-      LIO.putStrLn sessionId
-      putStr "Msg Type: "
-      LIO.putStrLn messageTypeStr
-      putStrLn "Args: "
-      mapM_ LIO.putStrLn args
+    sessionId:inSequenceT:messageComponents ->
+      case parseIntegralCheckBounds inSequenceT of
+        Just inSequence -> do
+          putStr "Session ID: "
+          LIO.putStrLn sessionId
+          putStr "In Sequence: "
+          LIO.putStrLn inSequenceT
+          let _ = inSequence :: Word32
+          if (sessionId == LT.pack "NEW") && (inSequence == 0) && (null messageComponents) then
+            handleNewSession sessionMapTVar clientSocket
+          else
+            case messageComponents of
+              messageTypeT:args ->
+                case parseIntegralCheckBounds messageTypeT of
+                  Just messageType -> do
+                    let _ = messageType :: Word32
+                    putStr "Msg Type: "
+                    LIO.putStrLn messageTypeT
+                    putStrLn "Args: "
+                    mapM_ LIO.putStrLn args
+                    sendEmptyResponse clientSocket
+                  Nothing -> return ()
+              [] -> do
+                putStrLn "Long poll connection"
+                return () -- TODO
+        Nothing -> return ()
     _ -> putStrLn "Invalid message"
+
+handleNewSession :: SessionMapTVar -> Socket -> IO ()
+handleNewSession sessionMapTVar clientSocket = do
+  putStrLn "Request for a new session"
+  maybeSessionId <- createSession sessionMapTVar clientSocket
+  case maybeSessionId of
+    Just sessionId -> do
+      putStrLn "Created new session"
+      sendJsonResponse clientSocket $ JSON.toJSObject [("sessionId", JSON.showJSON $ LE.encodeUtf8 sessionId)]
+      return ()
+    Nothing -> do
+      putStrLn "Failed to create a new session"
+      return ()
 
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
@@ -127,6 +147,16 @@ sendJsonResponse clientSocket jsObject = do
       "Content-Type: application/json\r\n\r\n"
     ),
     encodedData]
+
+sendEmptyResponse :: Socket -> IO ()
+sendEmptyResponse clientSocket = do
+  sendAll clientSocket $ C8.pack (
+      "HTTP/1.1 200 OK" ++
+      "Server: Liberty.WebGateway\r\n" ++
+      "Access-Control-Allow-Origin: *\r\n" ++
+      "Content-Length: 0\r\n" ++
+      "Content-Type: application/json\r\n\r\n"
+    )
 
 readMaybeInt :: ByteString -> Maybe Int
 readMaybeInt s = do
