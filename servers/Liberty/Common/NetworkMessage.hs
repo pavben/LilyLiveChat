@@ -4,6 +4,7 @@ module Liberty.Common.NetworkMessage (
   MessageType(..),
   Message,
   EncodedMessage,
+  messageIdToType,
   createMessage,
   parseMessage
 ) where

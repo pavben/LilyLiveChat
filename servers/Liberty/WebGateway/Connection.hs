@@ -23,6 +23,7 @@ import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import qualified Text.JSON as JSON
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
+import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
 import Liberty.WebGateway.Sessions
 
@@ -55,7 +56,7 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                       if LBS.length textRemainder == fromIntegral contentLength then do
                         -- got all data
                         putStrLn "Got all data"
-                        let urlEncodedArgs = map (\(x, y) -> y) $ sortBy (comparing fst) $ map (\s -> (C8.takeWhile (/= '=') s, LBS.drop 1 $ C8.dropWhile (/= '=') s)) $ C8.split '&' textRemainder
+                        let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (\s -> (C8.takeWhile (/= '=') s, LBS.drop 1 $ C8.dropWhile (/= '=') s)) $ C8.split '&' textRemainder
                         case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
                           Just rawArgs ->
                             case mapM decodeUtf8Maybe rawArgs of
@@ -105,7 +106,6 @@ processClientRequest texts clientSocket sessionMapTVar =
           LIO.putStrLn sessionId
           putStr "In Sequence: "
           LIO.putStrLn inSequenceT
-          let _ = inSequence :: Word32
           if (sessionId == LT.pack "NEW") && (inSequence == 0) && (null messageComponents) then
             handleNewSession sessionMapTVar clientSocket
           else do
@@ -115,15 +115,12 @@ processClientRequest texts clientSocket sessionMapTVar =
             case maybeSessionDataTVar of
               Just sessionDataTVar ->
                 case messageComponents of
-                  messageTypeT:args ->
+                  messageTypeT:messageTexts ->
                     case parseIntegralCheckBounds messageTypeT of
-                      Just messageType -> do
-                        let _ = messageType :: Word32
-                        putStr "Msg Type: "
-                        LIO.putStrLn messageTypeT
-                        putStrLn "Args: "
-                        mapM_ LIO.putStrLn args
-                        sendEmptyResponse clientSocket
+                      Just messageTypeId ->
+                        case messageIdToType messageTypeId of
+                          Just messageType -> handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSocket
+                          Nothing -> return ()
                       Nothing -> return ()
                   [] -> do
                     putStrLn "Long poll connection"
@@ -146,6 +143,52 @@ handleNewSession sessionMapTVar clientSocket = do
     Nothing -> do
       putStrLn "Failed to create a new session"
       return ()
+
+handleSendCommand :: MessageType -> [Text] -> SessionDataTVar -> InSequence -> Socket -> IO ()
+handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSocket = do
+  putStr "Msg Type: "
+  putStrLn $ show messageType
+  putStrLn "Args: "
+  mapM_ LIO.putStrLn messageTexts
+  -- first, make sure lastInSequence is inSequence - 1
+  initialSessionData <- atomically $ readTVar sessionDataTVar
+  case sdProxySocket initialSessionData of
+    Just proxySocket ->
+      if inSequence == (sdLastInSequence initialSessionData) + 1 then
+        case createMessage (messageType, messageTexts) of
+          Just encodedMessage -> do
+            sendSuccess <- catch
+              (sendAll proxySocket encodedMessage >> return True)
+              (\(SomeException ex) -> do
+                putStrLn ("Exception during send to proxy socket: " ++ show ex)
+                sClose proxySocket
+                return False)
+
+            case sendSuccess of
+              True ->
+                -- if written successfully, update lastInSequence
+                atomically $ do
+                  sessionData <- readTVar sessionDataTVar
+                  writeTVar sessionDataTVar $ sessionData { sdLastInSequence = inSequence }
+              False -> do
+                -- set proxySocket to Nothing to indicate that this connection is dead
+                atomically $ do
+                  sessionData <- readTVar sessionDataTVar
+                  writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
+          Nothing -> do
+            putStrLn "Failed to encode message"
+            return ()
+      else do
+        -- invalid inSequence
+        sClose proxySocket
+        atomically $ do
+          sessionData <- readTVar sessionDataTVar
+          writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
+        return ()
+    Nothing -> do
+      putStrLn "No proxy socket available."
+      return ()
+  sendEmptyResponse clientSocket
 
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do

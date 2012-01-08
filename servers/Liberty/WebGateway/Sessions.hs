@@ -1,5 +1,6 @@
 module Liberty.WebGateway.Sessions (
   SessionId,
+  InSequence,
   SessionData(..),
   SessionDataTVar,
   SessionMapTVar,
@@ -16,6 +17,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
+import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
@@ -23,14 +25,12 @@ import Liberty.WebGateway.RandomString
 import Liberty.Common.NetworkMessage
 
 type SessionId = Text
-type SequenceNumber = Integer
+type SequenceNumber = Word32
 type InSequence = SequenceNumber
 type OutSequence = SequenceNumber
-data ProxyConnectionState = ProxyConnectionActive | ProxyConnectionClosed
 data SessionData = SessionData {
   sdCurrentWaiterSocket :: Maybe Socket,
-  sdProxySocket :: Socket,
-  sdProxyConnectionState :: ProxyConnectionState,
+  sdProxySocket :: Maybe Socket,
   sdLastInSequence :: InSequence,
   sdLastOutSequence :: OutSequence,
   sdMessagesWaiting :: [(OutSequence, Message)]
@@ -60,7 +60,7 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
     case Map.lookup newSessionId sessionMap of
       Just _ -> return False
       Nothing -> do
-        newSessionEntry <- newTVar $ SessionData Nothing proxySocket ProxyConnectionActive 0 0 []
+        newSessionEntry <- newTVar $ SessionData Nothing (Just proxySocket) 0 0 []
         writeTVar sessionMapTVar $ Map.insert newSessionId newSessionEntry sessionMap
         return True
 
