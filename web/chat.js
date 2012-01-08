@@ -142,7 +142,7 @@ $(document).ready(function() {
 					log("Got session ID: " + getSessionIdResponse.sessionId);
 					queueAjaxCommand([1, 1, myName, myColor, 'images/funshine_bear.png']);
 					// begin long-polling
-					//ajaxJsonLongPoll();
+					ajaxJsonLongPoll();
 					/*
 						function(guestJoinResponse) {
 							replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
@@ -236,21 +236,23 @@ $(document).ready(function() {
 			data: uriEncodeArray([mySessionId, lastInSequence]),
 			dataType: 'json',
 			success: function(data, textStatus, jqXHR) {
-				for (var i in data.commands) {
-					var command = data.commands[i];
-					// advance the sequence, removing it from the command
-					if (lastInSequence <= int(command[0])) {
-						alert("lastInSequence is " + lastInSequence + ", but command[0] is " + command[0]);
+				log(data);
+				for (var i in data.m) {
+					var message = data.m[i];
+					// advance the sequence, removing it from the message
+					if (parseInt(message[0]) <= lastInSequence) {
+						alert("lastInSequence is " + lastInSequence + ", but message[0] is " + message[0]);
 					}
-					lastInSequence = int(command.shift());
-					log("NewSeq: " + lastInSequence + "- Received command: ");
-					log(command);
+					lastInSequence = parseInt(message.shift());
+					log("NewSeq: " + lastInSequence + " - Received message: ");
+					log(message);
 					setTimeout(ajaxJsonLongPoll, 0);
 				}
 			},
 			error: function(request, textStatus, errorThrown) {
 				log("Long Poll Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
-				setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
+				//setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
+				// TODO: enable
 			}
 		});
 	}

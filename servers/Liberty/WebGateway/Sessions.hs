@@ -48,8 +48,8 @@ createSession sessionMapTVar clientSocket = do
   maybeProxySocket <- establishProxyConnection
   case maybeProxySocket of
     Just proxySocket -> do
-      (sessionId, sessionEntryTVar) <- tryCreateSessionUntilSuccess sessionMapTVar proxySocket
-      _ <- forkIO $ proxySocketReaderLoop proxySocket LBS.empty sessionEntryTVar
+      (sessionId, sessionDataTVar) <- tryCreateSessionUntilSuccess sessionMapTVar proxySocket
+      _ <- forkIO $ proxySocketReaderLoop proxySocket LBS.empty sessionDataTVar
       return $ Just sessionId
     Nothing -> do
       putStrLn "Failed to establish proxy connection -- session will not be issued"

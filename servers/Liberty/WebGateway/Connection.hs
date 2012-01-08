@@ -172,6 +172,8 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
                 atomically $ do
                   sessionData <- readTVar sessionDataTVar
                   writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
+            -- regardless of whether or not the send was successful, acknowledge receipt
+            sendEmptyResponse clientSocket
           Nothing -> do
             putStrLn "Failed to encode message"
             return ()
@@ -185,24 +187,58 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
     Nothing -> do
       putStrLn "No proxy socket available."
       return ()
-  sendEmptyResponse clientSocket
 
+-- TODO: What happens if the client closes the connection? Do we need a way of aborting the wait?
 handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> IO ()
 handleLongPoll sessionDataTVar outSequence clientSocket = do
+  (filteredMessageList, sessionActive) <- atomically $ do
+    sessionData <- readTVar sessionDataTVar
+    -- filter the list to contain only the messages the client has not yet acknowledged receiving
+    let filteredMessageList' = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
+        sessionActive' =
+          case sdProxySocket sessionData of
+            Just _ -> True
+            Nothing -> False
+
+    if null filteredMessageList' && sessionActive' then
+      retry
+    else do
+      writeTVar sessionDataTVar $ sessionData { sdMessagesWaiting = [] }
+      return (filteredMessageList', sessionActive')
+
+  sendLongPollJsonResponse clientSocket filteredMessageList sessionActive
   return ()
+
+sendLongPollJsonResponse :: Socket -> [(OutSequence, Message)] -> Bool -> IO ()
+sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
+  let
+    messageAndSequenceToByteString (outSequence, (messageType, messageTexts)) =
+      C8.pack (show outSequence) : C8.pack (show (messageTypeToId messageType)) : map LE.encodeUtf8 messageTexts
+    arrayOfMessageArrays = map messageAndSequenceToByteString messagesAndSequences
+    objectData = m ++ sessionEnded
+    m = [("m", JSON.showJSONs arrayOfMessageArrays)]
+    sessionEnded = if sessionActive then [] else [("sessionEnded", JSON.showJSON True)]
+    jsObject = JSON.toJSObject objectData
+  in do
+    print $ JSON.encode jsObject
+    sendJsonResponse clientSocket jsObject
+    return ()
 
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
   let encodedData = C8.pack $ JSON.encode jsObject
-  sendAll clientSocket $ LBS.concat [
-    C8.pack (
+  putStrLn "SENDING"
+  print $ encodedData
+  catch (sendAll clientSocket $ LBS.concat [C8.pack
+    (
       "HTTP/1.1 200 OK" ++
       "Server: Liberty.WebGateway\r\n" ++
       "Access-Control-Allow-Origin: *\r\n" ++
       "Content-Length: " ++ show (LBS.length encodedData) ++ "\r\n" ++
       "Content-Type: application/json\r\n\r\n"
     ),
-    encodedData]
+    encodedData])
+    (\(SomeException ex) -> return ()) -- ignore exceptions
 
 sendEmptyResponse :: Socket -> IO ()
 sendEmptyResponse clientSocket = do
