@@ -213,7 +213,7 @@ sendLongPollJsonResponse :: Socket -> [(OutSequence, Message)] -> Bool -> IO ()
 sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
   let
     messageAndSequenceToByteString (outSequence, (messageType, messageTexts)) =
-      C8.pack (show outSequence) : C8.pack (show (messageTypeToId messageType)) : map LE.encodeUtf8 messageTexts
+      JSON.showJSON outSequence : JSON.showJSON (messageTypeToId messageType) : map (JSON.showJSON . LE.encodeUtf8) messageTexts
     arrayOfMessageArrays = map messageAndSequenceToByteString messagesAndSequences
     objectData = m ++ sessionEnded
     m = [("m", JSON.showJSONs arrayOfMessageArrays)]

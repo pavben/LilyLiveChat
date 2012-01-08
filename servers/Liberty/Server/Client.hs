@@ -106,7 +106,7 @@ handleGuestJoin siteId name color icon (ClientRef clientChan clientSocket) datab
   case lookupResult of
     Right siteData -> do
       putStrLn $ "got site data: " ++ show siteData
-      case createMessage (NowTalkingToMessage, []) of
+      case createMessage (NowTalkingToMessage, [LT.pack "Joe"]) of
         Just encodedMessage -> do
           sendAll clientSocket $ encodedMessage
           sendAll clientSocket $ encodedMessage
