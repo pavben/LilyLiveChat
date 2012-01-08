@@ -140,7 +140,7 @@ $(document).ready(function() {
 					mySessionId = getSessionIdResponse.sessionId;
 					lastInSequence = 0; // initialize this to 0
 					log("Got session ID: " + getSessionIdResponse.sessionId);
-					queueAjaxCommand([1, myName, myColor, 'images/funshine_bear.png']);
+					queueAjaxCommand([1, 1, myName, myColor, 'images/funshine_bear.png']);
 					// begin long-polling
 					//ajaxJsonLongPoll();
 					/*

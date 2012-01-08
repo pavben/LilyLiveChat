@@ -188,7 +188,7 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
   sendEmptyResponse clientSocket
 
 handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> IO ()
-handleLongPoll sessionDataTVar sequenceNumber clientSocket = do
+handleLongPoll sessionDataTVar outSequence clientSocket = do
   return ()
 
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()

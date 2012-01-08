@@ -38,28 +38,34 @@ initializeClient clientSocket databaseHandleTVar siteMapTVar = do
 clientSocketReadLoop :: ClientRef -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 clientSocketReadLoop clientRef buffer databaseHandleTVar siteMapTVar =
   finally
-    (catch
-      (do
-        recvResult <- recv (crClientSocket clientRef) 2048
-        if not $ LBS.null recvResult then do
-          putStrLn $ "Len: " ++ show (LBS.length recvResult)
-          let parseResult = parseMessage $ LBS.append buffer recvResult
-          case parseResult of
-            Just (maybeMessage, newBuffer) -> do
-              case maybeMessage of
-                Just message -> do
-                  putStrLn $ "Msg: " ++ show message
-                  handleMessage message clientRef databaseHandleTVar siteMapTVar
-                Nothing -> putStrLn $ "No valid message in current buffer yet"
+    (do
+      case parseMessage buffer of
+        Just (maybeMessage, newBuffer) ->
+          case maybeMessage of
+            Just message -> do
+              putStrLn $ "Msg: " ++ show message
+              handleMessage message clientRef databaseHandleTVar siteMapTVar
               clientSocketReadLoop clientRef newBuffer databaseHandleTVar siteMapTVar
             Nothing -> do
-              putStrLn $ "Message parse failed due to protocol error"
-        else do
-          putStrLn $ "Client disconnecting -- recv returned nothing"
-      )
-      (\(SomeException ex) -> do
-        putStrLn $ "Client disconnecting due to exception: " ++ show ex
-      )
+              putStrLn "No valid message in current buffer yet"
+              maybeReceivedData <- catch (do
+                recvResult <- recv (crClientSocket clientRef) 2048
+                if not $ LBS.null recvResult then do
+                  return $ Just recvResult
+                else do
+                  return Nothing
+                )
+                (\(SomeException ex) -> do
+                  putStrLn $ "Client disconnecting due to exception: " ++ show ex
+                  return Nothing
+                )
+
+              case maybeReceivedData of
+                Just receivedData ->
+                  -- now that we've received some data, loop around and try parsing it
+                  clientSocketReadLoop clientRef (LBS.append newBuffer receivedData) databaseHandleTVar siteMapTVar
+                Nothing ->
+                  putStrLn $ "Client disconnecting -- recv returned nothing"
     )
     (atomically $ writeTChan (crClientChan clientRef) $ Disconnect)
 
@@ -90,16 +96,23 @@ handleMessage (messageType, params) clientRef databaseHandleTVar siteMapTVar =
   case (messageType,params) of
     (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
       case parseIntegralCheckBounds siteIdT of
-        Just siteId -> handleGuestJoin siteId name color icon databaseHandleTVar siteMapTVar
+        Just siteId -> handleGuestJoin siteId name color icon clientRef databaseHandleTVar siteMapTVar
         Nothing -> putStrLn "Numeric conversion failed!"
     _ -> putStrLn "No match"
 
-handleGuestJoin :: SiteId -> Text -> Text -> Text -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleGuestJoin siteId name color icon databaseHandleTVar siteMapTVar = do
+handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientRef -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleGuestJoin siteId name color icon (ClientRef clientChan clientSocket) databaseHandleTVar siteMapTVar = do
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteData -> do
       putStrLn $ "got site data: " ++ show siteData
+      case createMessage (NowTalkingToMessage, []) of
+        Just encodedMessage -> do
+          sendAll clientSocket $ encodedMessage
+          sendAll clientSocket $ encodedMessage
+          sendAll clientSocket $ encodedMessage
+          return ()
+        Nothing -> return ()
     Left _ -> putStrLn "Error in lookup"
   return ()
 
