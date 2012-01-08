@@ -1,6 +1,8 @@
 module Liberty.WebGateway.Sessions (
   SessionId,
+  SequenceNumber,
   InSequence,
+  OutSequence,
   SessionData(..),
   SessionDataTVar,
   SessionMapTVar,

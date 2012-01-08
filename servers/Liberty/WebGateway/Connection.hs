@@ -17,7 +17,6 @@ import qualified Data.Text.Lazy.IO as LIO
 import qualified Data.Text.Lazy.Read as LTR
 import Data.List
 import Data.Ord
-import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
@@ -99,14 +98,14 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
 processClientRequest :: [Text] -> Socket -> SessionMapTVar -> IO ()
 processClientRequest texts clientSocket sessionMapTVar =
   case texts of
-    sessionId:inSequenceT:messageComponents ->
-      case parseIntegralCheckBounds inSequenceT of
-        Just inSequence -> do
+    sessionId:sequenceNumberT:messageComponents ->
+      case parseIntegralCheckBounds sequenceNumberT of
+        Just sequenceNumber -> do
           putStr "Session ID: "
           LIO.putStrLn sessionId
-          putStr "In Sequence: "
-          LIO.putStrLn inSequenceT
-          if (sessionId == LT.pack "NEW") && (inSequence == 0) && (null messageComponents) then
+          putStr "Sequence number: "
+          LIO.putStrLn sequenceNumberT
+          if (sessionId == LT.pack "NEW") && (sequenceNumber == 0) && (null messageComponents) then
             handleNewSession sessionMapTVar clientSocket
           else do
             maybeSessionDataTVar <- atomically $ do
@@ -119,12 +118,12 @@ processClientRequest texts clientSocket sessionMapTVar =
                     case parseIntegralCheckBounds messageTypeT of
                       Just messageTypeId ->
                         case messageIdToType messageTypeId of
-                          Just messageType -> handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSocket
+                          Just messageType -> handleSendCommand messageType messageTexts sessionDataTVar sequenceNumber clientSocket
                           Nothing -> return ()
                       Nothing -> return ()
                   [] -> do
                     putStrLn "Long poll connection"
-                    return () -- TODO
+                    handleLongPoll sessionDataTVar sequenceNumber clientSocket
               Nothing -> do
                 putStrLn "Invalid session (not found or expired)"
                 return ()
@@ -159,10 +158,7 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
           Just encodedMessage -> do
             sendSuccess <- catch
               (sendAll proxySocket encodedMessage >> return True)
-              (\(SomeException ex) -> do
-                putStrLn ("Exception during send to proxy socket: " ++ show ex)
-                sClose proxySocket
-                return False)
+              (\(SomeException ex) -> putStrLn ("Exception during send to proxy socket: " ++ show ex) >> return False)
 
             case sendSuccess of
               True ->
@@ -172,6 +168,7 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
                   writeTVar sessionDataTVar $ sessionData { sdLastInSequence = inSequence }
               False -> do
                 -- set proxySocket to Nothing to indicate that this connection is dead
+                sClose proxySocket
                 atomically $ do
                   sessionData <- readTVar sessionDataTVar
                   writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
@@ -189,6 +186,10 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
       putStrLn "No proxy socket available."
       return ()
   sendEmptyResponse clientSocket
+
+handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> IO ()
+handleLongPoll sessionDataTVar sequenceNumber clientSocket = do
+  return ()
 
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
