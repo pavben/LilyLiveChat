@@ -2,10 +2,14 @@ module Liberty.WebGateway.Connection (
   processConnection
 ) where
 import qualified Codec.Binary.Url as Url
+import Control.Concurrent.STM.TVar
 import Control.Exception
+import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LE
@@ -104,21 +108,29 @@ processClientRequest texts clientSocket sessionMapTVar =
           let _ = inSequence :: Word32
           if (sessionId == LT.pack "NEW") && (inSequence == 0) && (null messageComponents) then
             handleNewSession sessionMapTVar clientSocket
-          else
-            case messageComponents of
-              messageTypeT:args ->
-                case parseIntegralCheckBounds messageTypeT of
-                  Just messageType -> do
-                    let _ = messageType :: Word32
-                    putStr "Msg Type: "
-                    LIO.putStrLn messageTypeT
-                    putStrLn "Args: "
-                    mapM_ LIO.putStrLn args
-                    sendEmptyResponse clientSocket
-                  Nothing -> return ()
-              [] -> do
-                putStrLn "Long poll connection"
-                return () -- TODO
+          else do
+            maybeSessionDataTVar <- atomically $ do
+              sessionMap <- readTVar sessionMapTVar
+              return $ Map.lookup sessionId sessionMap
+            case maybeSessionDataTVar of
+              Just sessionDataTVar ->
+                case messageComponents of
+                  messageTypeT:args ->
+                    case parseIntegralCheckBounds messageTypeT of
+                      Just messageType -> do
+                        let _ = messageType :: Word32
+                        putStr "Msg Type: "
+                        LIO.putStrLn messageTypeT
+                        putStrLn "Args: "
+                        mapM_ LIO.putStrLn args
+                        sendEmptyResponse clientSocket
+                      Nothing -> return ()
+                  [] -> do
+                    putStrLn "Long poll connection"
+                    return () -- TODO
+              Nothing -> do
+                putStrLn "Invalid session (not found or expired)"
+                return ()
         Nothing -> return ()
     _ -> putStrLn "Invalid message"
 

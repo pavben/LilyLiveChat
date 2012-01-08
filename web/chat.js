@@ -139,7 +139,7 @@ $(document).ready(function() {
 					// set the session ID to use in future requests
 					mySessionId = getSessionIdResponse.sessionId;
 					lastInSequence = 0; // initialize this to 0
-					alert("Got session ID: " + getSessionIdResponse.sessionId);
+					log("Got session ID: " + getSessionIdResponse.sessionId);
 					queueAjaxCommand([1, myName, myColor, 'images/funshine_bear.png']);
 					// begin long-polling
 					//ajaxJsonLongPoll();
@@ -209,7 +209,6 @@ $(document).ready(function() {
 				data: uriEncodeArray([mySessionId].concat(currentCommand)), // mySessionId,nextOutSequence,...
 				dataType: 'json',
 				success: function(data, textStatus, jqXHR) {
-					log("ajax command sent successfully");
 					ajaxCommandSendInProgress = false;
 					// immediately after, send the next entry (if any)
 					setTimeout(sendAjaxCommands, 0);

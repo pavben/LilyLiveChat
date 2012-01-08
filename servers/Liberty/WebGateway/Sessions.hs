@@ -1,7 +1,7 @@
 module Liberty.WebGateway.Sessions (
   SessionId,
   SessionData(..),
-  SessionEntryTVar,
+  SessionDataTVar,
   SessionMapTVar,
   createSessionMapTVar,
   createSession
@@ -35,8 +35,8 @@ data SessionData = SessionData {
   sdLastOutSequence :: OutSequence,
   sdMessagesWaiting :: [(OutSequence, Message)]
 }
-type SessionEntryTVar = TVar SessionData
-type SessionMapTVar = TVar (Map SessionId SessionEntryTVar)
+type SessionDataTVar = TVar SessionData
+type SessionMapTVar = TVar (Map SessionId SessionDataTVar)
 
 createSessionMapTVar :: IO SessionMapTVar
 createSessionMapTVar = atomically $ newTVar $ Map.empty
