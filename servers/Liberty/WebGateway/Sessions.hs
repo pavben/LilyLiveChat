@@ -26,6 +26,7 @@ import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Liberty.WebGateway.RandomString
 import Liberty.Common.NetworkMessage
+import Liberty.Common.Timeouts
 
 type SessionId = Text
 type SequenceNumber = Word32
@@ -35,7 +36,9 @@ data SessionData = SessionData {
   sdProxySocket :: Maybe Socket,
   sdLastInSequence :: InSequence,
   sdLastOutSequence :: OutSequence,
-  sdMessagesWaiting :: [(OutSequence, Message)]
+  sdMessagesWaiting :: [(OutSequence, Message)],
+  sdLongPollRequestAbortTVar :: TVar Bool,
+  sdSessionTimeoutAbortTVar :: TVar Bool
 }
 type SessionDataTVar = TVar SessionData
 type SessionMapTVar = TVar (Map SessionId SessionDataTVar)
@@ -115,7 +118,12 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
     case Map.lookup newSessionId sessionMap of
       Just _ -> return Nothing
       Nothing -> do
-        newSessionDataTVar <- newTVar $ SessionData (Just proxySocket) 0 0 []
+        -- initially, no long poll request
+        longPollRequestAbortTVar <- newTVar True
+        -- TODO: set session timeout here
+        -- initially, no session timeout
+        sessionTimeoutAbortTVar <- newTVar True
+        newSessionDataTVar <- newTVar $ SessionData (Just proxySocket) 0 0 [] longPollRequestAbortTVar sessionTimeoutAbortTVar
         writeTVar sessionMapTVar $ Map.insert newSessionId newSessionDataTVar sessionMap
         return $ Just newSessionDataTVar
 
@@ -132,4 +140,32 @@ establishProxyConnection = catch
     return $ Just connectionSocket
   )
   (\(SomeException e) -> return Nothing)
+
+{-
+setSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO (TVar Bool)
+setSessionTimeout sessionMapTVar sessionId sessionDataTVar =
+  let
+    timeoutAction = do
+      putStrLn "Session cleanup triggered (TODO)"
+      return ()
+  in
+    return $ setTimeout 10 timeoutAction
+
+updateSessionCleanupTimer :: Int -> SessionDataTVar -> SessionMapTVar -> TVar Bool
+updateSessionCleanupTimer numSeconds sessionDataTVar sessionMapTVar = do
+  newLongPollStatusChildTVar <- atomically $ do
+    -- read the session data
+    sessionData <- readTVar sessionDataTVar
+    -- read the current long poll status child tvar
+    currentLongPollStatusChildTVar <- readTVar (sdLongPollStatusParentTVar sessionData)
+    -- write False to the child, signalling that the old request has been replaced by this one
+    writeTVar currentLongPollStatusChildTVar False
+    -- create a new child tvar which will be associated with this request
+    newLongPollStatusChildTVar' <- newTVar True
+    -- write it to the parent tvar
+    writeTVar (sdLongPollStatusParentTVar sessionData) newLongPollStatusChildTVar'
+    return newLongPollStatusChildTVar'
+
+  return newLongPollStatusChildTVar
+-}
 

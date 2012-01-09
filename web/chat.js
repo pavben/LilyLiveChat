@@ -224,6 +224,8 @@ $(document).ready(function() {
 		}
 	}
 
+				setTimeout(ajaxJsonLongPoll, 4000);
+
 	function ajaxJsonLongPoll() {
 		if (!mySessionId) {
 			log("ajaxJsonLongPoll not allowed due to !mySessionId");
@@ -246,8 +248,8 @@ $(document).ready(function() {
 					lastInSequence = parseInt(message.shift());
 					log("NewSeq: " + lastInSequence + " - Received message: ");
 					log(message);
-					setTimeout(ajaxJsonLongPoll, 0);
 				}
+				setTimeout(ajaxJsonLongPoll, 0);
 			},
 			error: function(request, textStatus, errorThrown) {
 				log("Long Poll Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);

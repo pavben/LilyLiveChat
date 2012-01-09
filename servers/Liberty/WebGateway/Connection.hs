@@ -4,6 +4,7 @@ module Liberty.WebGateway.Connection (
 import qualified Codec.Binary.Url as Url
 import Control.Concurrent.STM.TVar
 import Control.Exception
+import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
@@ -23,6 +24,7 @@ import Prelude hiding (catch)
 import qualified Text.JSON as JSON
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
 import Liberty.Common.NetworkMessage
+import Liberty.Common.Timeouts
 import Liberty.Common.Utils
 import Liberty.WebGateway.Sessions
 
@@ -123,7 +125,7 @@ processClientRequest texts clientSocket sessionMapTVar =
                       Nothing -> return ()
                   [] -> do
                     putStrLn "Long poll connection"
-                    handleLongPoll sessionDataTVar sequenceNumber clientSocket
+                    handleLongPoll sessionDataTVar sequenceNumber clientSocket sessionMapTVar
               Nothing -> do
                 putStrLn "Invalid session (not found or expired)"
                 return ()
@@ -188,26 +190,51 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
       putStrLn "No proxy socket available."
       return ()
 
--- TODO: What happens if the client closes the connection? Do we need a way of aborting the wait?
-handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> IO ()
-handleLongPoll sessionDataTVar outSequence clientSocket = do
-  (filteredMessageList, sessionActive) <- atomically $ do
+handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> SessionMapTVar -> IO ()
+handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar = do
+  (myLongPollAbortTVar, previousLongPollAbortTVar) <- atomically $ do
+    sessionData <- readTVar sessionDataTVar
+    myLongPollAbortTVar' <- newTVar False
+    writeTVar sessionDataTVar $ sessionData { sdLongPollRequestAbortTVar = myLongPollAbortTVar' }
+    let previousLongPollAbortTVar' = sdLongPollRequestAbortTVar sessionData
+    return (myLongPollAbortTVar', previousLongPollAbortTVar')
+
+  -- try to abort, even if there is nothing to
+  void $ abortTimeout previousLongPollAbortTVar
+
+  -- set the long poll timeout
+  setTimeout 20 myLongPollAbortTVar $ do
+    putStrLn "Long poll timeout!"
+    -- set myLongPollAbortTVar to True, signalling that this long poll request has timed out
+    void $ abortTimeout myLongPollAbortTVar
+
+  maybeResponse <- atomically $ do
     sessionData <- readTVar sessionDataTVar
     -- filter the list to contain only the messages the client has not yet acknowledged receiving
-    let filteredMessageList' = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
-        sessionActive' =
+    let filteredMessageList = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
+        sessionActive =
           case sdProxySocket sessionData of
             Just _ -> True
             Nothing -> False
 
-    if null filteredMessageList' && sessionActive' then
-      retry
-    else do
-      writeTVar sessionDataTVar $ sessionData { sdMessagesWaiting = [] }
-      return (filteredMessageList', sessionActive')
+    abortedFlag <- readTVar myLongPollAbortTVar
 
-  sendLongPollJsonResponse clientSocket filteredMessageList sessionActive
-  return ()
+    case (filteredMessageList, sessionActive, abortedFlag) of
+      -- if this request has timed out or been replaced by a newer one, abort
+      (_, _, True) -> return Nothing
+      -- if there is nothing to send, wait until there is
+      ([], True, False) -> retry
+      -- and in all other cases, there is something to send (the list ior sessionActive)
+      _ -> do
+        writeTVar sessionDataTVar $ sessionData { sdMessagesWaiting = [] }
+        return $ Just (filteredMessageList, sessionActive)
+
+  case maybeResponse of
+    Just (filteredMessageList, sessionActive) -> do
+      sendLongPollJsonResponse clientSocket filteredMessageList sessionActive
+      return ()
+    Nothing ->
+      return () -- don't send anything, just cut the connection
 
 sendLongPollJsonResponse :: Socket -> [(OutSequence, Message)] -> Bool -> IO ()
 sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
