@@ -177,6 +177,7 @@ $(document).ready(function() {
 			log("queueAjaxCommand not allowed due to !mySessionId");
 			return;
 		}
+
 		ajaxCommandQueue.push([nextOutSequence++].concat(data));
 
 		if (!ajaxCommandSendInProgress) {
@@ -197,8 +198,8 @@ $(document).ready(function() {
 					// immediately after, send the next entry (if any)
 					setTimeout(sendAjaxCommands, 0);
 				},
-				function () {
-					log("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
+				function (errorThrown) {
+					log("SEND Error: " + errorThrown);
 					// re-add the command to the beginning to retry when possible
 					ajaxCommandQueue.unshift(currentCommand);
 					ajaxCommandSendInProgress = false;
@@ -229,10 +230,14 @@ $(document).ready(function() {
 				}
 				setTimeout(ajaxJsonLongPoll, 0);
 			},
-			function () {
-				log("Long Poll Error");
-				setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
-				// TODO: enable
+			function (errorThrown) {
+				log("Long Poll Error: " + errorThrown);
+				if (errorThrown == 'timeout') {
+					setTimeout(ajaxJsonLongPoll, 0);
+				}
+				else {
+					setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
+				}
 			}
 		);
 	}
@@ -244,12 +249,12 @@ $(document).ready(function() {
 			url: "http://localhost:9802/c",
 			data: uriEncodeArray(data),
 			dataType: 'json',
-			timeout: 5,
+			timeout: 5 * 1000,
 			success: function(data, textStatus, jqXHR) {
 				successFunction(data);
 			},
 			error: function(request, textStatus, errorThrown) {
-				log("Error is: " ++ errorThrown);
+				log("Error is: " + errorThrown);
 				errorFunction(errorThrown);
 			}
 		});

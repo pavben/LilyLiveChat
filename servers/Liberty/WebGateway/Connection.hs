@@ -137,11 +137,13 @@ processClientRequest texts clientSocket sessionMapTVar =
 handleNewSession :: SessionMapTVar -> Socket -> IO ()
 handleNewSession sessionMapTVar clientSocket = do
   putStrLn "Request for a new session"
-  maybeSessionId <- createSession sessionMapTVar
-  case maybeSessionId of
-    Just sessionId -> do
+  createSessionResult <- createSession sessionMapTVar
+  case createSessionResult of
+    Just (sessionId, sessionDataTVar) -> do
       putStrLn "Created new session"
       sendJsonResponse clientSocket $ JSON.toJSObject [("sessionId", JSON.showJSON $ LE.encodeUtf8 sessionId)]
+      -- set the session timeout in case we don't receive any long poll requests
+      resetSessionTimeout sessionMapTVar sessionId sessionDataTVar
       return ()
     Nothing -> do
       putStrLn "Failed to create a new session"
@@ -194,13 +196,14 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
 
 handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> SessionMapTVar -> SessionId -> IO ()
 handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId = do
-  (myLongPollAbortTVar, previousLongPollAbortTVar, sessionTimeoutAbortTVar) <- atomically $ do
+  (myLongPollAbortTVar, myLongPollTimeoutTVar, previousLongPollAbortTVar, sessionTimeoutAbortTVar) <- atomically $ do
     sessionData <- readTVar sessionDataTVar
     myLongPollAbortTVar' <- newTVar False
-    writeTVar sessionDataTVar $ sessionData { sdLongPollRequestAbortTVar = myLongPollAbortTVar' }
-    let previousLongPollAbortTVar' = sdLongPollRequestAbortTVar sessionData
+    myLongPollTimeoutTVar' <- newTVar False
+    writeTVar sessionDataTVar $ sessionData { sdLongPollRequestAbortAndTimeoutTVars = (myLongPollAbortTVar', myLongPollTimeoutTVar') }
+    let (previousLongPollAbortTVar', _) = sdLongPollRequestAbortAndTimeoutTVars sessionData
     let sessionTimeoutAbortTVar' = sdSessionTimeoutAbortTVar sessionData
-    return (myLongPollAbortTVar', previousLongPollAbortTVar', sessionTimeoutAbortTVar')
+    return (myLongPollAbortTVar', myLongPollTimeoutTVar', previousLongPollAbortTVar', sessionTimeoutAbortTVar')
 
   -- try to abort, even if there is nothing to
   void $ abortTimeout previousLongPollAbortTVar
@@ -214,10 +217,10 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
   -- set the long poll timeout
   setTimeout 30 myLongPollAbortTVar $ do
     putStrLn "Long poll timeout!"
-    -- set myLongPollAbortTVar to True, signalling that this long poll request has timed out
-    void $ abortTimeout myLongPollAbortTVar
+    -- set myLongPollTimeoutTVar to True, signalling that this long poll request has timed out
+    atomically $ writeTVar myLongPollTimeoutTVar $ True
 
-  maybeResponse <- atomically $ do
+  eitherResponse <- atomically $ do
     sessionData <- readTVar sessionDataTVar
     -- filter the list to contain only the messages the client has not yet acknowledged receiving
     let filteredMessageList = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
@@ -227,25 +230,35 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
             Nothing -> False
 
     abortedFlag <- readTVar myLongPollAbortTVar
+    timeoutFlag <- readTVar myLongPollTimeoutTVar
 
-    case (filteredMessageList, sessionActive, abortedFlag) of
-      -- if this request has timed out or been replaced by a newer one, abort
-      (_, _, True) -> return Nothing
+    case (filteredMessageList, sessionActive, abortedFlag, timeoutFlag) of
+      -- if this request has been replaced by a newer one
+      (_, _, True, _) -> return $ Left False -- indicate that the request was aborted by a newer request
+      -- if this request has timed out (and was not aborted)
+      (_, _, False, True) -> return $ Left True -- indicate that the request was aborted by a timeout
       -- if there is nothing to send, wait until there is
-      ([], True, False) -> retry
-      -- and in all other cases, there is something to send (the list ior sessionActive)
+      ([], True, False, False) -> retry
+      -- and in all other cases, there is something to send (the list or sessionActive or both)
       _ -> do
         writeTVar sessionDataTVar $ sessionData { sdMessagesWaiting = [] }
-        return $ Just (filteredMessageList, sessionActive)
+        return $ Right (filteredMessageList, sessionActive)
 
-  case maybeResponse of
-    Just (filteredMessageList, sessionActive) -> do
+  case eitherResponse of
+    Right (filteredMessageList, sessionActive) -> do
       sendLongPollJsonResponse clientSocket filteredMessageList sessionActive
+      putStrLn "Long poll response sent (if socket was open)"
       -- set a new session cleanup timeout
       resetSessionTimeout sessionMapTVar sessionId sessionDataTVar
+    Left True -> do
+      putStrLn "Long poll aborted by timeout"
+      -- set a new session cleanup timeout, because this session has timed out and was not replaced by a newer one which would have to set the session timeout on its' exit
+      resetSessionTimeout sessionMapTVar sessionId sessionDataTVar
+    Left False -> do
+      putStrLn "Long poll aborted without timeout set"
       return ()
-    Nothing ->
-      return () -- don't send anything, just cut the connection
+
+  return ()
 
 sendLongPollJsonResponse :: Socket -> [(OutSequence, Message)] -> Bool -> IO ()
 sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =

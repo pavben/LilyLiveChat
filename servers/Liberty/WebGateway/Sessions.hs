@@ -37,7 +37,7 @@ data SessionData = SessionData {
   sdLastInSequence :: InSequence,
   sdLastOutSequence :: OutSequence,
   sdMessagesWaiting :: [(OutSequence, Message)],
-  sdLongPollRequestAbortTVar :: TVar Bool,
+  sdLongPollRequestAbortAndTimeoutTVars :: (TVar Bool, TVar Bool),
   sdSessionTimeoutAbortTVar :: TVar Bool
 }
 type SessionDataTVar = TVar SessionData
@@ -46,14 +46,14 @@ type SessionMapTVar = TVar (Map SessionId SessionDataTVar)
 createSessionMapTVar :: IO SessionMapTVar
 createSessionMapTVar = atomically $ newTVar $ Map.empty
 
-createSession :: SessionMapTVar -> IO (Maybe SessionId)
+createSession :: SessionMapTVar -> IO (Maybe (SessionId, SessionDataTVar))
 createSession sessionMapTVar = do
   maybeProxySocket <- establishProxyConnection
   case maybeProxySocket of
     Just proxySocket -> do
       (sessionId, sessionDataTVar) <- tryCreateSessionUntilSuccess sessionMapTVar proxySocket
       _ <- forkIO $ proxySocketReaderLoop proxySocket LBS.empty sessionDataTVar
-      return $ Just sessionId
+      return $ Just (sessionId, sessionDataTVar)
     Nothing -> do
       putStrLn "Failed to establish proxy connection -- session will not be issued"
       return Nothing
@@ -121,16 +121,15 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
       Nothing -> do
         -- initially, no long poll request
         longPollRequestAbortTVar <- newTVar True
+        longPollRequestTimeoutTVar <- newTVar False
         -- initially, no session timeout
         sessionTimeoutAbortTVar <- newTVar True
-        newSessionDataTVar <- newTVar $ SessionData (Just proxySocket) 0 0 [] longPollRequestAbortTVar sessionTimeoutAbortTVar
+        newSessionDataTVar <- newTVar $ SessionData (Just proxySocket) 0 0 [] (longPollRequestAbortTVar, longPollRequestTimeoutTVar) sessionTimeoutAbortTVar
         writeTVar sessionMapTVar $ Map.insert newSessionId newSessionDataTVar sessionMap
         return $ Just newSessionDataTVar
 
   case maybeSessionDataTVar of
     Just sessionDataTVar -> do
-      -- now that we have a sessionDataTVar, we can start the session timeout
-      resetSessionTimeout sessionMapTVar newSessionId sessionDataTVar
       return (newSessionId, sessionDataTVar)
     Nothing -> tryCreateSessionUntilSuccess sessionMapTVar proxySocket
 
@@ -152,10 +151,10 @@ resetSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO ()
 resetSessionTimeout sessionMapTVar sessionId sessionDataTVar = do
   (oldSessionTimeoutAbortTVar, newSessionTimeoutAbortTVar) <- atomically $ do
     sessionData <- readTVar sessionDataTVar
-    let oldSessionTimeoutAbortTVar = sdSessionTimeoutAbortTVar sessionData
+    let oldSessionTimeoutAbortTVar' = sdSessionTimeoutAbortTVar sessionData
     newSessionTimeoutAbortTVar' <- newTVar False
     writeTVar sessionDataTVar $ sessionData { sdSessionTimeoutAbortTVar = newSessionTimeoutAbortTVar' }
-    return (oldSessionTimeoutAbortTVar, newSessionTimeoutAbortTVar')
+    return (oldSessionTimeoutAbortTVar', newSessionTimeoutAbortTVar')
 
   -- abort the old timeout
   void $ abortTimeout oldSessionTimeoutAbortTVar
