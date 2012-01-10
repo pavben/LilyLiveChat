@@ -9,7 +9,6 @@ import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
-import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -51,26 +50,30 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
               putStrLn $ "textMatched: " ++ show textMatched
               putStrLn $ "textRemainder: " ++ show textRemainder
               case matches of
-                [requestMethod, requestPath, contentLengthStr] -> do
-                  case readMaybeInt contentLengthStr of
-                    Just contentLength ->
-                      if LBS.length textRemainder == fromIntegral contentLength then do
-                        -- got all data
-                        putStrLn "Got all data"
-                        let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (\s -> (C8.takeWhile (/= '=') s, LBS.drop 1 $ C8.dropWhile (/= '=') s)) $ C8.split '&' textRemainder
-                        case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
-                          Just rawArgs ->
-                            case mapM decodeUtf8Maybe rawArgs of
-                              Just textArgs -> processClientRequest textArgs clientSocket sessionMapTVar
-                              Nothing -> putStrLn "Error decoding UTF-8 args"
-                          Nothing -> putStrLn "Unable to URL-decode args"
-                        return False -- just bail and close the connection
-                      else do
-                        putStrLn "Got the request header, but not all of the data has arrived yet"
-                        return True
-                    Nothing -> do
-                      putStrLn "Client sent invalid content length"
-                      return False
+                [requestMethod, requestPath, contentLengthStr] ->
+                  if requestMethod == C8.pack "POST" && requestPath == C8.pack "/c" then do
+                    case readMaybeInt contentLengthStr of
+                      Just contentLength ->
+                        if LBS.length textRemainder == fromIntegral contentLength then do
+                          -- got all data
+                          putStrLn "Got all data"
+                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (\s -> (C8.takeWhile (/= '=') s, LBS.drop 1 $ C8.dropWhile (/= '=') s)) $ C8.split '&' textRemainder
+                          case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
+                            Just rawArgs ->
+                              case mapM decodeUtf8Maybe rawArgs of
+                                Just textArgs -> processClientRequest textArgs clientSocket sessionMapTVar
+                                Nothing -> putStrLn "Error decoding UTF-8 args"
+                            Nothing -> putStrLn "Unable to URL-decode args"
+                          return False -- just bail and close the connection
+                        else do
+                          putStrLn "Got the request header, but not all of the data has arrived yet"
+                          return True
+                      Nothing -> do
+                        putStrLn "Client sent invalid content length"
+                        return False
+                  else do
+                    putStrLn "Request method or path do not match"
+                    return False
                 _ -> error "Unexpected number of HTTP RegEx matches"
             Nothing -> do
               putStrLn "No match yet"
@@ -175,7 +178,7 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
                   sessionData <- readTVar sessionDataTVar
                   writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
             -- regardless of whether or not the send was successful, acknowledge receipt
-            sendEmptyResponse clientSocket
+            sendEmptyTextResponse clientSocket
           Nothing -> do
             putStrLn "Failed to encode message"
             return ()
@@ -255,7 +258,7 @@ sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
   let encodedData = C8.pack $ JSON.encode jsObject
   print $ encodedData
-  catch (sendAll clientSocket $ LBS.concat [C8.pack
+  sendAllIgnoreExceptions clientSocket $ LBS.concat [C8.pack
     (
       "HTTP/1.1 200 OK" ++
       "Server: Liberty.WebGateway\r\n" ++
@@ -263,18 +266,21 @@ sendJsonResponse clientSocket jsObject = do
       "Content-Length: " ++ show (LBS.length encodedData) ++ "\r\n" ++
       "Content-Type: application/json\r\n\r\n"
     ),
-    encodedData])
-    (\(SomeException ex) -> return ()) -- ignore exceptions
+    encodedData]
 
-sendEmptyResponse :: Socket -> IO ()
-sendEmptyResponse clientSocket = do
-  sendAll clientSocket $ C8.pack (
+sendEmptyTextResponse :: Socket -> IO ()
+sendEmptyTextResponse clientSocket = do
+  sendAllIgnoreExceptions clientSocket $ C8.pack (
       "HTTP/1.1 200 OK" ++
       "Server: Liberty.WebGateway\r\n" ++
       "Access-Control-Allow-Origin: *\r\n" ++
       "Content-Length: 0\r\n" ++
-      "Content-Type: application/json\r\n\r\n"
+      "Content-Type: text/plain\r\n\r\n"
     )
+
+sendAllIgnoreExceptions :: Socket -> ByteString -> IO ()
+sendAllIgnoreExceptions s byteString =
+  catch (sendAll s byteString) (\(SomeException _) -> return ())
 
 readMaybeInt :: ByteString -> Maybe Int
 readMaybeInt s = do

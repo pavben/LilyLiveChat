@@ -16,14 +16,12 @@ import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as C8
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as LT
 import Data.Word
 import Network.Socket hiding (recv)
-import Network.Socket.ByteString.Lazy (sendAll, recv)
+import Network.Socket.ByteString.Lazy (recv)
 import Prelude hiding (catch)
 import Liberty.WebGateway.RandomString
 import Liberty.Common.NetworkMessage
@@ -144,7 +142,7 @@ establishProxyConnection = catch
     connect connectionSocket (SockAddrInet 9801 hostAddr)
     return $ Just connectionSocket
   )
-  (\(SomeException e) -> return Nothing)
+  (\(SomeException _) -> return Nothing)
 
 resetSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO ()
 resetSessionTimeout sessionMapTVar sessionId sessionDataTVar = do
