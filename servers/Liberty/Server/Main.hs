@@ -17,8 +17,6 @@ main = do
   siteMap <- initializeSiteMap
   -- client dispatcher
   _ <- forkIO $ runClientDispatcher databaseHandleTVar siteMap
-  -- go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
-  threadDelay $ 5000 * 1000
-  -- TODO
+  -- TODO: go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
   forever $ threadDelay (10000 * 1000)
 

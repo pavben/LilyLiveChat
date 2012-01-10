@@ -95,7 +95,7 @@ handleMessage :: Message -> ClientRef -> DatabaseHandleTVar -> SiteMapTVar -> IO
 handleMessage (messageType, params) clientRef databaseHandleTVar siteMapTVar =
   case (messageType,params) of
     (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
-      case parseIntegralCheckBounds siteIdT of
+      case parseIntegral siteIdT of
         Just siteId -> handleGuestJoin siteId name color icon clientRef databaseHandleTVar siteMapTVar
         Nothing -> putStrLn "Numeric conversion failed!"
     _ -> putStrLn "No match"

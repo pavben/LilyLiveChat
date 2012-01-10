@@ -4,8 +4,9 @@ module Liberty.Server.Site (
 ) where
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
+import Data.Word
 
-type SiteId = Int
+type SiteId = Integer
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text
