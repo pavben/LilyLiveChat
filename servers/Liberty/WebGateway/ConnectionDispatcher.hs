@@ -54,7 +54,7 @@ acceptLoop listenerSocket sessionMapTVar httpRegex = do
 
 getHttpRegex :: IO (PCRE.Regex)
 getHttpRegex = do
-  compileResult <- PCRE.compile PCRE.compDotAll PCRE.execBlank (C8.pack "^(.*?) /(.*?) HTTP.*?[Cc][Oo][Nn][Tt][Ee][Nn][Tt]-[Ll][Ee][Nn][Gg][Tt][Hh]:\\W*?(\\d+)\\W*?\r\n.*?\r\n\r\n")
+  compileResult <- PCRE.compile PCRE.compDotAll PCRE.execBlank (C8.pack "^(.*?) (.*?) HTTP.*?[Cc][Oo][Nn][Tt][Ee][Nn][Tt]-[Ll][Ee][Nn][Gg][Tt][Hh]:\\W*?(\\d+)\\W*?\r\n.*?\r\n\r\n")
   case compileResult of
     Right regex -> return regex
     Left _ -> error "Error compiling HTTP RegEx"

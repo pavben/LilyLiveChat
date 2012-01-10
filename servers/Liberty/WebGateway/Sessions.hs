@@ -7,7 +7,8 @@ module Liberty.WebGateway.Sessions (
   SessionDataTVar,
   SessionMapTVar,
   createSessionMapTVar,
-  createSession
+  createSession,
+  resetSessionTimeout
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
@@ -133,16 +134,19 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
       return (newSessionId, sessionDataTVar)
     Nothing -> tryCreateSessionUntilSuccess sessionMapTVar proxySocket
 
--- TODO: restructure this to close the socket on failure
 establishProxyConnection :: IO (Maybe Socket)
-establishProxyConnection = catch
-  (do
-    connectionSocket <- socket AF_INET Stream 0
-    hostAddr <- inet_addr "127.0.0.1"
-    connect connectionSocket (SockAddrInet 9801 hostAddr)
-    return $ Just connectionSocket
-  )
-  (\(SomeException _) -> return Nothing)
+establishProxyConnection = do
+  socketInitResult <- try (socket AF_INET Stream 0)
+  case socketInitResult of
+    Right proxySocket ->
+      catch
+        (do
+          hostAddr <- inet_addr "127.0.0.1"
+          connect proxySocket (SockAddrInet 9801 hostAddr)
+          return $ Just proxySocket
+        )
+        (\(SomeException _) -> return Nothing)
+    Left (SomeException _) -> return Nothing
 
 resetSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO ()
 resetSessionTimeout sessionMapTVar sessionId sessionDataTVar = do

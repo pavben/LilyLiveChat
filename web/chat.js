@@ -133,7 +133,12 @@ $(document).ready(function() {
 		}
 		currentOnClick = $(this).attr('onclick');
 		$(this).attr('onclick', '');
-		ajaxJsonGetSessionId(
+		ajaxJsonGetSessionId(myName);
+	});
+
+	function ajaxJsonGetSessionId(myName) {
+		ajaxJson(
+			['NEW', nextOutSequence++],
 			function(getSessionIdResponse) {
 				if (getSessionIdResponse.sessionId) {
 					// set the session ID to use in future requests
@@ -162,23 +167,6 @@ $(document).ready(function() {
 				nextOutSequence = 0; // reset this to 0
 			}
 		);
-	});
-
-	function ajaxJsonGetSessionId(successFunction, errorFunction) {
-		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
-		$.ajax({
-			type: "POST",
-			url: "http://localhost:9802/liberty/test.php",
-			data: uriEncodeArray(['NEW', nextOutSequence++]),
-			dataType: 'json',
-			success: function(data, textStatus, jqXHR) {
-				successFunction(data);
-			},
-			error: function(request, textStatus, errorThrown) {
-				//alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
-				errorFunction();
-			}
-		});
 	}
 
 	var ajaxCommandQueue = [];
@@ -202,25 +190,21 @@ $(document).ready(function() {
 
 			currentCommand = ajaxCommandQueue.shift();
 
-			$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
-			$.ajax({
-				type: "POST",
-				url: "http://localhost:9802/liberty/test.php",
-				data: uriEncodeArray([mySessionId].concat(currentCommand)), // mySessionId,nextOutSequence,...
-				dataType: 'json',
-				success: function(data, textStatus, jqXHR) {
+			ajaxJson(
+				[mySessionId].concat(currentCommand), // mySessionId,nextOutSequence,...
+				function(data) {
 					ajaxCommandSendInProgress = false;
 					// immediately after, send the next entry (if any)
 					setTimeout(sendAjaxCommands, 0);
 				},
-				error: function(request, textStatus, errorThrown) {
+				function () {
 					log("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
 					// re-add the command to the beginning to retry when possible
 					ajaxCommandQueue.unshift(currentCommand);
 					ajaxCommandSendInProgress = false;
 					setTimeout(sendAjaxCommands, 5000); // schedule a retry in 5 seconds
 				}
-			});
+			);
 		}
 	}
 
@@ -229,13 +213,9 @@ $(document).ready(function() {
 			log("ajaxJsonLongPoll not allowed due to !mySessionId");
 			return;
 		}
-		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
-		$.ajax({
-			type: "POST",
-			url: "http://localhost:9802/liberty/test.php",
-			data: uriEncodeArray([mySessionId, lastInSequence]),
-			dataType: 'json',
-			success: function(data, textStatus, jqXHR) {
+		ajaxJson(
+			[mySessionId, lastInSequence],
+			function(data) {
 				log(data);
 				for (var i in data.m) {
 					var message = data.m[i];
@@ -249,27 +229,28 @@ $(document).ready(function() {
 				}
 				setTimeout(ajaxJsonLongPoll, 0);
 			},
-			error: function(request, textStatus, errorThrown) {
-				log("Long Poll Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
-				//setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
+			function () {
+				log("Long Poll Error");
+				setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
 				// TODO: enable
 			}
-		});
+		);
 	}
 
 	function ajaxJson(data, successFunction, errorFunction) {
 		$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 		$.ajax({
 			type: "POST",
-			url: "http://localhost:9802/liberty/test.php",
+			url: "http://localhost:9802/c",
 			data: uriEncodeArray(data),
 			dataType: 'json',
+			timeout: 5,
 			success: function(data, textStatus, jqXHR) {
 				successFunction(data);
 			},
 			error: function(request, textStatus, errorThrown) {
-				//alert("SEND Error: " + textStatus + " (" + errorThrown + ")" + " " + request.statusText);
-				errorFunction();
+				log("Error is: " ++ errorThrown);
+				errorFunction(errorThrown);
 			}
 		});
 	}

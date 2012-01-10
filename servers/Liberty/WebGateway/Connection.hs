@@ -14,7 +14,6 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LE
 import qualified Data.Text.Lazy.IO as LIO
-import qualified Data.Text.Lazy.Read as LTR
 import Data.List
 import Data.Ord
 import Network.Socket hiding (recv)
@@ -128,7 +127,7 @@ processClientRequest texts clientSocket sessionMapTVar =
                       Nothing -> return ()
                   [] -> do
                     putStrLn "Long poll connection"
-                    handleLongPoll sessionDataTVar sequenceNumber clientSocket sessionMapTVar
+                    handleLongPoll sessionDataTVar sequenceNumber clientSocket sessionMapTVar sessionId
               Nothing -> do
                 putStrLn "Invalid session (not found or expired)"
                 return ()
@@ -193,20 +192,27 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
       putStrLn "No proxy socket available."
       return ()
 
-handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> SessionMapTVar -> IO ()
-handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar = do
-  (myLongPollAbortTVar, previousLongPollAbortTVar) <- atomically $ do
+handleLongPoll :: SessionDataTVar -> OutSequence -> Socket -> SessionMapTVar -> SessionId -> IO ()
+handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId = do
+  (myLongPollAbortTVar, previousLongPollAbortTVar, sessionTimeoutAbortTVar) <- atomically $ do
     sessionData <- readTVar sessionDataTVar
     myLongPollAbortTVar' <- newTVar False
     writeTVar sessionDataTVar $ sessionData { sdLongPollRequestAbortTVar = myLongPollAbortTVar' }
     let previousLongPollAbortTVar' = sdLongPollRequestAbortTVar sessionData
-    return (myLongPollAbortTVar', previousLongPollAbortTVar')
+    let sessionTimeoutAbortTVar' = sdSessionTimeoutAbortTVar sessionData
+    return (myLongPollAbortTVar', previousLongPollAbortTVar', sessionTimeoutAbortTVar')
 
   -- try to abort, even if there is nothing to
   void $ abortTimeout previousLongPollAbortTVar
 
+  -- we also need to abort the session timeout as we don't want the session cleaned up
+  -- note: this aborts the session timeout that was there when we took the snapshot, not
+  --   necessarily the current session timeout
+  --   this avoids the race condition of aborting a session timeout created by a more recent request
+  void $ abortTimeout sessionTimeoutAbortTVar
+
   -- set the long poll timeout
-  setTimeout 20 myLongPollAbortTVar $ do
+  setTimeout 30 myLongPollAbortTVar $ do
     putStrLn "Long poll timeout!"
     -- set myLongPollAbortTVar to True, signalling that this long poll request has timed out
     void $ abortTimeout myLongPollAbortTVar
@@ -235,6 +241,8 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar = do
   case maybeResponse of
     Just (filteredMessageList, sessionActive) -> do
       sendLongPollJsonResponse clientSocket filteredMessageList sessionActive
+      -- set a new session cleanup timeout
+      resetSessionTimeout sessionMapTVar sessionId sessionDataTVar
       return ()
     Nothing ->
       return () -- don't send anything, just cut the connection
