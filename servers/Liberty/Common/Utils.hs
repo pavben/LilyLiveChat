@@ -2,7 +2,7 @@
 
 module Liberty.Common.Utils (
   parseIntegralCheckBounds,
-  fromIntegralCheckBounds
+  fromIntegerCheckBounds
 ) where
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -14,13 +14,13 @@ parseIntegralCheckBounds text =
     Right (parsedI, textRemaining) ->
       -- if the parse succeeded with no remaining text, return the value
       if LT.null textRemaining then
-        fromIntegralCheckBounds parsedI
+        fromIntegerCheckBounds parsedI
       else
         Nothing
     Left _ -> Nothing
 
-fromIntegralCheckBounds :: forall a b . (Integral a, Integral b, Bounded b) => a -> Maybe b
-fromIntegralCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = Nothing
+fromIntegerCheckBounds :: forall a . (Integral a, Bounded a) => Integer -> Maybe a
+fromIntegerCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = Nothing
                     | toInteger (minBound `asTypeOf` i) > toInteger x = Nothing
                     | otherwise = Just i
   where

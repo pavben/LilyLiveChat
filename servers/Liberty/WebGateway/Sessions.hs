@@ -12,6 +12,7 @@ module Liberty.WebGateway.Sessions (
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Exception
+import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
@@ -46,8 +47,8 @@ type SessionMapTVar = TVar (Map SessionId SessionDataTVar)
 createSessionMapTVar :: IO SessionMapTVar
 createSessionMapTVar = atomically $ newTVar $ Map.empty
 
-createSession :: SessionMapTVar -> Socket -> IO (Maybe SessionId)
-createSession sessionMapTVar clientSocket = do
+createSession :: SessionMapTVar -> IO (Maybe SessionId)
+createSession sessionMapTVar = do
   maybeProxySocket <- establishProxyConnection
   case maybeProxySocket of
     Just proxySocket -> do
@@ -58,7 +59,6 @@ createSession sessionMapTVar clientSocket = do
       putStrLn "Failed to establish proxy connection -- session will not be issued"
       return Nothing
 
--- TODO: Make sure that sClose by another thread will cause recv to return blank as this function relies on that for cleanup
 proxySocketReaderLoop :: Socket -> ByteString -> SessionDataTVar -> IO ()
 proxySocketReaderLoop proxySocket buffer sessionDataTVar =
   finally
@@ -77,6 +77,7 @@ proxySocketReaderLoop proxySocket buffer sessionDataTVar =
                 if not $ LBS.null recvResult then do
                   return $ Just recvResult
                 else do
+                  putStrLn $ "Proxy connection ending -- recv returned nothing"
                   return Nothing
                 )
                 (\(SomeException ex) -> do
@@ -88,8 +89,9 @@ proxySocketReaderLoop proxySocket buffer sessionDataTVar =
                 Just receivedData ->
                   -- now that we've received some data, loop around and try parsing it
                   proxySocketReaderLoop proxySocket (LBS.append newBuffer receivedData) sessionDataTVar
-                Nothing ->
-                  putStrLn $ "Proxy connection ending -- recv returned nothing"
+                Nothing -> return ()
+        Nothing ->
+          putStrLn "Proxy connection ending due to a protocol violation"
     )
     (do
       -- at this point, regardless of how the read was terminated, close the socket
@@ -120,7 +122,6 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
       Nothing -> do
         -- initially, no long poll request
         longPollRequestAbortTVar <- newTVar True
-        -- TODO: set session timeout here
         -- initially, no session timeout
         sessionTimeoutAbortTVar <- newTVar True
         newSessionDataTVar <- newTVar $ SessionData (Just proxySocket) 0 0 [] longPollRequestAbortTVar sessionTimeoutAbortTVar
@@ -128,9 +129,13 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
         return $ Just newSessionDataTVar
 
   case maybeSessionDataTVar of
-    Just sessionDataTVar -> return (newSessionId, sessionDataTVar)
+    Just sessionDataTVar -> do
+      -- now that we have a sessionDataTVar, we can start the session timeout
+      resetSessionTimeout sessionMapTVar newSessionId sessionDataTVar
+      return (newSessionId, sessionDataTVar)
     Nothing -> tryCreateSessionUntilSuccess sessionMapTVar proxySocket
 
+-- TODO: restructure this to close the socket on failure
 establishProxyConnection :: IO (Maybe Socket)
 establishProxyConnection = catch
   (do
@@ -141,31 +146,36 @@ establishProxyConnection = catch
   )
   (\(SomeException e) -> return Nothing)
 
-{-
-setSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO (TVar Bool)
-setSessionTimeout sessionMapTVar sessionId sessionDataTVar =
-  let
-    timeoutAction = do
-      putStrLn "Session cleanup triggered (TODO)"
-      return ()
-  in
-    return $ setTimeout 10 timeoutAction
-
-updateSessionCleanupTimer :: Int -> SessionDataTVar -> SessionMapTVar -> TVar Bool
-updateSessionCleanupTimer numSeconds sessionDataTVar sessionMapTVar = do
-  newLongPollStatusChildTVar <- atomically $ do
-    -- read the session data
+resetSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO ()
+resetSessionTimeout sessionMapTVar sessionId sessionDataTVar = do
+  (oldSessionTimeoutAbortTVar, newSessionTimeoutAbortTVar) <- atomically $ do
     sessionData <- readTVar sessionDataTVar
-    -- read the current long poll status child tvar
-    currentLongPollStatusChildTVar <- readTVar (sdLongPollStatusParentTVar sessionData)
-    -- write False to the child, signalling that the old request has been replaced by this one
-    writeTVar currentLongPollStatusChildTVar False
-    -- create a new child tvar which will be associated with this request
-    newLongPollStatusChildTVar' <- newTVar True
-    -- write it to the parent tvar
-    writeTVar (sdLongPollStatusParentTVar sessionData) newLongPollStatusChildTVar'
-    return newLongPollStatusChildTVar'
+    let oldSessionTimeoutAbortTVar = sdSessionTimeoutAbortTVar sessionData
+    newSessionTimeoutAbortTVar' <- newTVar False
+    writeTVar sessionDataTVar $ sessionData { sdSessionTimeoutAbortTVar = newSessionTimeoutAbortTVar' }
+    return (oldSessionTimeoutAbortTVar, newSessionTimeoutAbortTVar')
 
-  return newLongPollStatusChildTVar
--}
+  -- abort the old timeout
+  void $ abortTimeout oldSessionTimeoutAbortTVar
+
+  -- create the new timeout
+  setTimeout 10 newSessionTimeoutAbortTVar $ do
+    putStrLn "Session cleanup triggered"
+    maybeProxySocket <- atomically $ do
+      sessionData <- readTVar sessionDataTVar
+      let maybeProxySocket' = sdProxySocket sessionData
+
+      -- remove the session from the session map
+      sessionMap <- readTVar sessionMapTVar
+      writeTVar sessionMapTVar $ Map.delete sessionId sessionMap
+      
+      -- return the proxy socket so that it can be closed
+      return maybeProxySocket'
+
+    -- close the proxy socket, if any
+    case maybeProxySocket of
+      Just proxySocket -> sClose proxySocket
+      Nothing -> return ()
+
+    return ()
 

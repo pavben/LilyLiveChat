@@ -71,7 +71,7 @@ textToBytestringAndLen :: (Integral a, Bounded a) => Text -> Maybe (ByteString, 
 textToBytestringAndLen text =
   let
     bytestring = LE.encodeUtf8 text
-    maybeLen = fromIntegralCheckBounds $ LBS.length bytestring
+    maybeLen = fromIntegerCheckBounds $ toInteger $ LBS.length bytestring
   in
     case maybeLen of
       Just len -> Just (bytestring, len)

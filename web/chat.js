@@ -224,8 +224,6 @@ $(document).ready(function() {
 		}
 	}
 
-				setTimeout(ajaxJsonLongPoll, 4000);
-
 	function ajaxJsonLongPoll() {
 		if (!mySessionId) {
 			log("ajaxJsonLongPoll not allowed due to !mySessionId");

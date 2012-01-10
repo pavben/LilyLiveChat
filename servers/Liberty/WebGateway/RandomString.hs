@@ -11,7 +11,7 @@ getRandomText128 :: IO Text
 getRandomText128 = 
   let
     randomWord64AsHex = do
-      ri <- randomRIO (0, 2 ^ 64) :: IO Integer
+      ri <- randomRIO (0 :: Integer, 2 ^ (64 :: Int))
       return $ LT.pack $ showHex (fromIntegral ri :: Word64) ""
   in do
     r1 <- randomWord64AsHex

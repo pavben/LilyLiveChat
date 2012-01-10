@@ -135,7 +135,7 @@ processClientRequest texts clientSocket sessionMapTVar =
 handleNewSession :: SessionMapTVar -> Socket -> IO ()
 handleNewSession sessionMapTVar clientSocket = do
   putStrLn "Request for a new session"
-  maybeSessionId <- createSession sessionMapTVar clientSocket
+  maybeSessionId <- createSession sessionMapTVar
   case maybeSessionId of
     Just sessionId -> do
       putStrLn "Created new session"
@@ -254,7 +254,6 @@ sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
   let encodedData = C8.pack $ JSON.encode jsObject
-  putStrLn "SENDING"
   print $ encodedData
   catch (sendAll clientSocket $ LBS.concat [C8.pack
     (
