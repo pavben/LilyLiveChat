@@ -9,9 +9,8 @@ module Liberty.Server.DatabaseManager (
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Exception (SomeException, catch, throwIO)
+import Control.Exception
 import Control.Monad.STM
-import Control.Monad.Trans (liftIO)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Database.MongoDB
