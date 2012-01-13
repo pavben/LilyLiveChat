@@ -32,16 +32,14 @@ data OtherClientData = ClientUnregistered | ClientGuestData ClientGuestData'
   deriving (Show)
 
 data ClientData = ClientData {
-  cdSocket :: Socket,
+  cdSocket :: Maybe Socket,
   cdOtherData :: OtherClientData
 } deriving (Show)
-
-type MaybeClientData = Maybe ClientData
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar =
   finally
-    (clientSocketReadLoop (ClientData clientSocket ClientUnregistered) LBS.empty databaseHandleTVar siteMapTVar)
+    (clientSocketReadLoop (ClientData (Just clientSocket) ClientUnregistered) LBS.empty databaseHandleTVar siteMapTVar)
     (sClose clientSocket)
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
@@ -52,63 +50,87 @@ clientSocketReadLoop clientData buffer databaseHandleTVar siteMapTVar = do
       case maybeMessage of
         Just message -> do
           putStrLn $ "Msg: " ++ show message
-          handleMessage message clientData databaseHandleTVar siteMapTVar
-          clientSocketReadLoop clientData newBuffer databaseHandleTVar siteMapTVar
+          newClientData <- handleMessage message clientData databaseHandleTVar siteMapTVar
+          clientSocketReadLoop newClientData newBuffer databaseHandleTVar siteMapTVar
         Nothing -> do
           putStrLn "No valid message in current buffer yet"
-          maybeReceivedData <- catch (do
-            recvResult <- recv (cdSocket clientData) 2048
-            if not $ LBS.null recvResult then do
-              return $ Just recvResult
-            else do
-              return Nothing
-            )
-            (\(SomeException ex) -> do
-              putStrLn $ "Client disconnecting due to exception: " ++ show ex
-              return Nothing
-            )
+          case cdSocket clientData of
+            Just clientSocket -> do
+              maybeReceivedData <- catch (do
+                recvResult <- recv clientSocket 2048
+                if not $ LBS.null recvResult then do
+                  return $ Just recvResult
+                else do
+                  return Nothing
+                )
+                (\(SomeException ex) -> do
+                  putStrLn $ "Client disconnecting due to exception: " ++ show ex
+                  return Nothing
+                )
 
-          case maybeReceivedData of
-            Just receivedData ->
-              -- now that we've received some data, loop around and try parsing it
-              clientSocketReadLoop clientData (LBS.append newBuffer receivedData) databaseHandleTVar siteMapTVar
-            Nothing ->
-              putStrLn $ "Client disconnecting -- recv returned nothing"
+              case maybeReceivedData of
+                Just receivedData ->
+                  -- now that we've received some data, loop around and try parsing it
+                  clientSocketReadLoop clientData (LBS.append newBuffer receivedData) databaseHandleTVar siteMapTVar
+                Nothing ->
+                  putStrLn $ "Client disconnecting -- recv returned nothing"
+            Nothing -> do
+              putStrLn "Client disconnecting -- we've already closed the socket"
     Nothing ->
       putStrLn "Client disconnecting due to a protocol violation"
 
-handleMessage :: Message -> ClientData -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleMessage :: Message -> ClientData -> DatabaseHandleTVar -> SiteMapTVar -> IO ClientData
 handleMessage (messageType, params) clientData databaseHandleTVar siteMapTVar =
   case (messageType,params) of
     (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
       case parseIntegral siteIdT of
         Just siteId -> handleGuestJoin siteId name color icon clientData databaseHandleTVar siteMapTVar
-        Nothing -> putStrLn "Numeric conversion failed!"
-    _ -> putStrLn "No match"
+        Nothing -> do
+          putStrLn "Numeric conversion failed!"
+          closeClientSocket clientData
+    _ -> do
+      putStrLn "No match"
+      closeClientSocket clientData
 
-handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientData -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientData -> DatabaseHandleTVar -> SiteMapTVar -> IO ClientData
 handleGuestJoin siteId name color icon clientData databaseHandleTVar siteMapTVar = do
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteData -> do
-      putStrLn $ "got site data: " ++ show siteData
+      putStrLn $ "Obtained site data from db: " ++ show siteData
+      -- start debug
       case createMessage (NowTalkingToMessage, [LT.pack "Joe"]) of
         Just encodedMessage -> do
-          sendAll (cdSocket clientData) $ encodedMessage
-          sendAll (cdSocket clientData) $ encodedMessage
-          sendAll (cdSocket clientData) $ encodedMessage
-          return ()
-        Nothing -> return ()
-    Left _ -> putStrLn "Error in lookup"
-  return ()
+          sendMessage clientData $ encodedMessage
+          sendMessage clientData $ encodedMessage
+          sendMessage clientData $ encodedMessage
+        Nothing -> return clientData
+      -- end debug
+      -- TODO: make sure all fields are HTML-safe
+    Left _ -> do
+      putStrLn "Error in lookup"
+      -- TODO: respond with some error
+      return clientData
 
--- TODO: Make this return an error on exception?
-sendMessage :: ClientData -> ByteString -> IO ()
+sendMessage :: ClientData -> ByteString -> IO ClientData
 sendMessage clientData byteString =
-  catch
-    (sendAll (cdSocket clientData) byteString)
-    (\(SomeException e) -> do
-      putStrLn "Exception on sendMessage. Closing socket."
-      sClose (cdSocket clientData)
-    )
+  case cdSocket clientData of
+    Just clientSocket ->
+      catch
+        (do
+          sendAll clientSocket byteString
+          return clientData
+        )
+        (\(SomeException e) -> do
+          putStrLn "Exception on sendMessage. Closing socket."
+          closeClientSocket clientData
+        )
+    Nothing -> return clientData -- if the socket is already closed, simply return
+
+closeClientSocket :: ClientData -> IO ClientData
+closeClientSocket clientData = case cdSocket clientData of
+  Just clientSocket -> do
+    sClose clientSocket
+    return clientData { cdSocket = Nothing }
+  Nothing -> return clientData -- else we return the unchanged client data
 
