@@ -1,7 +1,8 @@
 module Liberty.Server.SiteMap (
   SiteMapTVar,
   initializeSiteMap,
-  lookupSite
+  lookupSite,
+  LookupFailureReason(..)
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
@@ -21,6 +22,7 @@ data SiteEntry = SiteEntryLoaded SiteData | SiteEntryLoading | SiteEntryLoadFail
 initializeSiteMap :: IO (SiteMapTVar)
 initializeSiteMap = atomically $ newTVar $ Map.empty
 
+-- TODO: make idle sites expire
 lookupSite :: DatabaseHandleTVar -> SiteMapTVar -> SiteId -> IO (Either LookupFailureReason SiteData)
 lookupSite databaseHandleTVar siteMapTVar siteId = do
   (threadResponsibleForLoading, siteEntryTVar) <- atomically $ do

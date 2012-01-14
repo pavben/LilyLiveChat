@@ -99,18 +99,26 @@ handleGuestJoin siteId name color icon clientData databaseHandleTVar siteMapTVar
     Right siteData -> do
       putStrLn $ "Obtained site data from db: " ++ show siteData
       -- start debug
-      case createMessage (NowTalkingToMessage, [LT.pack "Joe"]) of
-        Just encodedMessage -> do
-          sendMessage clientData $ encodedMessage
-          sendMessage clientData $ encodedMessage
-          sendMessage clientData $ encodedMessage
-        Nothing -> return clientData
+      _ <- createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientData
+      _ <- createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientData
+      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientData
       -- end debug
       -- TODO: make sure all fields are HTML-safe
-    Left _ -> do
-      putStrLn "Error in lookup"
-      -- TODO: respond with some error
-      return clientData
+    Left lookupFailureReason ->
+      case lookupFailureReason of
+        LookupFailureNotExist -> do
+          putStrLn "Lookup failed: Site does not exist"
+          -- TODO: respond with a more specific error
+          createAndSendMessage (SomethingWentWrongMessage, []) clientData >>= closeClientSocket
+        LookupFailureTechnicalError -> do
+          putStrLn "Lookup failed: Technical error"
+          createAndSendMessage (SomethingWentWrongMessage, []) clientData >>= closeClientSocket
+
+createAndSendMessage :: Message -> ClientData -> IO ClientData
+createAndSendMessage messageTypeAndParams clientData =
+  case createMessage messageTypeAndParams of
+    Just encodedMessage -> sendMessage clientData encodedMessage
+    Nothing -> return clientData
 
 sendMessage :: ClientData -> ByteString -> IO ClientData
 sendMessage clientData byteString =
