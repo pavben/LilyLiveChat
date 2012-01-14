@@ -40,15 +40,18 @@ data ClientData = ClientData {
 type ClientDataTVar = TVar ClientData
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-initializeClient clientSocket databaseHandleTVar siteMapTVar =
+initializeClient clientSocket databaseHandleTVar siteMapTVar = do
+  clientSendChan <- atomically $ newTChan
   finally
     (do
-      clientSendChan <- atomically $ newTChan
       clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan ClientUnregistered)
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
       clientSocketReadLoop clientDataTVar LBS.empty databaseHandleTVar siteMapTVar
     )
-    (sClose clientSocket) -- this close is here just for backup
+    (do
+      atomically $ writeTChan clientSendChan $ CloseSocket
+      sClose clientSocket
+    )
 
 clientSocketSendLoop :: ClientSendChan -> ClientDataTVar -> IO ()
 clientSocketSendLoop clientSendChan clientDataTVar = do
