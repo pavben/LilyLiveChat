@@ -11,7 +11,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Text.Lazy as LT
 import Liberty.Server.DatabaseManager
-import Liberty.Server.Site
+import Liberty.Server.Types
 
 -- public data
 type SiteMapTVar = TVar (Map SiteId (TVar SiteEntry))

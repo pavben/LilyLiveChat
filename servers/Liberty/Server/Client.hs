@@ -18,7 +18,6 @@ import Prelude hiding (catch)
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
-import Liberty.Server.Site
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
 
