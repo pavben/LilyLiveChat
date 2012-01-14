@@ -17,13 +17,13 @@ import Liberty.Server.Site
 type SiteMapTVar = TVar (Map SiteId (TVar SiteEntry))
 
 -- private data
-data SiteEntry = SiteEntryLoaded SiteData | SiteEntryLoading | SiteEntryLoadFailed LookupFailureReason
+data SiteEntry = SiteEntryLoaded SiteDataTVar | SiteEntryLoading | SiteEntryLoadFailed LookupFailureReason
 
 initializeSiteMap :: IO (SiteMapTVar)
 initializeSiteMap = atomically $ newTVar $ Map.empty
 
 -- TODO: make idle sites expire
-lookupSite :: DatabaseHandleTVar -> SiteMapTVar -> SiteId -> IO (Either LookupFailureReason SiteData)
+lookupSite :: DatabaseHandleTVar -> SiteMapTVar -> SiteId -> IO (Either LookupFailureReason SiteDataTVar)
 lookupSite databaseHandleTVar siteMapTVar siteId = do
   (threadResponsibleForLoading, siteEntryTVar) <- atomically $ do
     -- lookup siteId in siteMap
@@ -56,15 +56,17 @@ lookupSite databaseHandleTVar siteMapTVar siteId = do
       _ -> return siteEntry'
 
   case siteEntry of
-    SiteEntryLoaded siteData -> return $ Right siteData
+    SiteEntryLoaded siteDataTVar -> return $ Right siteDataTVar
     SiteEntryLoadFailed lookupFailureReason -> return $ Left lookupFailureReason
     SiteEntryLoading -> error "Unexpected siteEntry value of SiteEntryLoading -- concurrency error"
 
 loadSiteDataFromDb :: DatabaseHandleTVar -> SiteId -> TVar SiteEntry -> IO ()
 loadSiteDataFromDb databaseHandleTVar siteId siteEntryTVar = do
   result <- getSiteDataFromDb databaseHandleTVar siteId
-  atomically $ writeTVar siteEntryTVar $ case result of
-    Right siteData -> SiteEntryLoaded siteData
-    Left lookupFailureReason -> SiteEntryLoadFailed lookupFailureReason
+  case result of
+    Right siteData -> do
+      siteDataTVar <- atomically $ newTVar siteData
+      atomically $ writeTVar siteEntryTVar $ SiteEntryLoaded siteDataTVar
+    Left lookupFailureReason -> atomically $ writeTVar siteEntryTVar $ SiteEntryLoadFailed lookupFailureReason
   return ()
 

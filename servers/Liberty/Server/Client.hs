@@ -18,26 +18,9 @@ import Prelude hiding (catch)
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
-import Liberty.Server.Messages.ClientSendChan
 import Liberty.Server.Site
 import Liberty.Server.SiteMap
-
-data ClientGuestData' = ClientGuestData' {
-  cgdSiteId :: SiteId,
-  cgdName :: Text,
-  cgdColor :: Text,
-  cgdIconUrl :: Text
-}
-
-data OtherClientData = ClientUnregistered | ClientGuestData ClientGuestData'
-
-data ClientData = ClientData {
-  cdSocket :: Socket,
-  cdSendChan :: ClientSendChan,
-  cdOtherData :: OtherClientData
-}
-
-type ClientDataTVar = TVar ClientData
+import Liberty.Server.Types
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar = do
@@ -128,7 +111,8 @@ handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseH
 handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
-    Right siteData -> do
+    Right siteDataTVar -> do
+      siteData <- atomically $ readTVar siteDataTVar
       putStrLn $ "Obtained site data from db: " ++ show siteData
       -- start debug
       createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar

@@ -18,19 +18,7 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding as LE
 import Data.Word
 import Liberty.Common.Utils
-
--- common
-data MessageType = GuestJoinMessage
-                 | InLinePositionUpdateMessage
-                 | NowTalkingToMessage
-                 | ChatMessage
-                 | AppendToChatLogMessage
-                 | EndChatMessage
-                 | SomethingWentWrongMessage
-  deriving (Show)
-
-type Message = (MessageType, [Text])
-type EncodedMessage = ByteString
+import Liberty.Common.Types
 
 messageTypeToId :: MessageType -> Word8
 messageTypeToId messageType = case messageType of

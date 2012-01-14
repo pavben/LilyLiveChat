@@ -127,7 +127,7 @@ getSiteDataFromDb databaseHandleTVar siteId =
         if length docs == 1 then do
           let firstDoc = head $ docs
           case combineMaybes (lookup "id" firstDoc :: Maybe SiteId) (lookup "name" firstDoc :: Maybe String) of
-            Just (siteId', siteNameStr) -> return $ Right $ SiteData siteId' (LT.pack siteNameStr)
+            Just (siteId', siteNameStr) -> return $ Right $ SiteData siteId' (LT.pack siteNameStr) [] []
             Nothing -> return $ Left $ LookupFailureTechnicalError
         else
           return $ Left $ LookupFailureTechnicalError
