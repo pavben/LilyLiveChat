@@ -3,6 +3,7 @@ module Liberty.Server.Client (
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TChan
+import Control.Concurrent.STM.TVar
 import Control.Exception
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
@@ -17,7 +18,7 @@ import Prelude hiding (catch)
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
-import Liberty.Server.Messages.ClientChan
+import Liberty.Server.Messages.ClientSendChan
 import Liberty.Server.Site
 import Liberty.Server.SiteMap
 
@@ -26,82 +27,110 @@ data ClientGuestData' = ClientGuestData' {
   cgdName :: Text,
   cgdColor :: Text,
   cgdIconUrl :: Text
-} deriving (Show)
+}
 
 data OtherClientData = ClientUnregistered | ClientGuestData ClientGuestData'
-  deriving (Show)
 
 data ClientData = ClientData {
-  cdSocket :: Maybe Socket,
+  cdSocket :: Socket,
+  cdSendChan :: ClientSendChan,
   cdOtherData :: OtherClientData
-} deriving (Show)
+}
+
+type ClientDataTVar = TVar ClientData
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar =
   finally
-    (clientSocketReadLoop (ClientData (Just clientSocket) ClientUnregistered) LBS.empty databaseHandleTVar siteMapTVar)
-    (sClose clientSocket)
+    (do
+      clientSendChan <- atomically $ newTChan
+      clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan ClientUnregistered)
+      _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
+      clientSocketReadLoop clientDataTVar LBS.empty databaseHandleTVar siteMapTVar
+    )
+    (sClose clientSocket) -- this close is here just for backup
+
+clientSocketSendLoop :: ClientSendChan -> ClientDataTVar -> IO ()
+clientSocketSendLoop clientSendChan clientDataTVar = do
+  clientSendChanMessage <- atomically $ readTChan clientSendChan
+  clientData <- atomically $ readTVar clientDataTVar
+  let clientSocket = cdSocket clientData
+  case clientSendChanMessage of
+    SendMessage encodedMessage -> do
+      sendSuccess <- catch
+        (do
+          sendAll clientSocket encodedMessage
+          return True
+        )
+        (\(SomeException e) -> do
+          putStrLn "Exception on sendAll. Closing socket."
+          return False
+        )
+      if sendSuccess then
+        clientSocketSendLoop clientSendChan clientDataTVar
+      else
+        sClose clientSocket
+    CloseSocket -> do
+      putStrLn "Got CloseSocket message. Closing client socket."
+      sClose clientSocket
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
-clientSocketReadLoop :: ClientData -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-clientSocketReadLoop clientData buffer databaseHandleTVar siteMapTVar = do
+clientSocketReadLoop :: ClientDataTVar -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+clientSocketReadLoop clientDataTVar buffer databaseHandleTVar siteMapTVar = do
   case parseMessage buffer of
     Just (maybeMessage, newBuffer) ->
       case maybeMessage of
         Just message -> do
           putStrLn $ "Msg: " ++ show message
-          newClientData <- handleMessage message clientData databaseHandleTVar siteMapTVar
-          clientSocketReadLoop newClientData newBuffer databaseHandleTVar siteMapTVar
+          handleMessage message clientDataTVar databaseHandleTVar siteMapTVar
+          clientSocketReadLoop clientDataTVar newBuffer databaseHandleTVar siteMapTVar
         Nothing -> do
           putStrLn "No valid message in current buffer yet"
-          case cdSocket clientData of
-            Just clientSocket -> do
-              maybeReceivedData <- catch (do
-                recvResult <- recv clientSocket 2048
-                if not $ LBS.null recvResult then do
-                  return $ Just recvResult
-                else do
-                  return Nothing
-                )
-                (\(SomeException ex) -> do
-                  putStrLn $ "Client disconnecting due to exception: " ++ show ex
-                  return Nothing
-                )
+          clientData <- atomically $ readTVar clientDataTVar
+          maybeReceivedData <- catch (do
+            recvResult <- recv (cdSocket clientData) 2048
+            if not $ LBS.null recvResult then do
+              return $ Just recvResult
+            else do
+              return Nothing
+            )
+            (\(SomeException ex) -> do
+              putStrLn $ "Client disconnecting due to exception: " ++ show ex
+              return Nothing
+            )
 
-              case maybeReceivedData of
-                Just receivedData ->
-                  -- now that we've received some data, loop around and try parsing it
-                  clientSocketReadLoop clientData (LBS.append newBuffer receivedData) databaseHandleTVar siteMapTVar
-                Nothing ->
-                  putStrLn $ "Client disconnecting -- recv returned nothing"
-            Nothing -> do
-              putStrLn "Client disconnecting -- we've already closed the socket"
+          case maybeReceivedData of
+            Just receivedData ->
+              -- now that we've received some data, loop around and try parsing it
+              clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) databaseHandleTVar siteMapTVar
+            Nothing ->
+              putStrLn $ "Client disconnecting -- recv returned nothing"
     Nothing ->
       putStrLn "Client disconnecting due to a protocol violation"
 
-handleMessage :: Message -> ClientData -> DatabaseHandleTVar -> SiteMapTVar -> IO ClientData
-handleMessage (messageType, params) clientData databaseHandleTVar siteMapTVar =
+handleMessage :: Message -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVar =
   case (messageType,params) of
     (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
       case parseIntegral siteIdT of
-        Just siteId -> handleGuestJoin siteId name color icon clientData databaseHandleTVar siteMapTVar
+        Just siteId -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
         Nothing -> do
           putStrLn "Numeric conversion failed!"
-          closeClientSocket clientData
+          closeClientSocket clientDataTVar
     _ -> do
       putStrLn "No match"
-      closeClientSocket clientData
+      closeClientSocket clientDataTVar
 
-handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientData -> DatabaseHandleTVar -> SiteMapTVar -> IO ClientData
-handleGuestJoin siteId name color icon clientData databaseHandleTVar siteMapTVar = do
+handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteData -> do
       putStrLn $ "Obtained site data from db: " ++ show siteData
       -- start debug
-      _ <- createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientData
-      _ <- createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientData
-      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientData
+      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar
+      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar
+      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar
       -- end debug
       -- TODO: make sure all fields are HTML-safe
     Left lookupFailureReason ->
@@ -109,36 +138,23 @@ handleGuestJoin siteId name color icon clientData databaseHandleTVar siteMapTVar
         LookupFailureNotExist -> do
           putStrLn "Lookup failed: Site does not exist"
           -- TODO: respond with a more specific error
-          createAndSendMessage (SomethingWentWrongMessage, []) clientData >>= closeClientSocket
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
         LookupFailureTechnicalError -> do
           putStrLn "Lookup failed: Technical error"
-          createAndSendMessage (SomethingWentWrongMessage, []) clientData >>= closeClientSocket
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
 
-createAndSendMessage :: Message -> ClientData -> IO ClientData
-createAndSendMessage messageTypeAndParams clientData =
+createAndSendMessage :: Message -> ClientDataTVar -> IO ()
+createAndSendMessage messageTypeAndParams clientDataTVar = do
   case createMessage messageTypeAndParams of
-    Just encodedMessage -> sendMessage clientData encodedMessage
-    Nothing -> return clientData
+    Just encodedMessage -> do
+      clientData <- atomically $ readTVar clientDataTVar
+      atomically $ writeTChan (cdSendChan clientData) $ SendMessage encodedMessage
+    Nothing -> return ()
 
-sendMessage :: ClientData -> ByteString -> IO ClientData
-sendMessage clientData byteString =
-  case cdSocket clientData of
-    Just clientSocket ->
-      catch
-        (do
-          sendAll clientSocket byteString
-          return clientData
-        )
-        (\(SomeException e) -> do
-          putStrLn "Exception on sendMessage. Closing socket."
-          closeClientSocket clientData
-        )
-    Nothing -> return clientData -- if the socket is already closed, simply return
-
-closeClientSocket :: ClientData -> IO ClientData
-closeClientSocket clientData = case cdSocket clientData of
-  Just clientSocket -> do
-    sClose clientSocket
-    return clientData { cdSocket = Nothing }
-  Nothing -> return clientData -- else we return the unchanged client data
+closeClientSocket :: ClientDataTVar -> IO ()
+closeClientSocket clientDataTVar = do
+  clientData <- atomically (readTVar clientDataTVar)
+  sClose $ cdSocket clientData
 
