@@ -1,7 +1,9 @@
 module Liberty.Server.Types (
   ClientData(..),
-  ClientGuestData(..),
   OtherClientData(..),
+  ClientGuestData(..),
+  GuestCurrentState(..),
+  Operator(..),
   ClientDataTVar,
   SiteId,
   SiteData(..),
@@ -21,14 +23,20 @@ data ClientData = ClientData {
   cdSocket :: Socket,
   cdSendChan :: ClientSendChan,
   cdOtherData :: OtherClientData
-}
+} deriving (Show)
 data OtherClientData = OCDClientUnregistered | OCDClientGuestData ClientGuestData
+  deriving (Show)
 data ClientGuestData = ClientGuestData {
-  cgdSiteDataTVar :: SiteDataTVar,
   cgdName :: Text,
   cgdColor :: Text,
-  cgdIconUrl :: Text
-}
+  cgdIconUrl :: Text,
+  cgdSiteDataTVar :: SiteDataTVar,
+  cgdCurrentState :: GuestCurrentState
+} deriving (Show)
+data GuestCurrentState = GCSWaiting [Text] | GCSTalkingTo Operator
+  deriving (Show)
+data Operator = OperatorClient -- TODO: Add OperatorMailman
+  deriving (Show)
 type ClientDataTVar = TVar ClientData
 
 -- Site
@@ -49,4 +57,7 @@ type ClientSendChan = TChan ClientSendChanMessage
 -- Show instances
 instance Show (TVar a) where
   show _ = "TVar"
+
+instance Show (TChan a) where
+  show _ = "TChan"
 

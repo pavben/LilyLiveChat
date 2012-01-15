@@ -125,9 +125,13 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
           writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
           -- and update the client's data as they have now been registered as a guest
           clientData <- readTVar clientDataTVar
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData siteDataTVar name color icon }
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar (GCSWaiting []) }
           return $ length newGuestsWaiting
         createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
+        -- DEBUG START
+        newCD <- atomically $ readTVar clientDataTVar
+        print newCD
+        -- DEBUG END
         -- TODO: make sure all fields are HTML-safe
       Left lookupFailureReason ->
         case lookupFailureReason of
