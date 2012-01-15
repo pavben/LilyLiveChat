@@ -3,6 +3,7 @@ module Liberty.Server.Types (
   OtherClientData(..),
   ClientGuestData(..),
   ChatSession(..),
+  ChatSessionTVar,
   ChatOperatorEntry(..),
   ChatLogEntry(..),
   ClientDataTVar,
@@ -39,9 +40,10 @@ data ChatSession = ChatSession {
   csOperator :: ChatOperatorEntry,
   csLog :: [ChatLogEntry]
 } deriving (Show)
+type ChatSessionTVar = TVar ChatSession
 data ChatOperatorEntry = ChatOperatorNobody | ChatOperatorClient (TVar ClientData)
   deriving (Show)
-data ChatLogEntry = CLEOperJoin Text Text -- name, color
+data ChatLogEntry = CLEJoin Text Text -- name, color
   | CLEMessage Text Text Text -- name, color, text
   deriving (Show)
 type ClientDataTVar = TVar ClientData
@@ -51,7 +53,7 @@ type SiteId = Integer
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text,
-  sdGuestsWaiting :: [ClientDataTVar],
+  sdSessionsWaiting :: [ChatSessionTVar],
   sdOperators :: [ClientDataTVar]
 } deriving (Show)
 

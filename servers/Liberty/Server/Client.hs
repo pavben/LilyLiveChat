@@ -119,15 +119,15 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
     case lookupResult of
       Right siteDataTVar -> do
         positionInLine <- atomically $ do
-          -- first, add this client to the site data's waiting list
-          siteData <- readTVar siteDataTVar
-          let newGuestsWaiting = sdGuestsWaiting siteData ++ [clientDataTVar]
-          writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
-          -- and update the client's data as they have now been registered as a guest
           clientData <- readTVar clientDataTVar
-          chatSession <- newTVar $ ChatSession clientDataTVar ChatOperatorNobody [] -- TODO: Add guest join to the log
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSession }
-          return $ length newGuestsWaiting
+          -- create a new chat session with this client as the guest and no operator
+          chatSessionTVar <- newTVar $ ChatSession clientDataTVar ChatOperatorNobody [CLEJoin name color]
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSessionTVar }
+          -- add the newly-created chat session to the site data's waiting list
+          siteData <- readTVar siteDataTVar
+          let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
+          writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
+          return $ length newSessionsWaiting
         createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
         -- DEBUG START
         newCD <- atomically $ readTVar clientDataTVar
