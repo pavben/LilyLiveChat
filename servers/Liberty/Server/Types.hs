@@ -1,6 +1,6 @@
 module Liberty.Server.Types (
   ClientData(..),
-  ClientGuestData'(..),
+  ClientGuestData(..),
   OtherClientData(..),
   ClientDataTVar,
   SiteId,
@@ -22,9 +22,9 @@ data ClientData = ClientData {
   cdSendChan :: ClientSendChan,
   cdOtherData :: OtherClientData
 }
-data OtherClientData = ClientUnregistered | ClientGuestData ClientGuestData'
-data ClientGuestData' = ClientGuestData' {
-  cgdSiteId :: SiteId,
+data OtherClientData = OCDClientUnregistered | OCDClientGuestData ClientGuestData
+data ClientGuestData = ClientGuestData {
+  cgdSiteDataTVar :: SiteDataTVar,
   cgdName :: Text,
   cgdColor :: Text,
   cgdIconUrl :: Text

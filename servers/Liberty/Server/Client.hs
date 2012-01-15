@@ -26,7 +26,7 @@ initializeClient clientSocket databaseHandleTVar siteMapTVar = do
   clientSendChan <- atomically $ newTChan
   finally
     (do
-      clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan ClientUnregistered)
+      clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan OCDClientUnregistered)
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
       clientSocketReadLoop clientDataTVar LBS.empty databaseHandleTVar siteMapTVar
     )
@@ -108,29 +108,42 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
 
 handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
-  lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
-  case lookupResult of
-    Right siteDataTVar -> do
-      positionInLine <- atomically $ do
-        clientData <- readTVar clientDataTVar
-        writeTVar clientDataTVar $ clientData { cdOtherData = ClientGuestData $ ClientGuestData' siteId name color icon }
-        siteData <- readTVar siteDataTVar
-        let newGuestsWaiting = sdGuestsWaiting siteData ++ [clientDataTVar]
-        writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
-        return $ length newGuestsWaiting
-      createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
-      -- TODO: make sure all fields are HTML-safe
-    Left lookupFailureReason ->
-      case lookupFailureReason of
-        LookupFailureNotExist -> do
-          putStrLn "Lookup failed: Site does not exist"
-          -- TODO: respond with a more specific error
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
-        LookupFailureTechnicalError -> do
-          putStrLn "Lookup failed: Technical error"
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
+  clientInitiallyUnregistered <- atomically $ do
+    clientData <- readTVar clientDataTVar
+    case cdOtherData clientData of
+      OCDClientUnregistered -> return True
+      _ -> return False
+
+  if clientInitiallyUnregistered then do
+    lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
+    case lookupResult of
+      Right siteDataTVar -> do
+        positionInLine <- atomically $ do
+          -- first, add this client to the site data's waiting list
+          siteData <- readTVar siteDataTVar
+          let newGuestsWaiting = sdGuestsWaiting siteData ++ [clientDataTVar]
+          writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
+          -- and update the client's data as they have now been registered as a guest
+          clientData <- readTVar clientDataTVar
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData siteDataTVar name color icon }
+          return $ length newGuestsWaiting
+        createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
+        -- TODO: make sure all fields are HTML-safe
+      Left lookupFailureReason ->
+        case lookupFailureReason of
+          LookupFailureNotExist -> do
+            putStrLn "Lookup failed: Site does not exist"
+            -- TODO: respond with a more specific error
+            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+            closeClientSocket clientDataTVar
+          LookupFailureTechnicalError -> do
+            putStrLn "Lookup failed: Technical error"
+            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+            closeClientSocket clientDataTVar
+  else do
+    putStrLn "Client requested to join as a guest while not currently unregistered"
+    createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+    closeClientSocket clientDataTVar
 
 createAndSendMessage :: Message -> ClientDataTVar -> IO ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do
