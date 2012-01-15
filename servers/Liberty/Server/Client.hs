@@ -94,61 +94,83 @@ clientSocketReadLoop clientDataTVar buffer databaseHandleTVar siteMapTVar = do
       putStrLn "Client disconnecting due to a protocol violation"
 
 handleMessage :: Message -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVar =
-  case (messageType,params) of
-    (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
-      case parseIntegral siteIdT of
-        Just siteId -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
-        Nothing -> do
-          putStrLn "Numeric conversion failed!"
+handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVar = do
+  clientData <- atomically $ readTVar clientDataTVar
+  case cdOtherData clientData of
+    OCDClientUnregistered ->
+      case (messageType,params) of
+        (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
+          case parseIntegral siteIdT of
+            Just siteId -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
+            Nothing -> do
+              putStrLn "Numeric conversion failed!"
+              closeClientSocket clientDataTVar
+        _ -> do
+          putStrLn "Client (Unregistered) sent an unknown command"
           closeClientSocket clientDataTVar
-    _ -> do
-      putStrLn "No match"
-      closeClientSocket clientDataTVar
+    OCDClientGuestData clientGuestData ->
+      case (messageType,params) of
+        (ChatMessage,[text]) -> handleGuestChatMessage text clientGuestData clientDataTVar
+        _ -> do
+          putStrLn "Client (Guest) sent an unknown command"
+          closeClientSocket clientDataTVar
 
 handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
-  clientInitiallyUnregistered <- atomically $ do
-    clientData <- readTVar clientDataTVar
-    case cdOtherData clientData of
-      OCDClientUnregistered -> return True
-      _ -> return False
+  lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
+  case lookupResult of
+    Right siteDataTVar -> do
+      positionInLine <- atomically $ do
+        clientData <- readTVar clientDataTVar
+        -- create a new chat session with this client as the guest and no operator
+        chatSessionTVar <- newTVar $ ChatSession clientDataTVar ChatOperatorNobody [CLEJoin name color]
+        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSessionTVar }
+        -- add the newly-created chat session to the site data's waiting list
+        siteData <- readTVar siteDataTVar
+        let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
+        writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
+        return $ length newSessionsWaiting
+      createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
+      -- DEBUG START
+      newCD <- atomically $ readTVar clientDataTVar
+      print newCD
+      -- DEBUG END
+      -- TODO: make sure all fields are HTML-safe
+    Left lookupFailureReason ->
+      case lookupFailureReason of
+        LookupFailureNotExist -> do
+          putStrLn "Lookup failed: Site does not exist"
+          -- TODO: respond with a more specific error
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
+        LookupFailureTechnicalError -> do
+          putStrLn "Lookup failed: Technical error"
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
 
-  if clientInitiallyUnregistered then do
-    lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
-    case lookupResult of
-      Right siteDataTVar -> do
-        positionInLine <- atomically $ do
-          clientData <- readTVar clientDataTVar
-          -- create a new chat session with this client as the guest and no operator
-          chatSessionTVar <- newTVar $ ChatSession clientDataTVar ChatOperatorNobody [CLEJoin name color]
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSessionTVar }
-          -- add the newly-created chat session to the site data's waiting list
-          siteData <- readTVar siteDataTVar
-          let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
-          writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
-          return $ length newSessionsWaiting
-        createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
-        -- DEBUG START
-        newCD <- atomically $ readTVar clientDataTVar
-        print newCD
-        -- DEBUG END
-        -- TODO: make sure all fields are HTML-safe
-      Left lookupFailureReason ->
-        case lookupFailureReason of
-          LookupFailureNotExist -> do
-            putStrLn "Lookup failed: Site does not exist"
-            -- TODO: respond with a more specific error
-            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-            closeClientSocket clientDataTVar
-          LookupFailureTechnicalError -> do
-            putStrLn "Lookup failed: Technical error"
-            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-            closeClientSocket clientDataTVar
-  else do
-    putStrLn "Client requested to join as a guest while not currently unregistered"
-    createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-    closeClientSocket clientDataTVar
+handleGuestChatMessage :: Text -> ClientGuestData -> ClientDataTVar -> IO ()
+handleGuestChatMessage messageText clientGuestData clientDataTVar = do
+  -- first, append the message to the log and retrieve the chat session operator value
+  chatSessionOperator <- atomically $ do
+    let chatSessionTVar = cgdChatSession clientGuestData
+    chatSession <- readTVar $ chatSessionTVar
+    -- now that the message was sent to all appropriate parties, add it to the log
+    let updatedChatLog = (CLEMessage (cgdName clientGuestData) (cgdColor clientGuestData) messageText) : csLog chatSession
+    let updatedChatSession = chatSession { csLog = updatedChatLog }
+    writeTVar chatSessionTVar $ updatedChatSession
+    return $ csOperator updatedChatSession
+
+  -- DEBUG
+  log <- atomically $ do
+    cSession <- readTVar $ cgdChatSession clientGuestData
+    return $ csLog cSession
+  print log
+  -- END DEBUG
+
+  case chatSessionOperator of
+    ChatOperatorClient operatorClientDataTVar -> do
+      putStrLn "TODO: Support operators receiving messages"
+    ChatOperatorNobody -> return () -- nothing to do
 
 createAndSendMessage :: Message -> ClientDataTVar -> IO ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do

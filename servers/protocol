@@ -1,7 +1,7 @@
 Guest to Server
 ================================================================
 1 [siteId, name, color, icon] - Guest join
-4 [text] - Send message
+4 [text] - Chat message
 6 - End chat
 
 Server to Guest

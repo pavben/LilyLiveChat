@@ -169,6 +169,7 @@ $(document).ready(function() {
 					mySessionId = getSessionIdResponse.sessionId;
 					lastInSequence = 0; // initialize this to 0
 					log("Got session ID: " + getSessionIdResponse.sessionId);
+					// GuestJoinCommand, site id, name, ...
 					queueAjaxCommand([1, 1, myName, myColor, 'images/funshine_bear.png']);
 					// begin long-polling
 					ajaxJsonLongPoll();
@@ -299,6 +300,7 @@ $(document).ready(function() {
 
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
+			queueAjaxCommand([4, $('#chat_chatbox').val()]);
 			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val());
 			$('#chat_chatbox').val('');
 		}
