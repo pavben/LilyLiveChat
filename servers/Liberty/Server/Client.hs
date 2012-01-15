@@ -47,8 +47,8 @@ clientSocketSendLoop clientSendChan clientDataTVar = do
           sendAll clientSocket encodedMessage
           return True
         )
-        (\(SomeException e) -> do
-          putStrLn "Exception on sendAll. Closing socket."
+        (\(SomeException ex) -> do
+          putStrLn $ "Exception on sendAll: " ++ show ex ++ " -- closing socket."
           return False
         )
       if sendSuccess then
@@ -111,13 +111,14 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteDataTVar -> do
-      siteData <- atomically $ readTVar siteDataTVar
-      putStrLn $ "Obtained site data from db: " ++ show siteData
-      -- start debug
-      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar
-      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar
-      createAndSendMessage (NowTalkingToMessage, [LT.pack "Joe"]) clientDataTVar
-      -- end debug
+      positionInLine <- atomically $ do
+        clientData <- readTVar clientDataTVar
+        writeTVar clientDataTVar $ clientData { cdOtherData = ClientGuestData $ ClientGuestData' siteId name color icon }
+        siteData <- readTVar siteDataTVar
+        let newGuestsWaiting = sdGuestsWaiting siteData ++ [clientDataTVar]
+        writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
+        return $ length newGuestsWaiting
+      createAndSendMessage (InLinePositionUpdateMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
       -- TODO: make sure all fields are HTML-safe
     Left lookupFailureReason ->
       case lookupFailureReason of
