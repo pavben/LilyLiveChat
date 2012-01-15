@@ -12,3 +12,11 @@ Server to Guest
 6 - End chat
 7 - Something went wrong
 
+Operator to Server
+================================================================
+8 [siteId, operatorName, operatorPass] - Operator join
+4 [text] - Chat message
+
+Server to Operator
+================================================================
+5 [name, text] - Append to message log

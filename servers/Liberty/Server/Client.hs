@@ -114,6 +114,12 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
         _ -> do
           putStrLn "Client (Guest) sent an unknown command"
           closeClientSocket clientDataTVar
+    OCDClientOperatorData clientOperatorData ->
+      case (messageType,params) of
+        (ChatMessage,[text]) -> handleOperatorChatMessage text clientOperatorData clientDataTVar
+        _ -> do
+          putStrLn "Client (Operator) sent an unknown command"
+          closeClientSocket clientDataTVar
 
 handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
@@ -171,6 +177,10 @@ handleGuestChatMessage messageText clientGuestData clientDataTVar = do
     ChatOperatorClient operatorClientDataTVar -> do
       putStrLn "TODO: Support operators receiving messages"
     ChatOperatorNobody -> return () -- nothing to do
+
+handleOperatorChatMessage :: Text -> ClientOperatorData -> ClientDataTVar -> IO ()
+handleOperatorChatMessage messageText clientOperatorData clientDataTVar = do
+  putStrLn "TODO"
 
 createAndSendMessage :: Message -> ClientDataTVar -> IO ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do
