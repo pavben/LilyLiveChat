@@ -125,7 +125,8 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
           writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
           -- and update the client's data as they have now been registered as a guest
           clientData <- readTVar clientDataTVar
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar (GCSWaiting []) }
+          chatSession <- newTVar $ ChatSession clientDataTVar ChatOperatorNobody [] -- TODO: Add guest join to the log
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSession }
           return $ length newGuestsWaiting
         createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
         -- DEBUG START

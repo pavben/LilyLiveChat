@@ -2,8 +2,9 @@ module Liberty.Server.Types (
   ClientData(..),
   OtherClientData(..),
   ClientGuestData(..),
-  GuestCurrentState(..),
-  Operator(..),
+  ChatSession(..),
+  ChatOperatorEntry(..),
+  ChatLogEntry(..),
   ClientDataTVar,
   SiteId,
   SiteData(..),
@@ -31,11 +32,17 @@ data ClientGuestData = ClientGuestData {
   cgdColor :: Text,
   cgdIconUrl :: Text,
   cgdSiteDataTVar :: SiteDataTVar,
-  cgdCurrentState :: GuestCurrentState
+  cgdChatSession :: TVar ChatSession
 } deriving (Show)
-data GuestCurrentState = GCSWaiting [Text] | GCSTalkingTo Operator
+data ChatSession = ChatSession {
+  csGuestClientDataTVar :: ClientDataTVar,
+  csOperator :: ChatOperatorEntry,
+  csLog :: [ChatLogEntry]
+} deriving (Show)
+data ChatOperatorEntry = ChatOperatorNobody | ChatOperatorClient (TVar ClientData)
   deriving (Show)
-data Operator = OperatorClient -- TODO: Add OperatorMailman
+data ChatLogEntry = CLEOperJoin Text Text -- name, color
+  | CLEMessage Text Text Text -- name, color, text
   deriving (Show)
 type ClientDataTVar = TVar ClientData
 
