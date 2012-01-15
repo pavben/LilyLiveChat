@@ -118,7 +118,7 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
         let newGuestsWaiting = sdGuestsWaiting siteData ++ [clientDataTVar]
         writeTVar siteDataTVar $ siteData { sdGuestsWaiting = newGuestsWaiting }
         return $ length newGuestsWaiting
-      createAndSendMessage (InLinePositionUpdateMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
+      createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
       -- TODO: make sure all fields are HTML-safe
     Left lookupFailureReason ->
       case lookupFailureReason of

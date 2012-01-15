@@ -8,7 +8,7 @@ import Data.Text.Lazy (Text)
 
 -- common
 data MessageType = GuestJoinMessage
-                 | InLinePositionUpdateMessage
+                 | InLinePositionMessage
                  | NowTalkingToMessage
                  | ChatMessage
                  | AppendToChatLogMessage

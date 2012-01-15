@@ -4,6 +4,7 @@ $(document).ready(function() {
 	var welcomeTab = $('#welcome_tab');
 	var chatTab = $('#chat_tab');
 
+	var myName = null;
 	var myColor = null;
 
 	var mySessionId = 'NEW';
@@ -126,7 +127,7 @@ $(document).ready(function() {
 
 	$('#welcome_btn_ok').click(function(e) {
 		// TODO: check for Enter press in the name box
-		var myName = $.trim($('#welcome_myname').val());
+		myName = $.trim($('#welcome_myname').val());
 		// if no valid name was entered, generate one
 		if (myName.length == 0) {
 			myName = generateName();
@@ -135,6 +136,29 @@ $(document).ready(function() {
 		$(this).attr('onclick', '');
 		ajaxJsonGetSessionId(myName);
 	});
+
+	function handleMessage(message) {
+		log(message);
+		messageTypeId = message.shift();
+		switch (messageTypeId) {
+			case 2: // InLinePositionMessage
+				if (currentTab == welcomeTab) {
+					replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
+					changeTabTo(chatTab);
+				}
+				updatePositionInLine(parseInt(message[0]));
+				break;
+			case 3: // NowTalkingToMessage
+				break;
+			case 5: // AppendToChatLogMessage
+				break;
+			case 6: // EndChatMessage
+				break;
+			case 7: // SomethingWentWrongMessage
+				break;
+			default: // Invalid message type
+		}
+	}
 
 	function ajaxJsonGetSessionId(myName) {
 		ajaxJson(
@@ -218,15 +242,21 @@ $(document).ready(function() {
 			[mySessionId, lastInSequence],
 			function(data) {
 				log(data);
-				for (var i in data.m) {
-					var message = data.m[i];
-					// advance the sequence, removing it from the message
+
+				var messages = data.m;
+				for (var i in messages) {
+					var message = messages[i];
+
 					if (parseInt(message[0]) <= lastInSequence) {
 						alert("lastInSequence is " + lastInSequence + ", but message[0] is " + message[0]);
 					}
+
 					lastInSequence = parseInt(message.shift());
-					log("NewSeq: " + lastInSequence + " - Received message: ");
-					log(message);
+
+					handleMessage(message);
+				}
+				if (data.sessionEnded) {
+					alert("Session ended");
 				}
 				setTimeout(ajaxJsonLongPoll, 0);
 			},

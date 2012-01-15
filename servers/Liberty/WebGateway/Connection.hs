@@ -278,6 +278,7 @@ sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
   let encodedData = C8.pack $ JSON.encode jsObject
+  --let encodedData = C8.pack $ "{\"m\":[1,3,\"Joe\"]}"
   print $ encodedData
   sendAllIgnoreExceptions clientSocket $ LBS.concat [C8.pack
     (

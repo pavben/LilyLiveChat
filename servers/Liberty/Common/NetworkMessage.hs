@@ -23,7 +23,7 @@ import Liberty.Common.Types
 messageTypeToId :: MessageType -> Word8
 messageTypeToId messageType = case messageType of
   GuestJoinMessage -> 1
-  InLinePositionUpdateMessage -> 2
+  InLinePositionMessage -> 2
   NowTalkingToMessage -> 3
   ChatMessage -> 4
   AppendToChatLogMessage -> 5
@@ -33,7 +33,7 @@ messageTypeToId messageType = case messageType of
 messageIdToType :: Word8 -> Maybe MessageType
 messageIdToType messageId = case messageId of
   1 -> Just GuestJoinMessage
-  2 -> Just InLinePositionUpdateMessage
+  2 -> Just InLinePositionMessage
   3 -> Just NowTalkingToMessage
   4 -> Just ChatMessage
   5 -> Just AppendToChatLogMessage
