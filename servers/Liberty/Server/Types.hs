@@ -10,6 +10,7 @@ module Liberty.Server.Types (
   ClientDataTVar,
   SiteId,
   SiteData(..),
+  SiteOperatorInfo(..),
   SiteDataTVar,
   ClientSendChanMessage(..),
   ClientSendChan,
@@ -49,7 +50,7 @@ data ChatSession = ChatSession {
   csLog :: [ChatLogEntry]
 } deriving (Show)
 type ChatSessionTVar = TVar ChatSession
-data ChatOperatorEntry = ChatOperatorNobody | ChatOperatorClient (TVar ClientData)
+data ChatOperatorEntry = ChatOperatorNobody | ChatOperatorClient ClientDataTVar
   deriving (Show)
 data ChatLogEntry = CLEJoin Text Text -- name, color
   | CLEMessage Text Text Text -- name, color, text
@@ -62,7 +63,15 @@ data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text,
   sdSessionsWaiting :: [ChatSessionTVar],
-  sdOperators :: [ClientDataTVar]
+  sdOperators :: [SiteOperatorInfo],
+  sdOnlineOperators :: [ClientDataTVar]
+} deriving (Show)
+data SiteOperatorInfo = SiteOperatorInfo {
+  sodUsername :: Text,
+  sodPassword :: Text,
+  sodName :: Text,
+  sodColor :: Text,
+  sodIconUrl :: Text
 } deriving (Show)
 
 type SiteDataTVar = TVar SiteData
