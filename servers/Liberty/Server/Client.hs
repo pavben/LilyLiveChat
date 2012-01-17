@@ -99,12 +99,7 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
   case cdOtherData clientData of
     OCDClientUnregistered ->
       case (messageType,params) of
-        (GuestJoinMessage,[siteIdT,name,color,icon]) -> do
-          case parseIntegral siteIdT of
-            Just siteId -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
-            Nothing -> do
-              putStrLn "Numeric conversion failed!"
-              closeClientSocket clientDataTVar
+        (GuestJoinMessage,[siteId,name,color,icon]) -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
         _ -> do
           putStrLn "Client (Unregistered) sent an unknown command"
           closeClientSocket clientDataTVar

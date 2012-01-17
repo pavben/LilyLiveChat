@@ -14,6 +14,9 @@ data MessageType = GuestJoinMessage
                  | AppendToChatLogMessage
                  | EndChatMessage
                  | SomethingWentWrongMessage
+                 | OperatorLoginRequestMessage
+                 | OperatorLoginSuccessMessage
+                 | OperatorLoginFailedMessage
   deriving (Show)
 
 type Message = (MessageType, [Text])

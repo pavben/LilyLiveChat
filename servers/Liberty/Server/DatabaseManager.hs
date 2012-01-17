@@ -20,6 +20,7 @@ import Liberty.Server.Types
 -- public data
 type DatabaseHandleTVar = TVar (Maybe DatabaseHandle)
 data LookupFailureReason = LookupFailureNotExist | LookupFailureTechnicalError
+  deriving (Show)
 
 -- private data
 data DatabaseHandle = DatabaseHandle Pipe
@@ -118,24 +119,54 @@ runQuery databaseHandleTVar action = do
 getSiteDataFromDb :: DatabaseHandleTVar -> SiteId -> IO (Either LookupFailureReason SiteData)
 getSiteDataFromDb databaseHandleTVar siteId =
   let
-    action = (find $ select ["id" =: siteId] "sites") >>= rest
+    action = (find $ select ["siteId" =: (LT.unpack siteId)] "sites") >>= rest
   in do
     res <- runQuery databaseHandleTVar action
     case res of
       Just docs -> do
         putStrLn $ "num docs: " ++ show (length docs)
-        if length docs == 1 then do
+        if length docs == 1 then
           let firstDoc = head $ docs
-          case combineMaybes (lookup "id" firstDoc :: Maybe SiteId) (lookup "name" firstDoc :: Maybe String) of
-            -- TODO NEXT: load operator info together with the SiteData record
-            Just (siteId', siteNameStr) -> return $ Right $ SiteData siteId' (LT.pack siteNameStr) [] [] []
-            Nothing -> return $ Left $ LookupFailureTechnicalError
-        else
-          return $ Left $ LookupFailureTechnicalError
+          in
+            case combineMaybes3
+              (asMaybeText $ lookup "siteId" firstDoc)
+              (asMaybeText $ lookup "name" firstDoc)
+              (lookup "operators" firstDoc :: Maybe [Document])
+            of
+              Just (siteId, siteName, operatorsDocs) ->
+                case mapM
+                  (\operatorDoc ->
+                    case combineMaybes5
+                      (asMaybeText $ lookup "username" operatorDoc)
+                      (asMaybeText $ lookup "password" operatorDoc)
+                      (asMaybeText $ lookup "name" operatorDoc)
+                      (asMaybeText $ lookup "color" operatorDoc)
+                      (asMaybeText $ lookup "icon" operatorDoc)
+                    of
+                      Just (username, password, name, color, icon) -> Just $ SiteOperatorInfo username password name color icon
+                      Nothing -> Nothing
+                  )
+                  (operatorsDocs)
+                of
+                  Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos []
+                  Nothing -> return $ Left $ LookupFailureTechnicalError
+              Nothing -> return $ Left $ LookupFailureTechnicalError
+          else
+            return $ Left $ LookupFailureNotExist
       Nothing -> return $ Left $ LookupFailureTechnicalError
 
+combineMaybes2 :: Maybe a -> Maybe b -> Maybe (a, b)
+combineMaybes2 (Just a) (Just b) = Just (a, b)
+combineMaybes2 _ _ = Nothing
 
-combineMaybes :: Maybe a -> Maybe b -> Maybe (a, b)
-combineMaybes (Just a) (Just b) = Just (a, b)
-combineMaybes _ _ = Nothing
+combineMaybes3 :: Maybe a -> Maybe b -> Maybe c -> Maybe (a, b, c)
+combineMaybes3 (Just a) (Just b) (Just c) = Just (a, b, c)
+combineMaybes3 _ _ _ = Nothing
+
+combineMaybes5 :: Maybe a -> Maybe b -> Maybe c -> Maybe d -> Maybe e -> Maybe (a, b, c, d, e)
+combineMaybes5 (Just a) (Just b) (Just c) (Just d) (Just e) = Just (a, b, c, d, e)
+combineMaybes5 _ _ _ _ _ = Nothing
+
+asMaybeText :: Maybe String -> Maybe Text
+asMaybeText maybeString = fmap LT.pack maybeString
 

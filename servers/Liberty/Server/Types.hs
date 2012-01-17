@@ -58,7 +58,7 @@ data ChatLogEntry = CLEJoin Text Text -- name, color
 type ClientDataTVar = TVar ClientData
 
 -- Site
-type SiteId = Integer
+type SiteId = Text
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text,

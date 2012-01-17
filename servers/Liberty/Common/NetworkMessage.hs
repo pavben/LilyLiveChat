@@ -29,6 +29,9 @@ messageTypeToId messageType = case messageType of
   AppendToChatLogMessage -> 5
   EndChatMessage -> 6
   SomethingWentWrongMessage -> 7
+  OperatorLoginRequestMessage -> 8
+  OperatorLoginSuccessMessage -> 9
+  OperatorLoginFailedMessage -> 10
 
 messageIdToType :: Word8 -> Maybe MessageType
 messageIdToType messageId = case messageId of
@@ -39,6 +42,9 @@ messageIdToType messageId = case messageId of
   5 -> Just AppendToChatLogMessage
   6 -> Just EndChatMessage
   7 -> Just SomethingWentWrongMessage
+  8 -> OperatorLoginRequestMessage
+  9 -> OperatorLoginSuccessMessage
+  10 -> OperatorLoginFailedMessage
   _ -> Nothing
 
 -- createMessage and dependencies

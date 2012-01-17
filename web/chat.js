@@ -170,7 +170,7 @@ $(document).ready(function() {
 					lastInSequence = 0; // initialize this to 0
 					log("Got session ID: " + getSessionIdResponse.sessionId);
 					// GuestJoinCommand, site id, name, ...
-					queueAjaxCommand([1, 1, myName, myColor, 'images/funshine_bear.png']);
+					queueAjaxCommand([1, "virtivia", myName, myColor, 'images/funshine_bear.png']);
 					// begin long-polling
 					ajaxJsonLongPoll();
 					/*
