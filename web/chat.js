@@ -6,6 +6,7 @@ $(document).ready(function() {
 
 	var myName = null;
 	var myColor = null;
+	var myIcon = null;
 
 	var mySessionId = 'NEW';
 	var lastInSequence = null;
@@ -28,6 +29,21 @@ $(document).ready(function() {
 
 			onResize();
 		}
+	}
+
+	function randomizeProfileIcon(justNot) {
+		var icons = [
+			'images/cc/dog1.png',
+			'images/cc/foxy.png',
+			'images/cc/tuqui.png'
+		];
+
+		var newIcon;
+		do {
+			newIcon = icons[Math.floor(Math.random() * icons.length)];
+		} while (justNot && newIcon == justNot); // loop until unique
+
+		return newIcon;
 	}
 
 	function generateName(justNot)
@@ -118,9 +134,14 @@ $(document).ready(function() {
 
 	$('#welcome_btn_randomize').click(function(e) {
 		$('#welcome_myname').fadeTo(100, 0, function() {
+			// name
 			$('#welcome_myname').val(generateName($('#welcome_myname').val()));
+			// color
 			myColor = generatePersonColor();
 			$('#welcome_myname').css('color', myColor);
+			// icon
+			myIcon = randomizeProfileIcon(myIcon);
+			replaceIconWith(myIcon, $('#welcome_icon'));
 		});
 		$('#welcome_myname').fadeTo(100, 1);
 	});
@@ -143,7 +164,7 @@ $(document).ready(function() {
 		switch (messageTypeId) {
 			case 2: // InLinePositionMessage
 				if (currentTab == welcomeTab) {
-					replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
+					replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
 					changeTabTo(chatTab);
 				}
 				updatePositionInLine(parseInt(message[0]));
@@ -170,12 +191,12 @@ $(document).ready(function() {
 					lastInSequence = 0; // initialize this to 0
 					log("Got session ID: " + getSessionIdResponse.sessionId);
 					// GuestJoinCommand, site id, name, ...
-					queueAjaxCommand([1, "virtivia", myName, myColor, 'images/funshine_bear.png']);
+					queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
 					// begin long-polling
 					ajaxJsonLongPoll();
 					/*
 						function(guestJoinResponse) {
-							replaceMeWith(new Person(myName, myColor, 'Guest', 'images/funshine_bear.png'));
+							replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
 							changeTabTo(chatTab);
 						},
 						function() {
@@ -400,16 +421,17 @@ $(document).ready(function() {
 			fadeOutTime = 0;
 		}
 
-		icon.fadeTo(fadeOutTime, 0);
+		icon.fadeTo(fadeOutTime, 0, function() {
+			// when faded to 0, clear the old image
+			icon.css('background-image', 'none');
 
-		icon.css('background-image', 'none');
-
-		var iconCache = new Image();
-		iconCache.onload = function() {
-			icon.css('background-image', 'url(\'' + iconUrl + '\')');
-			icon.fadeTo(1000, 1);
-		}
-		iconCache.src = iconUrl;
+			var iconCache = new Image();
+			iconCache.onload = function() {
+				icon.css('background-image', 'url(\'' + iconUrl + '\')');
+				icon.fadeTo(500, 1);
+			}
+			iconCache.src = iconUrl;
+		});
 	}
 
 	var currentRightSpaceDiv = null;
@@ -480,8 +502,11 @@ $(document).ready(function() {
 	myColor = generatePersonColor();
 	$('#welcome_myname').css('color', myColor);
 
-	// set the icons
-	replaceIconWith('images/funshine_bear.png', $('#welcome_icon'));
+	// also pick a random icon to start with
+	myIcon = randomizeProfileIcon();
+	replaceIconWith(myIcon, $('#welcome_icon'));
+
+	// set the waiting clock icon
 	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 
 	function generatePersonColor() {
