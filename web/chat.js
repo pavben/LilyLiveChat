@@ -151,7 +151,7 @@ function handleMessage(message) {
 	}
 }
 
-function ajaxJsonGetSessionId(myName, onSuccessCallback) {
+function ajaxJsonGetSessionId(myName, onSuccessCallback, onErrorCallback) {
 	ajaxJson(
 		['NEW', nextOutSequence++],
 		function(getSessionIdResponse) {
@@ -164,38 +164,21 @@ function ajaxJsonGetSessionId(myName, onSuccessCallback) {
 				ajaxJsonLongPoll();
 				// call the callback function
 				onSuccessCallback();
-				/*
-					function(guestJoinResponse) {
-						replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
-						changeTabTo(chatTab);
-					},
-					function() {
-						alert("Failed to join");
-						$(this).attr('onclick', currentOnClick);
-					}
-				*/
 			}
 		},
-		function() {
-			alert("Failed to acquire Session ID");
-			// TODO: Make sure the disabling of onClick is working properly.. also consider just having a "busy" variable for it
-			$(this).attr('onclick', currentOnClick);
-			nextOutSequence = 0; // reset this to 0
-		}
+		onErrorCallback
 	);
 }
 
-function writeMessageToChatLog(name, nameColor, msg) {
+function writeMessageToChatLog(name, nameColor, msg, chatlogDiv) {
 	var content = '';
 	content += '<span class="chat_msgtext" style="color:' + nameColor + '">' + name + '</span>';
 	content += '<span class="chat_msgtext">: ' + msg + '</span><br/>';
 
-	writeContentToChatLog(content);
+	writeContentToChatLog(content, chatlogDiv);
 }
 
-function writeContentToChatLog(content) {
-	var chatlogDiv = $('#chat_chatlog');
-
+function writeContentToChatLog(content, chatlogDiv) {
 	chatlogDiv.append(content);
 
 	if (this.lastScrollTopTarget && chatlogDiv.scrollTop() >= this.lastScrollTopTarget - 30) {
@@ -235,13 +218,6 @@ function writeContentToChatLog(content) {
 var me = null;
 var they = null;
 
-function Person(name, color, title, iconUrl) {
-	this.name = name;
-	this.color = color;
-	this.title = title;
-	this.iconUrl = iconUrl;
-}
-
 function replaceMeWith(person) {
 	me = person;
 	replaceIconWith(person.iconUrl, $('#chat_myicon'));
@@ -253,42 +229,6 @@ function replaceThemWith(person) {
 	changeRightSpaceDivTo($('#chat_theircardrow'), function() {
 		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
 		replaceCardTextWith(person, null, $('#chat_theirname'), $('#chat_theirtitle'));
-	});
-}
-
-function replaceCardTextWith(person, card, name, title) {
-	// if card is provided, perform the fadeout & fadein
-	// otherwise, change the fields instantly
-	if (card) {
-		card.fadeTo(100, 0);
-	}
-	name.html(person.name);
-	name.css('color', person.color);
-
-	title.html(person.title);
-
-	if (card) {
-		card.fadeTo(1000, 1);
-	}
-}
-
-function replaceIconWith(iconUrl, icon) {
-	var fadeOutTime = 100;
-
-	if (icon.css('background-image') == 'none') {
-		fadeOutTime = 0;
-	}
-
-	icon.fadeTo(fadeOutTime, 0, function() {
-		// when faded to 0, clear the old image
-		icon.css('background-image', 'none');
-
-		var iconCache = new Image();
-		iconCache.onload = function() {
-			icon.css('background-image', 'url(\'' + iconUrl + '\')');
-			icon.fadeTo(500, 1);
-		}
-		iconCache.src = iconUrl;
 	});
 }
 
@@ -372,12 +312,12 @@ function onResize() {
 
 function onWelcomeTabResize() {
 	// disable scrolling as it causes visual glitches
-	$('html').css('overflow-y', 'hidden'); // TODO: should this be html or perhaps body?
+	$('body').css('overflow-y', 'hidden');
 	var newWelcomeTabHeight = $(window).height();
 	if (newWelcomeTabHeight < 641) {
 		newWelcomeTabHeight = 641;
 		// if the scrollbars are needed, enable them
-		$('html').css('overflow-y', 'auto');
+		$('body').css('overflow-y', 'auto');
 	}
 	// calculate how much space needs to be filled above and below the background
 	var spaceToFill = newWelcomeTabHeight - $('#welcome_bg').outerHeight();
@@ -390,7 +330,7 @@ function onWelcomeTabResize() {
 
 function onChatTabResize() {
 	// disable scrolling as it interferes with calculations and causes visual glitches
-	$('html').css('overflow-y', 'hidden');
+	$('body').css('overflow-y', 'hidden');
 	var chatlogDiv = $('#chat_chatlog');
 	var newChatLogHeight = $(window).height() // start with the full height
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
@@ -404,18 +344,33 @@ function onChatTabResize() {
 	if (newChatLogHeight < 200) {
 		newChatLogHeight = 200;
 		// if the scrollbars are needed, enable them
-		$('html').css('overflow-y', 'auto');
+		$('body').css('overflow-y', 'auto');
 	}
 	$('#chat_chatlog').css('height', newChatLogHeight);
 	$('#chat_chatbox').focus();
 }
 
-function stripPx(text) {
-	return text.replace('px', '');
-}
+var welcomeTabOkActive = false;
 
-function log(msg) {
-	window.console.log(msg);
+function welcomeTabOkHandler() {
+	if (!welcomeTabOkActive) {
+		myName = $.trim($('#welcome_myname').val());
+		// if no valid name was entered, generate one
+		if (myName.length == 0) {
+			myName = generateName();
+		}
+		ajaxJsonGetSessionId(
+			myName,
+			function() {
+				// GuestJoinCommand, site id, name, ...
+				queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
+			},
+			function() {
+				alert("Failed to acquire Session ID");
+				nextOutSequence = 0; // reset this to 0
+			}
+		);
+	}
 }
 
 $(document).ready(function() {
@@ -458,30 +413,20 @@ $(document).ready(function() {
 		});
 	});
 
-	$('#welcome_btn_ok').click(function(e) {
-		// TODO: check for Enter press in the name box
-		myName = $.trim($('#welcome_myname').val());
-		// if no valid name was entered, generate one
-		if (myName.length == 0) {
-			myName = generateName();
+	// clicking the OK button
+	$('#welcome_btn_ok').click(welcomeTabOkHandler);
+	// or pressing Enter inside the name box
+	$('#welcome_myname').keypress(function(e) {
+		if (e.which == 13) { // enter
+			welcomeTabOkHandler();
 		}
-		// TODO: Does this onclick thingy work?
-		currentOnClick = $(this).attr('onclick');
-		$(this).attr('onclick', '');
-		ajaxJsonGetSessionId(
-			myName,
-			function() {
-				// GuestJoinCommand, site id, name, ...
-				queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
-			}
-		);
 	});
 
 	// chat tab handlers
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
 			queueAjaxCommand([4, $('#chat_chatbox').val()]);
-			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val());
+			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
 			$('#chat_chatbox').val('');
 		}
 	});

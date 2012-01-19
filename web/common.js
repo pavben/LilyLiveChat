@@ -109,4 +109,57 @@ function uriEncodeArray(arr) {
 		str.push(p + "=" + encodeURIComponent(arr[p]));
 	return str.join("&");
 }
+// End of AJAX stuff
+
+function Person(name, color, title, iconUrl) {
+	this.name = name;
+	this.color = color;
+	this.title = title;
+	this.iconUrl = iconUrl;
+}
+
+function replaceCardTextWith(person, card, name, title) {
+	// if card is provided, perform the fadeout & fadein
+	// otherwise, change the fields instantly
+	if (card) {
+		card.fadeTo(100, 0);
+	}
+	name.html(person.name);
+	name.css('color', person.color);
+
+	title.html(person.title);
+
+	if (card) {
+		card.fadeTo(1000, 1);
+	}
+}
+
+function replaceIconWith(iconUrl, icon) {
+	var fadeOutTime = 100;
+
+	if (icon.css('background-image') == 'none') {
+		fadeOutTime = 0;
+	}
+
+	icon.fadeTo(fadeOutTime, 0, function() {
+		// when faded to 0, clear the old image
+		icon.css('background-image', 'none');
+
+		var iconCache = new Image();
+		iconCache.onload = function() {
+			icon.css('background-image', 'url(\'' + iconUrl + '\')');
+			icon.fadeTo(500, 1);
+		}
+		iconCache.src = iconUrl;
+	});
+}
+
+// misc
+function stripPx(text) {
+	return text.replace('px', '');
+}
+
+function log(msg) {
+	window.console.log(msg);
+}
 
