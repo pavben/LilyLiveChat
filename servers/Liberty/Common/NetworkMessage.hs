@@ -42,16 +42,20 @@ messageIdToType messageId = case messageId of
   5 -> Just AppendToChatLogMessage
   6 -> Just EndChatMessage
   7 -> Just SomethingWentWrongMessage
-  8 -> OperatorLoginRequestMessage
-  9 -> OperatorLoginSuccessMessage
-  10 -> OperatorLoginFailedMessage
+  8 -> Just OperatorLoginRequestMessage
+  9 -> Just OperatorLoginSuccessMessage
+  10 -> Just OperatorLoginFailedMessage
   _ -> Nothing
 
 -- createMessage and dependencies
 createMessage :: Message -> Maybe EncodedMessage
-createMessage (messageType, params) = case sequence $ map textToBytestringWithLen params of
-  Just encodedParams -> Just $ LBS.concat [LBS.singleton (messageTypeToId messageType), LBS.concat encodedParams, LBS.replicate 4 0]
-  Nothing -> Nothing
+createMessage (messageType, params) = 
+  case fromIntegerCheckBounds $ fromIntegral $ length params :: Maybe Word8 of
+    Just numParams -> 
+      case sequence $ map textToBytestringWithLen params of
+        Just encodedParams -> Just $ LBS.concat [LBS.singleton (messageTypeToId messageType), LBS.singleton numParams, LBS.concat encodedParams]
+        Nothing -> Nothing
+    Nothing -> Nothing
 
 textToBytestringWithLen :: Text -> Maybe ByteString
 textToBytestringWithLen text =
@@ -72,7 +76,6 @@ textToBytestringAndLen text =
       Nothing -> Nothing
 
 -- parseMessage and dependencies
-data ReadNextChunk = Chunk Text | NothingToRead | InvalidInput
 
 -- Exceptions handled by caller
 parseMessage :: ByteString -> Maybe (Maybe Message, ByteString)
@@ -83,43 +86,48 @@ parseMessage buffer =
       case maybeMessageTypeId of
         Just messageTypeId -> case messageIdToType messageTypeId of
           Just messageType -> do
-            maybeTexts <- readTexts
-            case maybeTexts of
-              Just texts -> bytesRead >>= \bytesRead' -> return $ Just (Just (messageType, texts), LBS.drop bytesRead' buffer)
-              Nothing -> return $ Just (Nothing, buffer) -- not received all the texts yet
+            maybeNumParams <- safeGet 1 getWord8
+            case maybeNumParams of
+              Just numParams -> do
+                maybeTexts <- readTexts numParams
+                case maybeTexts of
+                  Just texts -> bytesRead >>= \bytesRead' -> return $ Just (Just (messageType, texts), LBS.drop bytesRead' buffer)
+                  Nothing -> return $ Just (Nothing, buffer) -- not received all the texts yet
+              Nothing -> return $ Just (Nothing, buffer) -- could not read the number of parameters byte
           Nothing -> return $ Nothing -- invalid message type / protocol not followed
         Nothing -> return $ Just (Nothing, buffer) -- messageTypeId byte not yet received
   in runGet f buffer
 
-readTexts :: Get (Maybe [Text])
-readTexts = do
-  maybeTexts <- readChunks []
+readTexts :: Word8 -> Get (Maybe [Text])
+readTexts numParams = do
+  maybeTexts <- readChunks [] numParams
   case maybeTexts of
     Just texts -> return $ Just $ reverse $ texts
     Nothing -> return Nothing
 
-readChunks :: [Text] -> Get (Maybe [Text])
-readChunks texts = do
-  nextChunk <- readNextChunk
-  case nextChunk of
-    Chunk text -> readChunks (text : texts)
-    NothingToRead -> return $ Just texts
-    InvalidInput -> return Nothing
+readChunks :: [Text] -> Word8 -> Get (Maybe [Text])
+readChunks texts paramsRemaining =
+  if paramsRemaining > 0 then do
+    nextChunk <- readNextChunk
+    case nextChunk of
+      Just text -> readChunks (text : texts) (paramsRemaining - 1)
+      Nothing -> return Nothing
+  else
+    return $ Just texts
 
-readNextChunk :: Get (ReadNextChunk)
+readNextChunk :: Get (Maybe Text)
 readNextChunk = do
   maybeChunkLength <- safeGet 4 getWord32be
   case maybeChunkLength of
-    Just 0 -> return NothingToRead
     Just chunkLength -> do
       let chunkLengthAsInt64 = fromIntegral chunkLength :: Int64
       maybeByteString <- safeGet chunkLengthAsInt64 $ getLazyByteString chunkLengthAsInt64
       case maybeByteString of
         Just byteString -> case LE.decodeUtf8' byteString of
-          Right text -> return $ Chunk text
-          Left _ -> return InvalidInput
-        Nothing -> return InvalidInput
-    Nothing -> return InvalidInput
+          Right text -> return $ Just text
+          Left _ -> return Nothing
+        Nothing -> return Nothing
+    Nothing -> return Nothing
 
 safeGet :: Int64 -> Get a -> Get (Maybe a)
 safeGet bytesRequired getFunction = do
