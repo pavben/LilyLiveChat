@@ -111,6 +111,29 @@ function uriEncodeArray(arr) {
 }
 // End of AJAX stuff
 
+// tab switcher
+
+function changeTabTo(tab) {
+	if (currentTab) {
+		currentTab.fadeTo(300, 0, function() {
+			currentTab.hide();
+
+			onOldTabGone();
+		});
+	} else {
+		onOldTabGone();
+	}
+
+	function onOldTabGone() {
+		currentTab = tab;
+		currentTab.fadeTo(600, 1);
+
+		onResize();
+	}
+}
+
+// other
+
 function Person(name, color, title, iconUrl) {
 	this.name = name;
 	this.color = color;

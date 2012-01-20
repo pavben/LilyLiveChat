@@ -1,0 +1,115 @@
+@font-face {
+	font-family:'Signika';
+	font-style:normal;
+	font-weight:400;
+	src:local('Signika-Regular'), url('Signika.woff') format('woff');
+}
+body {
+	background-color:#F4F4F4;
+	color:#303030;
+	font-family:'Signika', sans-serif;
+	padding:0px 0px 0px 0px;
+	margin:0px 0px 0px 0px;
+	line-height:1;
+}
+input {
+	border:0;
+	padding:0;
+	outline:none;
+}
+.tab {
+	display:none;
+}
+.fixedtable, .cardrowtable {
+	display:table;
+	table-layout:fixed;
+	width:100%;
+}
+.cardrowtable {
+	height:100px;
+}
+.tablerow {
+	display:table-row;
+}
+.cell, .cell100, .cell320 {
+	display:table-cell;
+	height:100%;
+	vertical-align:top;
+}
+.cell100 {
+	width:100px;
+}
+.cell320 {
+	width:320px;
+}
+.framedicon {
+	display:table-cell;
+	width:98px;
+	height:98px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	vertical-align:top;
+}
+.leftcardtext {
+	display:table-cell;
+	width:212px;
+	padding-left:8px;
+	height:100%;
+}
+.rightcardtext {
+	display:table-cell;
+	width:212px;
+	height:100%;
+	padding-right:8px;
+	text-align:right;
+}
+.personname {
+	font-size:24px;
+}
+.persontitle {
+	font-size:18px;
+	line-height:140%;
+	color:#7C7C7C;
+}
+.inputboxwrapper {
+	display:block;
+	height:20px;
+	background-color:#F4F4F4;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	padding:3px 3px 3px 3px;
+}
+.inputbox {
+	display:block;
+	width:100%;
+	height:100%;
+	margin:0px auto 0px auto;
+	background-color:#F4F4F4;
+	color:#303030;
+	font-size:18px;
+}
+.basicbutton {
+	display:table-cell;
+	height:25px;
+	background-image:url('images/buttontile.png');
+	background-repeat:repeat-x;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	text-shadow:1px 1px 0px #f4f4f4;
+	text-align:center;
+	cursor:pointer;
+	padding:0px 0px 1px 0px;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	transition: all 0.1s ease-in-out;
+	line-height:26px;
+	vertical-align:top;
+}
+.basicbutton:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.basicbutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}

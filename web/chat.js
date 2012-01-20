@@ -8,25 +8,6 @@ var myName = null;
 var myColor = null;
 var myIcon = null;
 
-function changeTabTo(tab) {
-	if (currentTab) {
-		currentTab.fadeTo(300, 0, function() {
-			currentTab.hide();
-
-			onOldTabGone();
-		});
-	} else {
-		onOldTabGone();
-	}
-
-	function onOldTabGone() {
-		currentTab = tab;
-		currentTab.fadeTo(600, 1);
-
-		onResize();
-	}
-}
-
 function randomizeProfileIcon(justNot) {
 	var icons = [
 		'images/cc/dog1.png',
