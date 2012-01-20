@@ -6,10 +6,62 @@ var loginTab = null;
 $(document).ready(function() {
 	loginTab = $('#login_tab');
 
+	replaceIconWith('images/lock.png', $('#login_icon'));
+
+	// login tab handlers
+
+	// clicking the OK button
+	$('#login_btn_ok').click(loginTabOkHandler);
+	// or pressing Enter inside the name box
+	$('#login_username').keypress(function(e) {
+		if (e.which == 13) { // enter
+			loginTabOkHandler();
+		}
+	});
+	$('#login_password').keypress(function(e) {
+		if (e.which == 13) { // enter
+			loginTabOkHandler();
+		}
+	});
+
 	changeTabTo(loginTab);
 
 	$(window).resize(onResize);
 });
+
+var loginTabOkActive = false;
+
+function loginTabOkHandler() {
+	if (!loginTabOkActive) {
+		loginTabOkActive = true;
+
+		var username = $.trim($('#login_username').val());
+		var password = $.trim($('#login_password').val());
+
+		if (username.length == 0 || password.length == 0) {
+			alert("Please enter both the username and password.");
+			loginTabOkActive = false;
+			return;
+		}
+
+		ajaxJsonGetSessionId(
+			function() {
+				// GuestJoinCommand, site id, name, ...
+				queueAjaxCommand([8, "virtivia", username, password]);
+
+				// re-enable the OK button
+				loginTabOkActive = false;
+			},
+			function() {
+				alert("Failed to acquire Session ID");
+				nextOutSequence = 0; // reset this to 0
+
+				// re-enable the OK button
+				loginTabOkActive = false;
+			}
+		);
+	}
+}
 
 function onResize() {
 	if (currentTab == loginTab) {
@@ -32,6 +84,5 @@ function onLoginTabResize() {
 	$('#login_top').css('height', newLoginTabTopHeight);
 	$('#login_bottom').css('height', newLoginTabBottomHeight);
 	$('#login_tab').css('height', newLoginTabHeight);
-	log("new login tab height would be: " + newLoginTabHeight);
 }
 

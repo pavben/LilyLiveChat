@@ -43,6 +43,25 @@ function sendAjaxCommands() {
 	}
 }
 
+function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
+	ajaxJson(
+		['NEW', nextOutSequence++],
+		function(getSessionIdResponse) {
+			if (getSessionIdResponse.sessionId) {
+				// set the session ID to use in future requests
+				mySessionId = getSessionIdResponse.sessionId;
+				lastInSequence = 0; // initialize this to 0
+				log("Got session ID: " + getSessionIdResponse.sessionId);
+				// begin long-polling
+				ajaxJsonLongPoll();
+				// call the callback function
+				onSuccessCallback();
+			}
+		},
+		onErrorCallback
+	);
+}
+
 function ajaxJsonLongPoll() {
 	if (!mySessionId) {
 		log("ajaxJsonLongPoll not allowed due to !mySessionId");

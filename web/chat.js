@@ -132,25 +132,6 @@ function handleMessage(message) {
 	}
 }
 
-function ajaxJsonGetSessionId(myName, onSuccessCallback, onErrorCallback) {
-	ajaxJson(
-		['NEW', nextOutSequence++],
-		function(getSessionIdResponse) {
-			if (getSessionIdResponse.sessionId) {
-				// set the session ID to use in future requests
-				mySessionId = getSessionIdResponse.sessionId;
-				lastInSequence = 0; // initialize this to 0
-				log("Got session ID: " + getSessionIdResponse.sessionId);
-				// begin long-polling
-				ajaxJsonLongPoll();
-				// call the callback function
-				onSuccessCallback();
-			}
-		},
-		onErrorCallback
-	);
-}
-
 function writeMessageToChatLog(name, nameColor, msg, chatlogDiv) {
 	var content = '';
 	content += '<span class="chat_msgtext" style="color:' + nameColor + '">' + name + '</span>';
@@ -335,20 +316,27 @@ var welcomeTabOkActive = false;
 
 function welcomeTabOkHandler() {
 	if (!welcomeTabOkActive) {
+		welcomeTabOkActive = true;
+
 		myName = $.trim($('#welcome_myname').val());
 		// if no valid name was entered, generate one
 		if (myName.length == 0) {
 			myName = generateName();
 		}
 		ajaxJsonGetSessionId(
-			myName,
 			function() {
 				// GuestJoinCommand, site id, name, ...
 				queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
+
+				// re-enable the OK button
+				welcomeTabOkActive = false;
 			},
 			function() {
 				alert("Failed to acquire Session ID");
 				nextOutSequence = 0; // reset this to 0
+
+				// re-enable the OK button
+				welcomeTabOkActive = false;
 			}
 		);
 	}
