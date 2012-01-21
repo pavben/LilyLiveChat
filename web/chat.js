@@ -129,6 +129,7 @@ function handleMessage(message) {
 		case 7: // SomethingWentWrongMessage
 			break;
 		default: // Invalid message type
+			alert("Got invalid messagea type: " + messageTypeId);
 	}
 }
 

@@ -68,6 +68,29 @@ function loginTabOkHandler() {
 	}
 }
 
+function handleMessage(message) {
+	log(message);
+	messageTypeId = message.shift();
+	switch (messageTypeId) {
+		case 7: // SomethingWentWrongMessage
+			break;
+		case 9: // OperatorLoginSuccessMessage
+			/*
+			if (currentTab == welcomeTab) {
+				replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
+				changeTabTo(chatTab);
+			}
+			*/
+			alert("Login successful");
+			break;
+		case 10: // OperatorLoginFailedMessage
+			alert("Login failed: Invalid credentials");
+			break;
+		default: // Invalid message type
+			alert("Got invalid messagea type: " + messageTypeId);
+	}
+}
+
 function onResize() {
 	if (currentTab == loginTab) {
 		onLoginTabResize();
