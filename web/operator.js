@@ -39,9 +39,14 @@ function loginTabOkHandler() {
 		var password = $.trim($('#login_password').val());
 
 		if (username.length == 0 || password.length == 0) {
+			// TODO: REMOVE THIS DEV CODE
+			username = "mike";
+			password = "mike";
+			/*
 			alert("Please enter both the username and password.");
 			loginTabOkActive = false;
 			return;
+			*/
 		}
 
 		ajaxJsonGetSessionId(

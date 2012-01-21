@@ -100,6 +100,7 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
     OCDClientUnregistered ->
       case (messageType,params) of
         (GuestJoinMessage,[siteId,name,color,icon]) -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
+        (OperatorLoginRequestMessage,[siteId,username,password]) -> handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar
         _ -> do
           putStrLn "Client (Unregistered) sent an unknown command"
           closeClientSocket clientDataTVar
@@ -137,6 +138,69 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
       print newCD
       -- DEBUG END
       -- TODO: make sure all fields are HTML-safe
+    Left lookupFailureReason ->
+      case lookupFailureReason of
+        LookupFailureNotExist -> do
+          putStrLn "Lookup failed: Site does not exist"
+          -- TODO: respond with a more specific error
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
+        LookupFailureTechnicalError -> do
+          putStrLn "Lookup failed: Technical error"
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
+
+data OperatorLoginResult = OperatorLoginResultSuccess | OperatorLoginResultFailedMatch | OperatorLoginResultFailedDuplicate
+handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar =
+  let
+    matchSiteOperatorCredentials siteOperatorInfo = (sodUsername siteOperatorInfo == username) && (sodPassword siteOperatorInfo == password)
+  in
+    withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> do
+      operatorLoginResult <- atomically $ do
+        -- read the site data
+        siteData <- readTVar siteDataTVar
+        -- see if any operators match the given credentials
+        maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
+          [siteOperatorInfo] -> do
+            -- Successful match
+            return $ Just siteOperatorInfo
+          [] -> do
+            -- No match
+            return Nothing
+          _ -> do
+            -- Multiple match -- data integrity error
+            return Nothing
+
+        case maybeSiteOperatorInfo of
+          Just (SiteOperatorInfo _ _ name color iconUrl) -> do
+            -- update the site, adding the operator to it
+            let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
+            writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
+
+            -- update the client, associating it with the site
+            clientData <- readTVar clientDataTVar
+            writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color iconUrl siteDataTVar [] }
+            return $ Just (name, color, iconUrl)
+          Nothing -> return Nothing -- could not authenticate the user
+
+      case operatorLoginResult of
+        -- successful login
+        Just (name, color, iconUrl) -> do
+          putStrLn "Operator login successful"
+          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, iconUrl]) clientDataTVar
+        -- failed login
+        Nothing -> do
+          putStrLn "Operator login failed: Invalid credentials"
+          createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
+    )
+
+withSiteDataTVar :: SiteId -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> (SiteDataTVar -> IO ()) -> IO ()
+withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
+  lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
+  case lookupResult of
+    Right siteDataTVar -> f siteDataTVar
     Left lookupFailureReason ->
       case lookupFailureReason of
         LookupFailureNotExist -> do
