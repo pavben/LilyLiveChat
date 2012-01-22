@@ -47,23 +47,56 @@
 	border-right:1px solid #BBBBBB;
 }
 #main_topbarcontainer {
-	height:40px;
-	vertical-align:bottom;
+	height:30px;
 }
 #main_topbarinnertable {
+	height:30px;
+}
+/* all full-height top bar elements that have the line at the bottom */
+.main_topbaredgelinesleft,
+.main_topbaredgelinesright,
+.main_topbarspacer7w,
+.main_topbarlongspacer {
+	border-bottom:1px solid #BBBBBB;
+	height:29px;
+}
+.main_topbaredgelineswrapper {
+	display:table-cell;
+	width:10px;
+}
+.main_topbaredgelinesleft, .main_topbaredgelinesright {
+	background:url('images/edgelines.png');
+}
+.main_topbaredgelinesleft {
+	border-right:1px solid #BBBBBB;
+}
+.main_topbaredgelinesright {
+	border-left:1px solid #BBBBBB;
+}
+.main_topbarspacer7wwrapper {
+	display:table-cell;
+	width:7px;
+}
+.main_topbarspacer7w {
+	width:7px;
+}
+.main_topbartabwrapper {
+	display:table-cell;
+	width:162px;
+	height:30px;
+	vertical-align:bottom;
 }
 .main_topbartab, .main_topbartabcurrent {
-	display:table-cell;
-	background-image:url('images/tabtile.png');
+	width:152px;
+	background-image:url('images/tabtile.png'); /* TODO: modify the image to match the true height */
 	background-repeat:repeat-x;
 	border-top:1px solid #BBBBBB;
 	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 	border-top-left-radius:5px;
 	border-top-right-radius:5px;
-	padding:5px;
-	width:160px;
-	font-size:20px;
+	padding:4px;
+	font-size:16px;
 	text-align:center;
 	text-shadow:1px 1px 0px #f4f4f4;
 	-webkit-transition: all 0.1s ease-in-out;
@@ -77,18 +110,11 @@
 }
 .main_topbartab:active, .main_topbartabcurrent:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+	border-bottom:1px solid #BBBBBB;
 }
 .main_topbartab {
 	border-bottom:1px solid #BBBBBB;
 }
 .main_topbartabcurrent {
-	border-bottom:1px solid #E3E3E3;
+	padding-bottom:5px;
 }
-.main_topbarspacer, .main_topbarspacer9w {
-	display:table-cell;
-	border-bottom:1px solid #BBBBBB;
-}
-.main_topbarspacer9w {
-	width:9px;
-}
-
