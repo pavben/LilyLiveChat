@@ -2,9 +2,11 @@ var currentTab = null;
 
 // these will be set onload
 var loginTab = null;
+var mainTab = null;
 
 $(document).ready(function() {
 	loginTab = $('#login_tab');
+	mainTab = $('#main_tab');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
 
@@ -24,7 +26,8 @@ $(document).ready(function() {
 		}
 	});
 
-	changeTabTo(loginTab);
+	//changeTabTo(loginTab);
+	changeTabTo(mainTab);
 
 	$(window).resize(onResize);
 });

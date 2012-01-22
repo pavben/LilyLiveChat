@@ -1,8 +1,6 @@
 #login_tab {
 	min-width:659px;
-}
-#login_bg {
-	background: #C2E8F1 url('images/loginbg.png') repeat-x left top;
+	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
 }
 #login_top {
 	height:0px;
@@ -36,3 +34,61 @@
 #login_bottom {
 	height:0px;
 }
+#main_tab {
+	min-width:659px;
+	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
+}
+#main_box {
+	width:861px;
+	margin-left:auto;
+	margin-right:auto;
+	background-color:#E3E3E3;
+	border-left:1px solid #BBBBBB;
+	border-right:1px solid #BBBBBB;
+}
+#main_topbarcontainer {
+	height:40px;
+	vertical-align:bottom;
+}
+#main_topbarinnertable {
+}
+.main_topbartab, .main_topbartabcurrent {
+	display:table-cell;
+	background-image:url('images/tabtile.png');
+	background-repeat:repeat-x;
+	border-top:1px solid #BBBBBB;
+	border-left:1px solid #BBBBBB;
+	border-right:1px solid #BBBBBB;
+	border-top-left-radius:5px;
+	border-top-right-radius:5px;
+	padding:5px;
+	width:160px;
+	font-size:20px;
+	text-align:center;
+	text-shadow:1px 1px 0px #f4f4f4;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	transition: all 0.1s ease-in-out;
+	cursor:pointer;
+}
+.main_topbartab:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.main_topbartab:active, .main_topbartabcurrent:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+.main_topbartab {
+	border-bottom:1px solid #BBBBBB;
+}
+.main_topbartabcurrent {
+	border-bottom:1px solid #E3E3E3;
+}
+.main_topbarspacer, .main_topbarspacer9w {
+	display:table-cell;
+	border-bottom:1px solid #BBBBBB;
+}
+.main_topbarspacer9w {
+	width:9px;
+}
+
