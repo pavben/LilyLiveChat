@@ -88,7 +88,7 @@
 }
 .main_topbartab, .main_topbartabcurrent {
 	width:152px;
-	background-image:url('images/tabtile.png'); /* TODO: modify the image to match the true height */
+	background-image:url('images/tabtile.png');
 	background-repeat:repeat-x;
 	border-top:1px solid #BBBBBB;
 	border-left:1px solid #BBBBBB;
