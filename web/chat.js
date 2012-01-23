@@ -343,6 +343,139 @@ function welcomeTabOkHandler() {
 	}
 }
 
+var soundManager = null;
+
+function SoundManager() {
+	instance = this;
+/*
+			//////// TEST
+			log("audio..");
+			var dummyAudio = new Audio();
+			log(dummyAudio.canPlayType('audio/ogg; codecs=vorbis'));
+			log(dummyAudio.canPlayType('audio/mpeg'));
+			
+			var s = new Audio('audio/nextinline.ogg');
+			s.addEventListener('canplaythrough', function(ev) {
+				this.removeEventListener('canplaythrough', arguments.callee, false);
+				log("canplaythrough called");
+				s.play();
+			}, false);
+			s.addEventListener('error', function(ev) {
+				log("error!");
+			}, false);
+			s.load();
+			//////// END TEST
+*/
+	// formats are listed in order of preference
+	formats = [
+		{
+			mime: 'audio/ogg; codecs=vorbis',
+			ext: 'ogg'
+		},
+		{
+			mime: 'audio/mpeg',
+			ext: 'mp3'
+		}
+	];
+
+	// determine which audio format to use, if any
+	{
+		var dummyAudio = new Audio();
+		for (var i = 0; i < formats.length; i++) {
+			currentFormat = formats[i];
+
+			if (dummyAudio.canPlayType(currentFormat.mime)) {
+				this.fileExt = currentFormat.ext;
+				break;
+			}
+		}
+	}
+
+	filesToLoad = [
+		'youare9thinline',
+		'youarenow8thinline',
+		'7thinline',
+		'youarenow6thinline',
+		'youarenow5thinline',
+		'youarenow4thinline',
+		'youarenow3rd',
+		'youre2ndinline',
+		'getreadyyourenextinline',
+		'nowspeakingwithrep'
+	];
+
+	if (!this.fileExt) {
+		log("Cannot load SoundManager due to no compatible formats. Audio will be disabled.");
+		return;
+	}
+
+	this.sounds = {};
+	{
+		soundsLoaded = 0;
+		this.allSoundsLoaded = false;
+		for (var i = 0; i < filesToLoad.length; i++) {
+			var currentFile = filesToLoad[i];
+			var filePath = 'audio/' + currentFile + '.' + this.fileExt;
+			var s = new Audio(filePath);
+			s.addEventListener('canplaythrough', function() {
+				log("canplaythrough called");
+				this.removeEventListener('canplaythrough', arguments.callee, false);
+				soundsLoaded++;
+				log("sounds loaded: " + soundsLoaded);
+				if (soundsLoaded == filesToLoad.length) {
+					instance.allSoundsLoaded = true;
+					instance.considerPlayNextSafe();
+				}
+			}, false);
+			s.addEventListener('error', function() {
+				log("Unable to load sound: " + filePath);
+			}, false);
+			s.load();
+			instance.sounds[currentFile] = s;
+		}
+	}
+
+	this.playlist = [];
+
+	this.currentlyPlaying = false;
+
+	this.play = function(soundName) {
+		log("play called with sound = " + soundName);
+		var s = instance.sounds[soundName];
+		if (s) {
+			log('added to playlist');
+			instance.playlist.push(s);
+
+			instance.considerPlayNextSafe();
+		} else {
+			log('Invalid sound name: ' + soundName);
+		}
+	}
+
+	this.considerPlayNextSafe = function() {
+		if (!instance.currentlyPlaying && instance.allSoundsLoaded) {
+			instance.considerPlayNext();
+		}
+	}
+
+	this.considerPlayNext = function() {
+		instance.currentlyPlaying = true;
+
+		if (instance.playlist.length > 0) {
+			var s = instance.playlist.shift();
+			s.addEventListener('ended', function() {
+				log("ended");
+				this.removeEventListener('ended', arguments.callee, false);
+
+				instance.currentlyPlaying = false;
+
+				setTimeout(instance.considerPlayNext, 0);
+			});
+			s.play();
+		}
+	}
+}
+
 $(document).ready(function() {
 	welcomeTab = $('#welcome_tab');
 	chatTab = $('#chat_tab');
@@ -355,6 +488,21 @@ $(document).ready(function() {
 	// and these are hidden
 	$('#chat_theircardrow').hide();
 	$('#chat_inlinecardrow').hide();
+
+	// initialize the sound manager
+	soundManager = new SoundManager();
+	/*
+	soundManager.play('youare9thinline');
+	soundManager.play('youarenow8thinline');
+	soundManager.play('7thinline');
+	soundManager.play('youarenow6thinline');
+	soundManager.play('youarenow5thinline');
+	soundManager.play('youarenow4thinline');
+	soundManager.play('youarenow3rd');
+	soundManager.play('youre2ndinline');
+	soundManager.play('getreadyyourenextinline');
+	soundManager.play('nowspeakingwithrep');
+	*/
 
 	// generate an initial color and set it
 	myColor = generatePersonColor();
