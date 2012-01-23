@@ -397,7 +397,7 @@ function SoundManager() {
 		'7thinline',
 		'youarenow6thinline',
 		'youarenow5thinline',
-		'youarenow4thinline',
+		'youre4thinline',
 		'youarenow3rd',
 		'youre2ndinline',
 		'getreadyyourenextinline',
@@ -497,7 +497,7 @@ $(document).ready(function() {
 	soundManager.play('7thinline');
 	soundManager.play('youarenow6thinline');
 	soundManager.play('youarenow5thinline');
-	soundManager.play('youarenow4thinline');
+	soundManager.play('youre4thinline');
 	soundManager.play('youarenow3rd');
 	soundManager.play('youre2ndinline');
 	soundManager.play('getreadyyourenextinline');
