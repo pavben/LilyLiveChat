@@ -41,7 +41,7 @@
 }
 #welcome_chooseanamelabel {
 	height:30px;
-	padding-top:4px;
+	padding-top:5px;
 	text-align:center;
 }
 
@@ -50,12 +50,19 @@
 #chat_tab {
 	min-width:641px;
 	padding:9px 9px 2px 9px;
+	background-color:#E3E3E3;
 }
 #chat_cardsep {
 	display:table-cell;
 	width:1px;
 	height:100%;
 	background-color:#BBBBBB;
+}
+#chat_menubar {
+	margin-top:9px;
+	padding-top:9px;
+	border-top:1px solid #BBBBBB;
+	vertical-align:bottom;
 }
 #chat_chatlog {
 	height:400px;

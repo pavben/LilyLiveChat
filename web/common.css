@@ -91,7 +91,6 @@ input {
 }
 .basicbutton {
 	display:table-cell;
-	height:25px;
 	background-image:url('images/buttontile.png');
 	background-repeat:repeat-x;
 	border:1px solid #BBBBBB;
@@ -104,7 +103,7 @@ input {
 	-moz-transition: all 0.1s ease-in-out;
 	-o-transition: all 0.1s ease-in-out;
 	transition: all 0.1s ease-in-out;
-	line-height:26px;
+	line-height:24px;
 	vertical-align:top;
 }
 .basicbutton:hover {
