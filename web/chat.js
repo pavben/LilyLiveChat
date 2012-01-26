@@ -189,7 +189,7 @@ function replaceMeWith(person) {
 
 function replaceThemWith(person) {
 	they = person;
-	changeRightSpaceDivTo($('#chat_theircardrow'), function() {
+	changeRightSpaceDivTo($('#chat_theircardcell'), function() {
 		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
 		replaceCardTextWith(person, null, $('#chat_theirname'), $('#chat_theirtitle'));
 	});
@@ -245,7 +245,7 @@ function getOrdinalSuffixFor(number) {
 function updatePositionInLine(position) {
 	var newContent = position + '<sup>' + getOrdinalSuffixFor(position) + '</sup>';
 
-	changeRightSpaceDivTo($('#chat_inlinecardrow'), function() {
+	changeRightSpaceDivTo($('#chat_inlinecell'), function() {
 		$('#chat_inlinepos').html(newContent);
 	});
 }
@@ -468,8 +468,8 @@ $(document).ready(function() {
 	$('#chat_myicon').fadeTo(0, 0);
 	$('#chat_theiricon').fadeTo(0, 0);
 	// and these are hidden
-	$('#chat_theircardrow').hide();
-	$('#chat_inlinecardrow').hide();
+	$('#chat_theircardcell').hide();
+	$('#chat_inlinecell').hide();
 
 	// initialize the sound manager
 	soundManager = new SoundManager();

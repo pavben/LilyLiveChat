@@ -20,13 +20,10 @@ input {
 .tab {
 	display:none;
 }
-.fixedtable, .cardrowtable {
+.fixedtable {
 	display:table;
 	table-layout:fixed;
 	width:100%;
-}
-.cardrowtable {
-	height:100px;
 }
 .tablerow {
 	display:table-row;
@@ -42,8 +39,12 @@ input {
 .cell320 {
 	width:320px;
 }
-.framedicon {
+.iconcell {
 	display:table-cell;
+	width:100px;
+	vertical-align:top;
+}
+.framedicon {
 	width:98px;
 	height:98px;
 	background-color:#ECECEC;
@@ -53,7 +54,6 @@ input {
 }
 .leftcardtext {
 	display:table-cell;
-	width:212px;
 	padding-left:8px;
 	height:100%;
 }

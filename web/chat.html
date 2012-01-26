@@ -16,9 +16,11 @@
 			<div id="welcome_bg">
 				<div style="height:230px;"></div>
 				<div id="welcome_loginbox">
-					<div class="cardrowtable">
+					<div class="fixedtable">
 						<div id="welcome_card" class="tablerow">
-							<div id="welcome_icon" class="framedicon"></div>
+							<div class="iconcell">
+								<div id="welcome_icon" class="framedicon"></div>
+							</div>
 							<div id="welcome_cardtext" class="leftcardtext">
 								<div id="welcome_chooseanamelabel">
 									Choose a Name
@@ -40,52 +42,63 @@
 		<div id="welcome_bottom"></div>
 	</div>
 	<div id="chat_tab" class="tab">
-		<div class="cardrowtable">
-			<div class="cell">
-				<div id="chat_mycard" class="cell320">
-					<div class="cardrowtable">
-						<div id="chat_myicon" class="framedicon"></div>
-						<div id="chat_mycardtext" class="leftcardtext">
-							<div id="chat_myname" class="personname"></div>
-							<div id="chat_mytitle" class="persontitle"></div>
+		<div class="fixedtable">
+			<div class="tablerow">
+				<div class="cell">
+					<div class="fixedtable">
+						<div class="tablerow">
+							<div class="iconcell">
+								<div id="chat_myicon" class="framedicon"></div>
+							</div>
+							<div class="leftcardtext">
+								<div id="chat_myname" class="personname"></div>
+								<div id="chat_mytitle" class="persontitle"></div>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-			<div id="chat_cardsep"></div>
-			<div class="cell">
-				<div class="cardrowtable">
-					<div id="chat_theircardrow" class="tablerow">
-						<div class="cell"></div>
-						<div class="cell320">
-							<div class="cardrowtable">
-								<div id="chat_theircardtext" class="rightcardtext">
-									<div id="chat_theirname" class="personname"></div>
-									<div id="chat_theirtitle" class="persontitle"></div>
-								</div>
+				<div id="chat_cardsep"></div>
+				<div id="chat_theircardcell" class="cell">
+					<div class="fixedtable">
+						<div class="tablerow">
+							<div class="cell"></div>
+							<div id="chat_theircardtext" class="rightcardtext">
+								<div id="chat_theirname" class="personname"></div>
+								<div id="chat_theirtitle" class="persontitle"></div>
+							</div>
+							<div class="iconcell">
 								<div id="chat_theiricon" class="framedicon"></div>
 							</div>
 						</div>
 					</div>
-					<div id="chat_inlinecardrow" class="tablerow">
-						<div class="cell">
-							<div class="fixedtable">
-								<div class="tablerow" style="">
-									<div class="chat_inlinecardtexttop">You are</div>
-								</div>
-								<div class="tablerow">
-									<div id="chat_inlinepos"></div>
-								</div>
-								<div class="tablerow">
-									<div class="chat_inlinecardtextbot">in line</div>
+				</div>
+				<div id="chat_inlinecell" class="cell">
+					<div class="fixedtable">
+						<div class="tablerow">
+							<div class="cell"></div>
+							<div id="chat_inlineinfocell" class="cell">
+								<div class="fixedtable">
+									<div class="tablerow">
+										<div class="chat_inlinecardtexttop">You are</div>
+									</div>
+									<div class="tablerow">
+										<div id="chat_inlinepos"></div>
+									</div>
+									<div class="tablerow">
+										<div class="chat_inlinecardtextbot">in line</div>
+									</div>
 								</div>
 							</div>
+							<div class="cell"></div>
+							<div class="iconcell">
+								<div id="chat_waiticon" class="framedicon"></div>
+							</div>
 						</div>
-						<div id="chat_waiticon" class="framedicon"></div>
 					</div>
 				</div>
 			</div>
 		</div>
+		<!--
 		<div id="chat_menubar">
 			<div class="fixedtable">
 				<div class="tablerow">
@@ -95,6 +108,7 @@
 				</div>
 			</div>
 		</div>
+		-->
 		<div id="chat_chatlog">
 		</div>
 		<div id="chat_chatboxwrapper" class="inputboxwrapper">
