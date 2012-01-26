@@ -267,28 +267,10 @@ function generatePersonColor() {
 
 function onResize() {
 	if (currentTab == welcomeTab) {
-		onWelcomeTabResize();
+		onBasicVCenterResize('welcome', 641);
 	} else if (currentTab == chatTab) {
 		onChatTabResize();
 	}
-}
-
-function onWelcomeTabResize() {
-	// disable scrolling as it causes visual glitches
-	$('body').css('overflow-y', 'hidden');
-	var newWelcomeTabHeight = $(window).height();
-	if (newWelcomeTabHeight < 641) {
-		newWelcomeTabHeight = 641;
-		// if the scrollbars are needed, enable them
-		$('body').css('overflow-y', 'auto');
-	}
-	// calculate how much space needs to be filled above and below the background
-	var spaceToFill = newWelcomeTabHeight - $('#welcome_bg').outerHeight();
-	var newWelcomeTabBgTopHeight = Math.floor(spaceToFill / 2);
-	var newWelcomeTabBgBotHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
-	$('#welcome_bgtop').css('height', newWelcomeTabBgTopHeight);
-	$('#welcome_bgbot').css('height', newWelcomeTabBgBotHeight);
-	$('#welcome_tab').css('height', newWelcomeTabHeight);
 }
 
 function onChatTabResize() {

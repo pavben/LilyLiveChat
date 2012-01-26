@@ -151,6 +151,23 @@ function changeTabTo(tab) {
 	}
 }
 
+function onBasicVCenterResize(tabName, minHeight) {
+	// disable scrolling as it causes visual glitches
+	$('body').css('overflow-y', 'hidden');
+	var newTabHeight = $(window).height();
+	if (newTabHeight < minHeight) {
+		newTabHeight = minHeight;
+		// if the scrollbars are needed, enable them
+		$('body').css('overflow-y', 'auto');
+	}
+	var spaceToFill = newTabHeight - $('#' + tabName + '_middle').outerHeight();
+	var newTabTopHeight = Math.floor(spaceToFill / 2);
+	var newTabBottomHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
+	$('#' + tabName + '_top').css('height', newTabTopHeight);
+	$('#' + tabName + '_bottom').css('height', newTabBottomHeight);
+	$('#' + tabName + '_tab').css('height', newTabHeight);
+}
+
 // other
 
 function Person(name, color, title, iconUrl) {

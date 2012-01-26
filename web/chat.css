@@ -3,15 +3,15 @@
 #welcome_tab {
 	min-width:659px;
 }
-#welcome_bgtop {
+#welcome_top {
 	height:0px;
 	background-color:#76cfe4;
 }
-#welcome_bgbot {
+#welcome_bottom {
 	height:0px;
 	background-color:#68bd4d;
 }
-#welcome_bggradient {
+#welcome_middle {
 	/* BEGIN browser-specific crap */
 	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#76cfe4', endColorstr='#68bd4d'); /* IE6 & IE7 */
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#76cfe4', endColorstr='#68bd4d')"; /* IE8+ */

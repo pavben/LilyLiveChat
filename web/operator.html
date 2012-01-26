@@ -10,94 +10,75 @@
 	<script src='operator.js'></script>
 </head>
 <body>
-	<div id="login_tab" class="tab">
-		<div id="login_top"></div>
-		<div id="login_middle">
-			<div id="login_box">
-				<div class="fixedtable">
-					<div class="tablerow">
-						<div id="login_operloginlabel" class="cell">Operator Login</div>
+	<div class="common_skybg">
+		<div id="login_tab" class="tab">
+			<div id="login_top"></div>
+			<div id="login_middle">
+				<div id="login_box">
+					<div class="fixedtable">
+						<div class="tablerow">
+							<div id="login_operloginlabel" class="cell">Operator Login</div>
+						</div>
+						<div class="tablerow">
+							<div id="login_sitenamelabel" class="cell">Virtivia</div>
+						</div>
 					</div>
-					<div class="tablerow">
-						<div id="login_sitenamelabel" class="cell">Virtivia</div>
-					</div>
-				</div>
-				<div id="login_logintable" class="cardrowtable">
-					<div id="login_card" class="tablerow">
-						<div id="login_icon" class="framedicon"></div>
-						<div id="login_cardtext" class="leftcardtext">
-							<div class="fixedtable">
-								<div class="tablerow">
-									<div class="cell">
-										<div class="inputboxwrapper">
-											<input id="login_username" type="text" value="" class="inputbox" placeholder="Username" />
+					<div id="login_logintable" class="cardrowtable">
+						<div id="login_card" class="tablerow">
+							<div id="login_icon" class="framedicon"></div>
+							<div id="login_cardtext" class="leftcardtext">
+								<div class="fixedtable">
+									<div class="tablerow">
+										<div class="cell">
+											<div class="inputboxwrapper">
+												<input id="login_username" type="text" value="" class="inputbox" placeholder="Username" />
+											</div>
+										</div>
+									</div>
+									<div class="tablerow">
+										<div class="cell">
+											<div class="inputboxwrapper">
+												<input id="login_password" type="password" value="" class="inputbox" placeholder="Password" />
+											</div>
 										</div>
 									</div>
 								</div>
-								<div class="tablerow">
-									<div class="cell">
-										<div class="inputboxwrapper">
-											<input id="login_password" type="password" value="" class="inputbox" placeholder="Password" />
-										</div>
+								<div class="fixedtable" style="margin-top:1px;">
+									<div class="tablerow">
+										<div class="cell"></div>
+										<div id="login_btn_ok" class="basicbutton" style="width:82px;">OK</div>
 									</div>
-								</div>
-							</div>
-							<div class="fixedtable" style="margin-top:1px;">
-								<div class="tablerow">
-									<div class="cell"></div>
-									<div id="login_btn_ok" class="basicbutton" style="width:82px;">OK</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
+			<div id="login_bottom"></div>
 		</div>
-		<div id="login_bottom"></div>
-	</div>
-	<div id="main_tab" class="tab">
-		<div id="main_box">
-			<div class="fixedtable"><!-- the main table -->
-				<div class="tablerow"><!-- top bar row -->
-					<div id="main_topbarcontainer" class="cell">
-						<div id="main_topbarinnertable" class="fixedtable"><!-- the top bar table -->
-							<div class="tablerow">
-								<div class="main_topbaredgelineswrapper">
-									<div class="main_topbaredgelinesleft"></div>
-								</div>
-								<div class="main_topbarspacer7wwrapper">
-									<div class="main_topbarspacer7w"></div>
-								</div>
-								<div class="main_topbartabwrapper">
-									<div class="main_topbartabcurrent">Chats</div>
-								</div>
-								<div class="main_topbarspacer7wwrapper">
-									<div class="main_topbarspacer7w"></div>
-								</div>
-								<div class="main_topbartabwrapper">
-									<div class="main_topbartab">My Profile</div>
-								</div>
-								<div class="cell">
-									<div class="main_topbarlongspacer"></div>
-								</div>
-								<div class="main_topbaredgelineswrapper">
-									<div class="main_topbaredgelinesright"></div>
-								</div>
+		<div id="menu_tab" class="tab" style="height:100%;">
+			<div id="menu_top"></div>
+			<div id="menu_middle">
+				<div id="menu_box">
+					<div id="menu_welcomelabel">Welcome, Alice!</div>
+					<div class="fixedtable">
+						<div class="tablerow">
+							<div class="menu_optionbot">
+								<div class="menu_icon menu_settingsicon"></div>
+							</div>
+							<div class="cell"></div>
+							<div class="menu_optiontop">
+								<div class="menu_icon menu_chaticon"></div>
+							</div>
+							<div class="cell"></div>
+							<div class="menu_optionbot">
+								<div class="menu_icon menu_logouticon"></div>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="tablerow"><!-- main body row -->
-					<div class="cell" style="height:800px;">
-						<div id="main_chats_tab2" class="tab">
-							This is the Chats tab
-						</div>
-						<div id="main_profile_tab2" class="tab">
-							This is the My Profile tab
-						</div>
-					</div>
-				</div>
 			</div>
+			<div id="menu_bottom"></div>
 		</div>
 	</div>
 </body>

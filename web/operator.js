@@ -2,11 +2,11 @@ var currentTab = null;
 
 // these will be set onload
 var loginTab = null;
-var mainTab = null;
+var menuTab = null;
 
 $(document).ready(function() {
 	loginTab = $('#login_tab');
-	mainTab = $('#main_tab');
+	menuTab = $('#menu_tab');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
 
@@ -27,7 +27,7 @@ $(document).ready(function() {
 	});
 
 	//changeTabTo(loginTab);
-	changeTabTo(mainTab);
+	changeTabTo(menuTab);
 
 	$(window).resize(onResize);
 });
@@ -78,12 +78,10 @@ function handleMessage(message) {
 		case 7: // SomethingWentWrongMessage
 			break;
 		case 9: // OperatorLoginSuccessMessage
-			/*
 			if (currentTab == welcomeTab) {
-				replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
-				changeTabTo(chatTab);
+				//replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
+				changeTabTo(menuTab);
 			}
-			*/
 			alert("Login successful");
 			break;
 		case 10: // OperatorLoginFailedMessage
@@ -96,24 +94,26 @@ function handleMessage(message) {
 
 function onResize() {
 	if (currentTab == loginTab) {
-		onLoginTabResize();
+		onBasicVCenterResize('login', 600);
+	} else if (currentTab == menuTab) {
+		onBasicVCenterResize('menu', 600);
 	}
 }
 
-function onLoginTabResize() {
+function onBasicVCenterResize(tabName, minHeight) {
 	// disable scrolling as it causes visual glitches
 	$('body').css('overflow-y', 'hidden');
-	var newLoginTabHeight = $(window).height();
-	if (newLoginTabHeight < 641) {
-		newLoginTabHeight = 641;
+	var newTabHeight = $(window).height();
+	if (newTabHeight < minHeight) {
+		newTabHeight = minHeight;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
-	var spaceToFill = newLoginTabHeight - $('#login_middle').outerHeight();
-	var newLoginTabTopHeight = Math.floor(spaceToFill / 2);
-	var newLoginTabBottomHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
-	$('#login_top').css('height', newLoginTabTopHeight);
-	$('#login_bottom').css('height', newLoginTabBottomHeight);
-	$('#login_tab').css('height', newLoginTabHeight);
+	var spaceToFill = newTabHeight - $('#' + tabName + '_middle').outerHeight();
+	var newTabTopHeight = Math.floor(spaceToFill / 2);
+	var newTabBottomHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
+	$('#' + tabName + '_top').css('height', newTabTopHeight);
+	$('#' + tabName + '_bottom').css('height', newTabBottomHeight);
+	$('#' + tabName + '_tab').css('height', newTabHeight);
 }
 
