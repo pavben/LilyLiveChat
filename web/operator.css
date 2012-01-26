@@ -33,7 +33,7 @@
 	min-width:400px;
 }
 #menu_box {
-	width:320px;
+	width:318px;
 	margin-left:auto;
 	margin-right:auto;
 	padding:9px 9px 9px 9px;
@@ -43,7 +43,8 @@
 }
 #menu_welcomelabel {
 	text-align:center;
-	padding:5px 0px 16px 0px;
+	padding:5px 0px 14px 0px;
+	font-size:24px;
 }
 .menu_optiontop, .menu_optionbot {
 	display:table-cell;
@@ -53,7 +54,6 @@
 .menu_optionbot {
 	vertical-align:bottom;
 }
-
 .menu_icon {
 	width:98px;
 	height:98px;
