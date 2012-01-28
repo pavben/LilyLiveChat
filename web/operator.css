@@ -82,11 +82,29 @@
 .menu_logouticon {
 	background-image:url('images/menu_logout.png');
 }
-#chat_box {
-	width:861px;
+#chat_table {
+	display:table;
 	margin-left:auto;
 	margin-right:auto;
 	background-color:#E3E3E3;
 	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 }
+.chat_topleftcell {
+	display:table-cell;
+	width:641px;
+	height:29px;
+}
+.chat_toplefttable {
+	display:table;
+}
+.chat_toprightcell {
+	display:table-cell;
+	width:200px;
+}
+.chat_maincell {
+	display:table-cell;
+	width:641px;
+	height:400px;
+}
+

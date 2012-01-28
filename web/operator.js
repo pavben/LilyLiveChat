@@ -3,10 +3,12 @@ var currentTab = null;
 // these will be set onload
 var loginTab = null;
 var menuTab = null;
+var chatTab = null;
 
 $(document).ready(function() {
 	loginTab = $('#login_tab');
 	menuTab = $('#menu_tab');
+	chatTab = $('#chat_tab');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
 
@@ -27,7 +29,8 @@ $(document).ready(function() {
 	});
 
 	//changeTabTo(loginTab);
-	changeTabTo(menuTab);
+	//changeTabTo(menuTab);
+	changeTabTo(chatTab);
 
 	$(window).resize(onResize);
 });

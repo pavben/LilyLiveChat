@@ -39,6 +39,16 @@ input {
 .cell320 {
 	width:320px;
 }
+.vlinecell {
+	display:table-cell;
+	width:1px;
+	background-color:#BBBBBB;
+}
+.hlinecell {
+	display:table-cell;
+	height:1px;
+	background-color:#BBBBBB;
+}
 .iconcell {
 	display:table-cell;
 	width:100px;
@@ -111,4 +121,10 @@ input {
 }
 .basicbutton:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+.edgelinesright {
+	background:url('images/edgelines.png');
+	width:9px;
+	height:29px;
+	border-right:1px solid #BBBBBB;
 }
