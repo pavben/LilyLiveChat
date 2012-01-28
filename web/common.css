@@ -20,6 +20,9 @@ input {
 .tab {
 	display:none;
 }
+.normaltable {
+	display:table;
+}
 .fixedtable {
 	display:table;
 	table-layout:fixed;
@@ -122,9 +125,19 @@ input {
 .basicbutton:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
-.edgelinesright {
+.edgelinesleft, .edgelinesright, .edgelinesboth {
+	display:table-cell;
 	background:url('images/edgelines.png');
 	width:9px;
 	height:29px;
+}
+.edgelinesleft {
+	border-left:1px solid #BBBBBB;
+}
+.edgelinesright {
+	border-right:1px solid #BBBBBB;
+}
+.edgelinesboth {
+	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 }
