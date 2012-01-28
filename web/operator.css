@@ -109,10 +109,10 @@
 	vertical-align:top;
 }
 .chat_topbutton:hover {
-	box-shadow: 0px 0px 1px 1px #84d3e6;
+	box-shadow: 0px 0px 6px 2px #DEDEDE inset;
 }
 .chat_topbutton:active {
-	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+	box-shadow: 0px 0px 6px 2px #BDBDBD inset;
 }
 .chat_topbuttonbackicon {
 	height:29px;
