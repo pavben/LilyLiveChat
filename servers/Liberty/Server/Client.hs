@@ -247,7 +247,7 @@ handleCustomerChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO 
 handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
   -- first, append the message to the log and retrieve the chat session operator value
   chatSessionOperator <- atomically $ do
-    let chatSessionTVar = cgdChatSession clientCustomerData
+    let chatSessionTVar = cgdChatSessionTVar clientCustomerData
     chatSession <- readTVar $ chatSessionTVar
     -- now that the message was sent to all appropriate parties, add it to the log
     let updatedChatLog = (CLEMessage (cgdName clientCustomerData) (cgdColor clientCustomerData) messageText) : csLog chatSession
@@ -257,7 +257,7 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
 
   -- DEBUG
   log <- atomically $ do
-    cSession <- readTVar $ cgdChatSession clientCustomerData
+    cSession <- readTVar $ cgdChatSessionTVar clientCustomerData
     return $ csLog cSession
   print log
   -- END DEBUG
@@ -278,11 +278,26 @@ handleClientExitEvent clientDataTVar = do
     OCDClientCustomerData clientCustomerData -> do
       putStrLn "Client (Customer) exited"
       -- TODO: if there is an operator in the session, notify them that the customer has exited
+      let chatSessionTVar = cgdChatSessionTVar clientCustomerData
+      chatSession <- atomically $ readTVar $ chatSessionTVar
+      case csOperator chatSession of
+        ChatOperatorNobody -> do
+          -- TODO: look into the possibility of requiring the mutex to be held when calling onWaitingListUpdated
+          -- client exiting while on the waiting list
+          let siteDataTVar = cgdSiteDataTVar clientCustomerData
+          withSiteMutex siteDataTVar $ do
+            atomically $ do
+              siteData <- readTVar siteDataTVar
+              let newSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
+              writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
+            onWaitingListUpdated siteDataTVar
+        ChatOperatorClient operatorClientDataTVar -> do
+          putStrLn "TODO: Client disconnected while talking to an operator"
     OCDClientOperatorData clientOperatorData -> do
       putStrLn "Client (Operator) exited"
       -- TODO: for each active chat session
       --   end it (for now?)
-      --   consider re-queueing the customer (though we can't be reporting position in line then)
+      --   consider re-queueing the customer (though perhaps we can't be reporting position in line then)
     OCDClientUnregistered -> do
       putStrLn "Client (Unregistered) exited -- nothing to cleanup"
 
