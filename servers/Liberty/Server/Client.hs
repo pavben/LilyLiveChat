@@ -124,7 +124,7 @@ handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> Databa
 handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar =
   withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> do
     withSiteMutex siteDataTVar $ do
-      positionInLine <- atomically $ do
+      atomically $ do
         siteData <- readTVar siteDataTVar
         let thisChatSessionId = sdNextSessionId siteData
         clientData <- readTVar clientDataTVar
@@ -137,10 +137,7 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
         let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
         writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
 
-        return $ length newSessionsWaiting
-
-      createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
-      -- and notify all operators about the update
+      -- and notify all waiting clients and operators about the update (including sending the position to this customer)
       onWaitingListUpdated siteDataTVar
 
       -- DEBUG START
@@ -152,7 +149,8 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
 
 onWaitingListUpdated :: SiteDataTVar -> IO ()
 onWaitingListUpdated siteDataTVar = do
-  (onlineOperators, maybeResult) <- atomically $ do
+  -- first, update the operators
+  (onlineOperators, sessionsWaiting, maybeResult) <- atomically $ do
     siteData <- readTVar siteDataTVar
     let onlineOperators = sdOnlineOperators siteData
     let sessionsWaiting = sdSessionsWaiting siteData
@@ -161,13 +159,19 @@ onWaitingListUpdated siteDataTVar = do
         nextChatSession <- readTVar $ nextChatSessionTVar
         nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
         case cdOtherData nextChatSessionClientData of
-          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, Just (cgdName clientCustomerData, length sessionsWaiting))
-          _ -> return (onlineOperators, Nothing)
-      _ -> return (onlineOperators, Nothing)
+          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, sessionsWaiting, Just (cgdName clientCustomerData, length sessionsWaiting))
+          _ -> return (onlineOperators, sessionsWaiting, Nothing)
+      _ -> return (onlineOperators, sessionsWaiting, Nothing)
 
   case maybeResult of
     Just (nextCustomerName, lineSize) -> forM_ onlineOperators $ createAndSendMessage (LineStatusUpdateMessage, [nextCustomerName, LT.pack $ show $ lineSize])
     Nothing -> forM_ onlineOperators $ createAndSendMessage (LineIsEmptyMessage, [])
+
+  -- update the waiting customers with their new positions
+  forM_ (zip [1..] sessionsWaiting) (\(positionInLine, chatSessionTVar) -> do
+    chatSession <- atomically $ readTVar chatSessionTVar
+    let clientDataTVar = csCustomerClientDataTVar chatSession
+    createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
 
 withSiteMutex :: SiteDataTVar -> (IO ()) -> IO ()
 withSiteMutex siteDataTVar f = do

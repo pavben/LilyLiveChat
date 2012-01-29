@@ -36,7 +36,7 @@ data ClientCustomerData = ClientCustomerData {
   cgdColor :: Text,
   cgdIconUrl :: Text,
   cgdSiteDataTVar :: SiteDataTVar,
-  cgdChatSessionTVar :: TVar ChatSession
+  cgdChatSessionTVar :: ChatSessionTVar
 } deriving (Show)
 data ClientOperatorData = ClientOperatorData {
   codName :: Text,
@@ -44,7 +44,7 @@ data ClientOperatorData = ClientOperatorData {
   codTitle :: Text,
   codIconUrl :: Text,
   codSiteDataTVar :: SiteDataTVar,
-  codChatSessions :: [TVar ChatSession]
+  codChatSessions :: [ChatSessionTVar]
 } deriving (Show)
 data ChatSession = ChatSession {
   csId :: Integer,
