@@ -100,16 +100,16 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
   case cdOtherData clientData of
     OCDClientUnregistered ->
       case (messageType,params) of
-        (GuestJoinMessage,[siteId,name,color,icon]) -> handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
+        (CustomerJoinMessage,[siteId,name,color,icon]) -> handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
         (OperatorLoginRequestMessage,[siteId,username,password]) -> handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar
         _ -> do
           putStrLn "Client (Unregistered) sent an unknown command"
           closeClientSocket clientDataTVar
-    OCDClientGuestData clientGuestData ->
+    OCDClientCustomerData clientCustomerData ->
       case (messageType,params) of
-        (ChatMessage,[text]) -> handleGuestChatMessage text clientGuestData clientDataTVar
+        (ChatMessage,[text]) -> handleCustomerChatMessage text clientCustomerData clientDataTVar
         _ -> do
-          putStrLn "Client (Guest) sent an unknown command"
+          putStrLn "Client (Customer) sent an unknown command"
           closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
       case (messageType,params) of
@@ -118,8 +118,8 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
           putStrLn "Client (Operator) sent an unknown command"
           closeClientSocket clientDataTVar
 
-handleGuestJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
+handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
+handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteDataTVar -> do
@@ -127,9 +127,9 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
         siteData <- readTVar siteDataTVar
         let thisChatSessionId = sdNextSessionId siteData
         clientData <- readTVar clientDataTVar
-        -- create a new chat session with this client as the guest and no operator
+        -- create a new chat session with this client as the customer and no operator
         chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [CLEJoin name color]
-        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSessionTVar }
+        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
         -- add the newly-created chat session to the site data's waiting list
         let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
         writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
@@ -215,21 +215,21 @@ withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
           createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
 
-handleGuestChatMessage :: Text -> ClientGuestData -> ClientDataTVar -> IO ()
-handleGuestChatMessage messageText clientGuestData clientDataTVar = do
+handleCustomerChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
+handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
   -- first, append the message to the log and retrieve the chat session operator value
   chatSessionOperator <- atomically $ do
-    let chatSessionTVar = cgdChatSession clientGuestData
+    let chatSessionTVar = cgdChatSession clientCustomerData
     chatSession <- readTVar $ chatSessionTVar
     -- now that the message was sent to all appropriate parties, add it to the log
-    let updatedChatLog = (CLEMessage (cgdName clientGuestData) (cgdColor clientGuestData) messageText) : csLog chatSession
+    let updatedChatLog = (CLEMessage (cgdName clientCustomerData) (cgdColor clientCustomerData) messageText) : csLog chatSession
     let updatedChatSession = chatSession { csLog = updatedChatLog }
     writeTVar chatSessionTVar $ updatedChatSession
     return $ csOperator updatedChatSession
 
   -- DEBUG
   log <- atomically $ do
-    cSession <- readTVar $ cgdChatSession clientGuestData
+    cSession <- readTVar $ cgdChatSession clientCustomerData
     return $ csLog cSession
   print log
   -- END DEBUG
@@ -247,8 +247,8 @@ handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
   clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
-    OCDClientGuestData clientGuestData -> do
-      putStrLn "Client (Guest) exited"
+    OCDClientCustomerData clientCustomerData -> do
+      putStrLn "Client (Customer) exited"
       -- TODO: if there is an operator in the session, notify them that the customer has exited
     OCDClientOperatorData clientOperatorData -> do
       putStrLn "Client (Operator) sent an unknown command"

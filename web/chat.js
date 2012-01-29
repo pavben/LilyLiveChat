@@ -115,7 +115,7 @@ function handleMessage(message) {
 	switch (messageTypeId) {
 		case 2: // InLinePositionMessage
 			if (currentTab == welcomeTab) {
-				replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
+				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
 				changeTabTo(chatTab);
 			}
 			updatePositionInLine(parseInt(message[0]));
@@ -308,7 +308,7 @@ function welcomeTabOkHandler() {
 		}
 		ajaxJsonGetSessionId(
 			function() {
-				// GuestJoinCommand, site id, name, ...
+				// CustomerJoinCommand, site id, name, ...
 				queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
 
 				// re-enable the OK button

@@ -65,7 +65,7 @@ function loginTabOkHandler() {
 
 		ajaxJsonGetSessionId(
 			function() {
-				// GuestJoinCommand, site id, name, ...
+				// OperatorLoginRequestMessage, site id, name, ...
 				queueAjaxCommand([8, "virtivia", username, password]);
 
 				// re-enable the OK button

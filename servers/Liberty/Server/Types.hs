@@ -1,7 +1,7 @@
 module Liberty.Server.Types (
   ClientData(..),
   OtherClientData(..),
-  ClientGuestData(..),
+  ClientCustomerData(..),
   ClientOperatorData(..),
   ChatSession(..),
   ChatSessionTVar,
@@ -28,9 +28,9 @@ data ClientData = ClientData {
   cdSendChan :: ClientSendChan,
   cdOtherData :: OtherClientData
 } deriving (Show)
-data OtherClientData = OCDClientUnregistered | OCDClientGuestData ClientGuestData | OCDClientOperatorData ClientOperatorData
+data OtherClientData = OCDClientUnregistered | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData
   deriving (Show)
-data ClientGuestData = ClientGuestData {
+data ClientCustomerData = ClientCustomerData {
   cgdName :: Text,
   cgdColor :: Text,
   cgdIconUrl :: Text,
@@ -47,7 +47,7 @@ data ClientOperatorData = ClientOperatorData {
 } deriving (Show)
 data ChatSession = ChatSession {
   csId :: Integer,
-  csGuestClientDataTVar :: ClientDataTVar,
+  csCustomerClientDataTVar :: ClientDataTVar,
   csOperator :: ChatOperatorEntry,
   csLog :: [ChatLogEntry]
 } deriving (Show)

@@ -1,10 +1,10 @@
-Guest to Server
+Customer to Server
 ================================================================
-1 [siteId, name, color, icon] - Guest join
+1 [siteId, name, color, icon] - Customer join
 4 [text] - Chat message
 6 - End chat
 
-Server to Guest
+Server to Customer
 ================================================================
 2 [position] - In line count
 3 [name, color, icon] - Now talking to

@@ -7,7 +7,7 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Text.Lazy (Text)
 
 -- common
-data MessageType = GuestJoinMessage
+data MessageType = CustomerJoinMessage
                  | InLinePositionMessage
                  | NowTalkingToMessage
                  | ChatMessage
