@@ -96,7 +96,8 @@ function handleMessage(message) {
 				var iconUrl = message[3];
 				me = new Person(name, color, title, iconUrl);
 				$('#menu_welcomelabel').html('Hey, ' + name + '!');
-				changeTabTo(menuTab);
+				//changeTabTo(menuTab); // TODO: for now, we jump directly to the chat tab
+				changeTabTo(chatTab);
 			}
 			log("Login successful");
 			break;

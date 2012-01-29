@@ -150,7 +150,7 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
 onWaitingListUpdated :: SiteDataTVar -> IO ()
 onWaitingListUpdated siteDataTVar = do
   -- first, update the operators
-  (onlineOperators, sessionsWaiting, maybeResult) <- atomically $ do
+  (onlineOperators, sessionsWaiting, maybeNextCustomerInfo) <- atomically $ do
     siteData <- readTVar siteDataTVar
     let onlineOperators = sdOnlineOperators siteData
     let sessionsWaiting = sdSessionsWaiting siteData
@@ -159,12 +159,12 @@ onWaitingListUpdated siteDataTVar = do
         nextChatSession <- readTVar $ nextChatSessionTVar
         nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
         case cdOtherData nextChatSessionClientData of
-          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, sessionsWaiting, Just (cgdName clientCustomerData, length sessionsWaiting))
+          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, sessionsWaiting, Just (cgdName clientCustomerData, cgdColor clientCustomerData))
           _ -> return (onlineOperators, sessionsWaiting, Nothing)
       _ -> return (onlineOperators, sessionsWaiting, Nothing)
 
-  case maybeResult of
-    Just (nextCustomerName, lineSize) -> forM_ onlineOperators $ createAndSendMessage (LineStatusUpdateMessage, [nextCustomerName, LT.pack $ show $ lineSize])
+  case maybeNextCustomerInfo of
+    Just (nextCustomerName, nextCustomerColor) -> forM_ onlineOperators $ createAndSendMessage (LineStatusUpdateMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ length $ sessionsWaiting])
     Nothing -> forM_ onlineOperators $ createAndSendMessage (LineIsEmptyMessage, [])
 
   -- update the waiting customers with their new positions
@@ -179,10 +179,10 @@ withSiteMutex siteDataTVar f = do
     siteData <- readTVar siteDataTVar
     return $ sdSiteMutex siteData
 
-  bracket
+  bracket_
     (takeMVar siteMutex)
-    (\_ -> putMVar siteMutex ())
-    (\_ -> f)
+    (putMVar siteMutex ())
+    (f)
 
 data OperatorLoginResult = OperatorLoginResultSuccess | OperatorLoginResultFailedMatch | OperatorLoginResultFailedDuplicate
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()

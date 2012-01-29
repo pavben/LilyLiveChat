@@ -20,6 +20,6 @@ Server to Operator
 ================================================================
 9 [name, color, title, icon] - Operator login success response
 10 - Operator login failed response
-11 [next customer name, number of waiters] - Line status update
+11 [next customer name, their color, number of waiters] - Line status update
 12 - Line is empty
 

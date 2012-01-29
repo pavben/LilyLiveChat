@@ -163,4 +163,37 @@
 	width:641px;
 	height:400px;
 }
-
+.chat_sessionslistheader {
+	line-height:29px;
+	background-color:#ECECEC;
+	border-bottom:1px solid #BBBBBB;
+	text-align:center;
+}
+.chat_sessionslistcontent {
+	border-bottom:1px solid #BBBBBB;
+	padding:7px 7px 0px 7px;
+}
+.chat_sessionlistbutton {
+	line-height:25px;
+	font-size:18px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	text-shadow:1px 1px 0px #f4f4f4;
+	text-align:center;
+	cursor:pointer;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	transition: all 0.1s ease-in-out;
+	vertical-align:top;
+}
+.chat_sessionlistbutton:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.chat_sessionlistbutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+.chat_sessionlistsep {
+	height:7px;
+}
