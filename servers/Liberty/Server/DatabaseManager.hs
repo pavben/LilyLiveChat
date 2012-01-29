@@ -9,6 +9,7 @@ module Liberty.Server.DatabaseManager (
 ) where
 import Control.Applicative
 import Control.Concurrent
+import Control.Concurrent.MVar
 import Control.Concurrent.STM.TVar
 import Control.Exception
 import Control.Monad.STM
@@ -150,7 +151,9 @@ getSiteDataFromDb databaseHandleTVar siteId =
                   )
                   (operatorsDocs)
                 of
-                  Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos [] 0
+                  Just siteOperatorInfos -> do
+                    siteMutex <- newMVar ()
+                    return $ Right $ SiteData siteId siteName [] siteOperatorInfos [] 0 siteMutex
                   Nothing -> return $ Left $ LookupFailureTechnicalError
               Nothing -> return $ Left $ LookupFailureTechnicalError
           else

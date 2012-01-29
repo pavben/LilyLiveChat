@@ -5,6 +5,7 @@ import Control.Concurrent
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Control.Exception
+import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
@@ -14,12 +15,13 @@ import qualified Data.Text.Lazy.IO as LTI
 import qualified Data.Text.Lazy.Read as LTR
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
-import Prelude hiding (catch)
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
+import Prelude hiding (catch)
+import Safe
 
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar = do
@@ -119,11 +121,10 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
           closeClientSocket clientDataTVar
 
 handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar = do
-  lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
-  case lookupResult of
-    Right siteDataTVar -> do
-      (allOperators, positionInLine) <- atomically $ do
+handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar =
+  withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> do
+    withSiteMutex siteDataTVar $ do
+      (allOperators, nextCustomerName, positionInLine) <- atomically $ do
         siteData <- readTVar siteDataTVar
         let thisChatSessionId = sdNextSessionId siteData
         clientData <- readTVar clientDataTVar
@@ -133,24 +134,37 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
         -- add the newly-created chat session to the site data's waiting list
         let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
         writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
-        return $ (sdOnlineOperators siteData, length newSessionsWaiting)
+
+        nextCustomerName' <- case headMay newSessionsWaiting of
+          Just nextChatSessionTVar -> do
+            nextChatSession <- readTVar $ nextChatSessionTVar
+            nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
+            case cdOtherData nextChatSessionClientData of
+              OCDClientCustomerData clientCustomerData -> return $ cgdName clientCustomerData
+              _ -> return $ LT.pack "ERROR"
+          _ -> return $ LT.pack "ERROR"
+
+        return $ (sdOnlineOperators siteData, nextCustomerName', length newSessionsWaiting)
+
+      forM_ allOperators $ createAndSendMessage (LineStatusUpdateMessage, [nextCustomerName, LT.pack $ show $ positionInLine])
       createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
       -- DEBUG START
       newCD <- atomically $ readTVar clientDataTVar
       print newCD
       -- DEBUG END
       -- TODO: make sure all fields are HTML-safe
-    Left lookupFailureReason ->
-      case lookupFailureReason of
-        LookupFailureNotExist -> do
-          putStrLn "Lookup failed: Site does not exist"
-          -- TODO: respond with a more specific error
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
-        LookupFailureTechnicalError -> do
-          putStrLn "Lookup failed: Technical error"
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
+    )
+
+withSiteMutex :: SiteDataTVar -> (IO ()) -> IO ()
+withSiteMutex siteDataTVar f = do
+  siteMutex <- atomically $ do
+    siteData <- readTVar siteDataTVar
+    return $ sdSiteMutex siteData
+
+  bracket
+    (takeMVar siteMutex)
+    (\_ -> putMVar siteMutex ())
+    (\_ -> f)
 
 data OperatorLoginResult = OperatorLoginResultSuccess | OperatorLoginResultFailedMatch | OperatorLoginResultFailedDuplicate
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
@@ -251,7 +265,7 @@ handleClientExitEvent clientDataTVar = do
       putStrLn "Client (Customer) exited"
       -- TODO: if there is an operator in the session, notify them that the customer has exited
     OCDClientOperatorData clientOperatorData -> do
-      putStrLn "Client (Operator) sent an unknown command"
+      putStrLn "Client (Operator) exited"
       -- TODO: for each active chat session
       --   end it (for now?)
       --   consider re-queueing the customer (though we can't be reporting position in line then)

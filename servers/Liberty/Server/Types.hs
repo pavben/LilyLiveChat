@@ -16,6 +16,7 @@ module Liberty.Server.Types (
   ClientSendChan,
   module Liberty.Common.Types
 ) where
+import Control.Concurrent.MVar
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Data.Text.Lazy (Text)
@@ -67,7 +68,8 @@ data SiteData = SiteData {
   sdSessionsWaiting :: [ChatSessionTVar],
   sdOperators :: [SiteOperatorInfo],
   sdOnlineOperators :: [ClientDataTVar],
-  sdNextSessionId :: Integer
+  sdNextSessionId :: Integer,
+  sdSiteMutex :: MVar ()
 } deriving (Show)
 data SiteOperatorInfo = SiteOperatorInfo {
   sodUsername :: Text,
@@ -90,4 +92,7 @@ instance Show (TVar a) where
 
 instance Show (TChan a) where
   show _ = "TChan"
+
+instance Show (MVar a) where
+  show _ = "MVar"
 
