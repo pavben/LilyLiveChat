@@ -31,6 +31,11 @@ $(document).ready(function() {
 		}
 	});
 
+	// menu tab handlers
+	$('#menu_btn_chat').click(function() {
+		changeTabTo(chatTab);
+	});
+
 	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
 	//changeTabTo(chatTab);

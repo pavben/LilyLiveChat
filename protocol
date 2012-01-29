@@ -15,11 +15,9 @@ Server to Guest
 Operator to Server
 ================================================================
 8 [siteId, username, password] - Operator login request
-4 [text] - Chat message
 
 Server to Operator
 ================================================================
-5 [name, text] - Append to message log
 9 [name, color, title, icon] - Operator login success response
 10 - Operator login failed response
 
