@@ -20,6 +20,6 @@ Operator to Server
 Server to Operator
 ================================================================
 5 [name, text] - Append to message log
-9 [name, color, icon] - Operator login success response
+9 [name, color, title, icon] - Operator login success response
 10 - Operator login failed response
 

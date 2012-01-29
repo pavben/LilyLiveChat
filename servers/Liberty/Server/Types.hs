@@ -40,6 +40,7 @@ data ClientGuestData = ClientGuestData {
 data ClientOperatorData = ClientOperatorData {
   codName :: Text,
   codColor :: Text,
+  codTitle :: Text,
   codIconUrl :: Text,
   codSiteDataTVar :: SiteDataTVar,
   codChatSessions :: [TVar ChatSession]
@@ -71,6 +72,7 @@ data SiteOperatorInfo = SiteOperatorInfo {
   sodPassword :: Text,
   sodName :: Text,
   sodColor :: Text,
+  sodTitle :: Text,
   sodIconUrl :: Text
 } deriving (Show)
 

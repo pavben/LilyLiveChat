@@ -5,6 +5,9 @@ var loginTab = null;
 var menuTab = null;
 var chatTab = null;
 
+// Person object representing the operator
+var me = null;
+
 $(document).ready(function() {
 	loginTab = $('#login_tab');
 	menuTab = $('#menu_tab');
@@ -28,9 +31,9 @@ $(document).ready(function() {
 		}
 	});
 
-	//changeTabTo(loginTab);
+	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
-	changeTabTo(chatTab);
+	//changeTabTo(chatTab);
 
 	$(window).resize(onResize);
 });
@@ -81,11 +84,16 @@ function handleMessage(message) {
 		case 7: // SomethingWentWrongMessage
 			break;
 		case 9: // OperatorLoginSuccessMessage
-			if (currentTab == welcomeTab) {
-				//replaceMeWith(new Person(myName, myColor, 'Guest', myIcon));
+			if (currentTab == loginTab) {
+				var name = message[0];
+				var color = message[1];
+				var title = message[2];
+				var iconUrl = message[3];
+				me = new Person(name, color, title, iconUrl);
+				$('#menu_welcomelabel').html('Hey, ' + name + '!');
 				changeTabTo(menuTab);
 			}
-			alert("Login successful");
+			log("Login successful");
 			break;
 		case 10: // OperatorLoginFailedMessage
 			alert("Login failed: Invalid credentials");

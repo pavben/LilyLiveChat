@@ -173,22 +173,22 @@ handleOperatorLoginRequest siteId username password clientDataTVar databaseHandl
             return Nothing
 
         case maybeSiteOperatorInfo of
-          Just (SiteOperatorInfo _ _ name color iconUrl) -> do
+          Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
             -- update the site, adding the operator to it
             let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
             writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
 
             -- update the client, associating it with the site
             clientData <- readTVar clientDataTVar
-            writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color iconUrl siteDataTVar [] }
-            return $ Just (name, color, iconUrl)
+            writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
+            return $ Just (name, color, title, iconUrl)
           Nothing -> return Nothing -- could not authenticate the user
 
       case operatorLoginResult of
         -- successful login
-        Just (name, color, iconUrl) -> do
+        Just (name, color, title, iconUrl) -> do
           putStrLn "Operator login successful"
-          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, iconUrl]) clientDataTVar
+          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
         -- failed login
         Nothing -> do
           putStrLn "Operator login failed: Invalid credentials"

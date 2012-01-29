@@ -38,7 +38,8 @@ function sendAjaxCommands() {
 				ajaxCommandQueue.unshift(currentCommand);
 				ajaxCommandSendInProgress = false;
 				setTimeout(sendAjaxCommands, 5000); // schedule a retry in 5 seconds
-			}
+			},
+			5000
 		);
 	}
 }
@@ -58,7 +59,8 @@ function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
 				onSuccessCallback();
 			}
 		},
-		onErrorCallback
+		onErrorCallback,
+		5000
 	);
 }
 
@@ -93,30 +95,33 @@ function ajaxJsonLongPoll() {
 			}
 		},
 		function (errorThrown) {
-			log("Long Poll Error: " + errorThrown);
 			if (errorThrown == 'timeout') {
 				setTimeout(ajaxJsonLongPoll, 0);
 			}
 			else {
-				setTimeout(ajaxJsonLongPoll, 5000); // schedule a retry in 5 seconds
+				log("Long Poll Error: " + errorThrown);
+				setTimeout(ajaxJsonLongPoll, 4000); // schedule a retry in 4 seconds
 			}
-		}
+		},
+		10000
 	);
 }
 
-function ajaxJson(data, successFunction, errorFunction) {
+function ajaxJson(data, successFunction, errorFunction, timeout) {
 	$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 	$.ajax({
 		type: "POST",
 		url: "http://localhost:9802/c",
 		data: uriEncodeArray(data),
 		dataType: 'json',
-		timeout: 5 * 1000,
+		timeout: timeout,
 		success: function(data, textStatus, jqXHR) {
 			successFunction(data);
 		},
 		error: function(request, textStatus, errorThrown) {
-			log("Error is: " + errorThrown);
+			if (errorThrown != "timeout") {
+				log("Error is: " + errorThrown);
+			}
 			errorFunction(errorThrown);
 		}
 	});

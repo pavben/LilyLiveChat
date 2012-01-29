@@ -498,6 +498,7 @@ $(document).ready(function() {
 	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 
 	// welcome tab handlers
+	// TODO: If the user has changed the name value to something non-empty, do not reset it with Randomize
 	$('#welcome_btn_randomize').click(function(e) {
 		$('#welcome_myname').fadeTo(100, 0, function() {
 			// name

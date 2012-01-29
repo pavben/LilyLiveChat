@@ -7,6 +7,7 @@ module Liberty.Server.DatabaseManager (
   runDatabaseManager,
   getSiteDataFromDb
 ) where
+import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Exception
@@ -128,22 +129,23 @@ getSiteDataFromDb databaseHandleTVar siteId =
         if length docs == 1 then
           let firstDoc = head $ docs
           in
-            case combineMaybes3
-              (asMaybeText $ lookup "siteId" firstDoc)
-              (asMaybeText $ lookup "name" firstDoc)
+            case (,,) <$>
+              (asMaybeText $ lookup "siteId" firstDoc) <*>
+              (asMaybeText $ lookup "name" firstDoc) <*>
               (lookup "operators" firstDoc :: Maybe [Document])
             of
               Just (siteId, siteName, operatorsDocs) ->
                 case mapM
                   (\operatorDoc ->
-                    case combineMaybes5
-                      (asMaybeText $ lookup "username" operatorDoc)
-                      (asMaybeText $ lookup "password" operatorDoc)
-                      (asMaybeText $ lookup "name" operatorDoc)
-                      (asMaybeText $ lookup "color" operatorDoc)
+                    case (,,,,,) <$>
+                      (asMaybeText $ lookup "username" operatorDoc) <*>
+                      (asMaybeText $ lookup "password" operatorDoc) <*>
+                      (asMaybeText $ lookup "name" operatorDoc) <*>
+                      (asMaybeText $ lookup "color" operatorDoc) <*>
+                      (asMaybeText $ lookup "title" operatorDoc) <*>
                       (asMaybeText $ lookup "icon" operatorDoc)
                     of
-                      Just (username, password, name, color, icon) -> Just $ SiteOperatorInfo username password name color icon
+                      Just (username, password, name, color, title, icon) -> Just $ SiteOperatorInfo username password name color title icon
                       Nothing -> Nothing
                   )
                   (operatorsDocs)
@@ -154,18 +156,6 @@ getSiteDataFromDb databaseHandleTVar siteId =
           else
             return $ Left $ LookupFailureNotExist
       Nothing -> return $ Left $ LookupFailureTechnicalError
-
-combineMaybes2 :: Maybe a -> Maybe b -> Maybe (a, b)
-combineMaybes2 (Just a) (Just b) = Just (a, b)
-combineMaybes2 _ _ = Nothing
-
-combineMaybes3 :: Maybe a -> Maybe b -> Maybe c -> Maybe (a, b, c)
-combineMaybes3 (Just a) (Just b) (Just c) = Just (a, b, c)
-combineMaybes3 _ _ _ = Nothing
-
-combineMaybes5 :: Maybe a -> Maybe b -> Maybe c -> Maybe d -> Maybe e -> Maybe (a, b, c, d, e)
-combineMaybes5 (Just a) (Just b) (Just c) (Just d) (Just e) = Just (a, b, c, d, e)
-combineMaybes5 _ _ _ _ _ = Nothing
 
 asMaybeText :: Maybe String -> Maybe Text
 asMaybeText maybeString = fmap LT.pack maybeString

@@ -27,13 +27,13 @@
 	margin-top:6px;
 }
 #login_cardtext .inputboxwrapper {
-	margin-bottom:7px;
+	margin-bottom:8px;
 }
 #menu_tab {
 	min-width:400px;
 }
 #menu_box {
-	width:318px;
+	width:346px;
 	margin-left:auto;
 	margin-right:auto;
 	padding:9px 9px 9px 9px;
@@ -46,15 +46,18 @@
 	padding:5px 0px 14px 0px;
 	font-size:24px;
 }
-.menu_optiontop, .menu_optionbot {
+.menu_option, .menu_optionbig {
 	display:table-cell;
-	width:100px;
-	height:140px;
-}
-.menu_optionbot {
+	height:130px;
 	vertical-align:bottom;
 }
-.menu_icon {
+.menu_option {
+	width:100px;
+}
+.menu_optionbig {
+	width:130px;
+}
+.menu_icon, .menu_iconbig {
 	width:98px;
 	height:98px;
 	background-color:#ECECEC;
@@ -67,10 +70,18 @@
 	-o-transition: all 0.1s ease-in-out;
 	transition: all 0.1s ease-in-out;
 }
-.menu_icon:hover {
+.menu_icon {
+	width:98px;
+	height:98px;
+}
+.menu_iconbig {
+	width:128px;
+	height:128px;
+}
+.menu_icon:hover, .menu_iconbig:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
-.menu_icon:active {
+.menu_icon:active, .menu_iconbig:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
 .menu_settingsicon {
@@ -147,7 +158,7 @@
 	display:table-cell;
 	width:200px;
 }
-.chat_maincell {
+#chat_maincell {
 	display:table-cell;
 	width:641px;
 	height:400px;
