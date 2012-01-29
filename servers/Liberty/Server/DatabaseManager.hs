@@ -150,7 +150,7 @@ getSiteDataFromDb databaseHandleTVar siteId =
                   )
                   (operatorsDocs)
                 of
-                  Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos []
+                  Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos [] 0
                   Nothing -> return $ Left $ LookupFailureTechnicalError
               Nothing -> return $ Left $ LookupFailureTechnicalError
           else

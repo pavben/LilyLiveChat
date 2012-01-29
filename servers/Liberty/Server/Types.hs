@@ -46,6 +46,7 @@ data ClientOperatorData = ClientOperatorData {
   codChatSessions :: [TVar ChatSession]
 } deriving (Show)
 data ChatSession = ChatSession {
+  csId :: Integer,
   csGuestClientDataTVar :: ClientDataTVar,
   csOperator :: ChatOperatorEntry,
   csLog :: [ChatLogEntry]
@@ -65,7 +66,8 @@ data SiteData = SiteData {
   sdName :: Text,
   sdSessionsWaiting :: [ChatSessionTVar],
   sdOperators :: [SiteOperatorInfo],
-  sdOnlineOperators :: [ClientDataTVar]
+  sdOnlineOperators :: [ClientDataTVar],
+  sdNextSessionId :: Integer
 } deriving (Show)
 data SiteOperatorInfo = SiteOperatorInfo {
   sodUsername :: Text,

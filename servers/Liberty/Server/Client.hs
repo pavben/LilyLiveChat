@@ -24,15 +24,16 @@ import Liberty.Server.Types
 initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar siteMapTVar = do
   clientSendChan <- atomically $ newTChan
+  clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan OCDClientUnregistered)
   finally
     (do
-      clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan OCDClientUnregistered)
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
       clientSocketReadLoop clientDataTVar LBS.empty databaseHandleTVar siteMapTVar
     )
     (do
       atomically $ writeTChan clientSendChan $ CloseSocket
       sClose clientSocket
+      handleClientExitEvent clientDataTVar
     )
 
 clientSocketSendLoop :: ClientSendChan -> ClientDataTVar -> IO ()
@@ -122,16 +123,17 @@ handleGuestJoin siteId name color icon clientDataTVar databaseHandleTVar siteMap
   lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
   case lookupResult of
     Right siteDataTVar -> do
-      positionInLine <- atomically $ do
+      (allOperators, positionInLine) <- atomically $ do
+        siteData <- readTVar siteDataTVar
+        let thisChatSessionId = sdNextSessionId siteData
         clientData <- readTVar clientDataTVar
         -- create a new chat session with this client as the guest and no operator
-        chatSessionTVar <- newTVar $ ChatSession clientDataTVar ChatOperatorNobody [CLEJoin name color]
+        chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [CLEJoin name color]
         writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientGuestData $ ClientGuestData name color icon siteDataTVar chatSessionTVar }
         -- add the newly-created chat session to the site data's waiting list
-        siteData <- readTVar siteDataTVar
         let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
-        writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
-        return $ length newSessionsWaiting
+        writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
+        return $ (sdOnlineOperators siteData, length newSessionsWaiting)
       createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar
       -- DEBUG START
       newCD <- atomically $ readTVar clientDataTVar
@@ -240,6 +242,21 @@ handleGuestChatMessage messageText clientGuestData clientDataTVar = do
 handleOperatorChatMessage :: Text -> ClientOperatorData -> ClientDataTVar -> IO ()
 handleOperatorChatMessage messageText clientOperatorData clientDataTVar = do
   putStrLn "TODO"
+
+handleClientExitEvent :: ClientDataTVar -> IO ()
+handleClientExitEvent clientDataTVar = do
+  clientData <- atomically $ readTVar clientDataTVar
+  case cdOtherData clientData of
+    OCDClientGuestData clientGuestData -> do
+      putStrLn "Client (Guest) exited"
+      -- TODO: if there is an operator in the session, notify them that the customer has exited
+    OCDClientOperatorData clientOperatorData -> do
+      putStrLn "Client (Operator) sent an unknown command"
+      -- TODO: for each active chat session
+      --   end it (for now?)
+      --   consider re-queueing the customer (though we can't be reporting position in line then)
+    OCDClientUnregistered -> do
+      putStrLn "Client (Unregistered) exited -- nothing to cleanup"
 
 createAndSendMessage :: Message -> ClientDataTVar -> IO ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do
