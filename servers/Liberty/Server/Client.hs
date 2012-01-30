@@ -122,46 +122,38 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
 
 handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar =
-  withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> do
-    withSiteMutex siteDataTVar $ do
-      atomically $ do
-        siteData <- readTVar siteDataTVar
-        let thisChatSessionId = sdNextSessionId siteData
-        clientData <- readTVar clientDataTVar
+  -- TODO: make sure all fields are HTML-safe
+  withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> atomically $ do
+    siteData <- readTVar siteDataTVar
+    let thisChatSessionId = sdNextSessionId siteData
+    clientData <- readTVar clientDataTVar
 
-        -- create a new chat session with this client as the customer and no operator
-        chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [CLEJoin name color]
-        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
+    -- create a new chat session with this client as the customer and no operator
+    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [CLEJoin name color]
+    writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
 
-        -- add the newly-created chat session to the site data's waiting list
-        let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
-        writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
+    -- add the newly-created chat session to the site data's waiting list
+    let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
+    writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
 
-      -- and notify all waiting clients and operators about the update (including sending the position to this customer)
-      onWaitingListUpdated siteDataTVar
+    -- and notify all waiting clients and operators about the update (including sending the position to this customer)
+    onWaitingListUpdated siteDataTVar
+  )
 
-      -- DEBUG START
-      newCD <- atomically $ readTVar clientDataTVar
-      print newCD
-      -- DEBUG END
-      -- TODO: make sure all fields are HTML-safe
-    )
-
-onWaitingListUpdated :: SiteDataTVar -> IO ()
+onWaitingListUpdated :: SiteDataTVar -> STM ()
 onWaitingListUpdated siteDataTVar = do
   -- first, update the operators
-  (onlineOperators, sessionsWaiting, maybeNextCustomerInfo) <- atomically $ do
-    siteData <- readTVar siteDataTVar
-    let onlineOperators = sdOnlineOperators siteData
-    let sessionsWaiting = sdSessionsWaiting siteData
-    case headMay sessionsWaiting of
-      Just nextChatSessionTVar -> do
-        nextChatSession <- readTVar $ nextChatSessionTVar
-        nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
-        case cdOtherData nextChatSessionClientData of
-          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, sessionsWaiting, Just (ccdName clientCustomerData, ccdColor clientCustomerData))
-          _ -> return (onlineOperators, sessionsWaiting, Nothing)
-      _ -> return (onlineOperators, sessionsWaiting, Nothing)
+  siteData <- readTVar siteDataTVar
+  let onlineOperators = sdOnlineOperators siteData
+  let sessionsWaiting = sdSessionsWaiting siteData
+  maybeNextCustomerInfo <- case headMay sessionsWaiting of
+    Just nextChatSessionTVar -> do
+      nextChatSession <- readTVar $ nextChatSessionTVar
+      nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
+      case cdOtherData nextChatSessionClientData of
+        OCDClientCustomerData clientCustomerData -> return $ Just (ccdName clientCustomerData, ccdColor clientCustomerData)
+        _ -> return Nothing
+    _ -> return Nothing
 
   case maybeNextCustomerInfo of
     Just (nextCustomerName, nextCustomerColor) -> forM_ onlineOperators $ createAndSendMessage (LineStatusUpdateMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ length $ sessionsWaiting])
@@ -169,20 +161,9 @@ onWaitingListUpdated siteDataTVar = do
 
   -- update the waiting customers with their new positions
   forM_ (zip [1..] sessionsWaiting) (\(positionInLine, chatSessionTVar) -> do
-    chatSession <- atomically $ readTVar chatSessionTVar
+    chatSession <- readTVar chatSessionTVar
     let clientDataTVar = csCustomerClientDataTVar chatSession
     createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
-
-withSiteMutex :: SiteDataTVar -> (IO ()) -> IO ()
-withSiteMutex siteDataTVar f = do
-  siteMutex <- atomically $ do
-    siteData <- readTVar siteDataTVar
-    return $ sdSiteMutex siteData
-
-  bracket_
-    (takeMVar siteMutex)
-    (putMVar siteMutex ())
-    (f)
 
 data OperatorLoginResult = OperatorLoginResultSuccess | OperatorLoginResultFailedMatch | OperatorLoginResultFailedDuplicate
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
@@ -222,11 +203,11 @@ handleOperatorLoginRequest siteId username password clientDataTVar databaseHandl
         -- successful login
         Just (name, color, title, iconUrl) -> do
           putStrLn "Operator login successful"
-          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
+          createAndSendMessageIO (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
         -- failed login
         Nothing -> do
           putStrLn "Operator login failed: Invalid credentials"
-          createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+          createAndSendMessageIO (OperatorLoginFailedMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
     )
 
@@ -240,11 +221,11 @@ withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
         LookupFailureNotExist -> do
           putStrLn "Lookup failed: Site does not exist"
           -- TODO: respond with a more specific error
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          createAndSendMessageIO (SomethingWentWrongMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
         LookupFailureTechnicalError -> do
           putStrLn "Lookup failed: Technical error"
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          createAndSendMessageIO (SomethingWentWrongMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
 
 handleCustomerChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
@@ -273,42 +254,40 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
 
 handleAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
 handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = do
-  withSiteMutex siteDataTVar $ do
-    _ <- atomically $ do
-      siteData <- readTVar siteDataTVar
-      case sdSessionsWaiting siteData of
-        chatSessionTVar:remainingChatSessionTVars -> do
-          clientData <- readTVar clientDataTVar
-          case cdOtherData clientData of
-            OCDClientOperatorData clientOperatorData -> do
-              -- add the chat session to the operator
-              writeTVar clientDataTVar $ clientData {
-                cdOtherData = OCDClientOperatorData $ clientOperatorData {
-                  codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
-                }
+  _ <- atomically $ do
+    siteData <- readTVar siteDataTVar
+    case sdSessionsWaiting siteData of
+      chatSessionTVar:remainingChatSessionTVars -> do
+        clientData <- readTVar clientDataTVar
+        case cdOtherData clientData of
+          OCDClientOperatorData clientOperatorData -> do
+            -- add the chat session to the operator
+            writeTVar clientDataTVar $ clientData {
+              cdOtherData = OCDClientOperatorData $ clientOperatorData {
+                codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
               }
-              -- remove the chat session from sdSessionsWaiting
-              writeTVar siteDataTVar $ siteData {
-                sdSessionsWaiting = remainingChatSessionTVars
-              }
-              -- set the operator as the operator for this chat session
-              chatSession <- readTVar chatSessionTVar
-              writeTVar chatSessionTVar $ chatSession {
-                csOperator = ChatOperatorClient clientDataTVar
-              }
-              return Nothing
-            _ -> return Nothing -- ASSERT: Already pattern matched by caller
+            }
+            -- remove the chat session from sdSessionsWaiting
+            writeTVar siteDataTVar $ siteData {
+              sdSessionsWaiting = remainingChatSessionTVars
+            }
+            -- set the operator as the operator for this chat session
+            chatSession <- readTVar chatSessionTVar
+            writeTVar chatSessionTVar $ chatSession {
+              csOperator = ChatOperatorClient clientDataTVar
+            }
+            return Nothing
+          _ -> return Nothing -- ASSERT: Already pattern matched by caller
 
-        _ -> return Nothing
+      _ -> return Nothing
 
     -- update the operators with 'next in line' and waiting customers with their new position
     onWaitingListUpdated siteDataTVar
   
-  -- site mutex released
+    -- send the NowTalkingTo to the customer
+    
+    -- send the session added packet to the operator
 
-  -- send the NowTalkingTo to the customer
-  
-  -- send the session added packet to the operator
   putStrLn "ok"
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
@@ -322,14 +301,13 @@ handleClientExitEvent clientDataTVar = do
       chatSession <- atomically $ readTVar $ chatSessionTVar
       case csOperator chatSession of
         ChatOperatorNobody -> do
-          -- TODO: look into the possibility of requiring the mutex to be held when calling onWaitingListUpdated
           -- client exiting while on the waiting list
           let siteDataTVar = ccdSiteDataTVar clientCustomerData
-          withSiteMutex siteDataTVar $ do
-            atomically $ do
-              siteData <- readTVar siteDataTVar
-              let newSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
-              writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
+          atomically $ do
+            siteData <- readTVar siteDataTVar
+            let newSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
+            writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
+
             onWaitingListUpdated siteDataTVar
         ChatOperatorClient operatorClientDataTVar -> do
           putStrLn "TODO: Client disconnected while talking to an operator"
@@ -341,12 +319,15 @@ handleClientExitEvent clientDataTVar = do
     OCDClientUnregistered -> do
       putStrLn "Client (Unregistered) exited -- nothing to cleanup"
 
-createAndSendMessage :: Message -> ClientDataTVar -> IO ()
+createAndSendMessageIO :: Message -> ClientDataTVar -> IO ()
+createAndSendMessageIO messageTypeAndParams clientDataTVar = atomically $ createAndSendMessage messageTypeAndParams clientDataTVar
+
+createAndSendMessage :: Message -> ClientDataTVar -> STM ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do
   case createMessage messageTypeAndParams of
     Just encodedMessage -> do
-      clientData <- atomically $ readTVar clientDataTVar
-      atomically $ writeTChan (cdSendChan clientData) $ SendMessage encodedMessage
+      clientData <- readTVar clientDataTVar
+      writeTChan (cdSendChan clientData) $ SendMessage encodedMessage
     Nothing -> return ()
 
 closeClientSocket :: ClientDataTVar -> IO ()
