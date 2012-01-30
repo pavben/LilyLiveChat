@@ -108,41 +108,70 @@ function handleMessage(message) {
 		case 11: // LineStatusUpdateMessage
 			var name = message[0];
 			var color = message[1];
-			var numInLine = parseInt(message[2]);
-			// TODO: Create a message queue system to avoid mixing of effects
-			updateNextInLine(name, color, numInLine);
+			var lineLength = parseInt(message[2]);
+
+			setLineStatus(name, color, lineLength);
+
 			break;
 		case 12: // LineIsEmptyMessage
-			emptyNextInLine();
+			setLineStatus(null, null, 0);
 			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}
 }
 
-var lastNumInLine = 0;
-var currentNextInLine = [null, null]; // name and color
-
-function hey() {
-	updateNextInLine('Joe', '#cc3332', 1);
-	setTimeout(function() {
-		updateNextInLine('Joe', '#cc3332', 2);
-	}, 1);
-	setTimeout(function() {
-		updateNextInLine('Joe2', '#cc3332', 1);
-	}, 2);
-	setTimeout(function() {
-		updateNextInLine('Joe2', '#cc3332', 2);
-	}, 3);
+/* Line status updating and effects */
+function testLineStatusUpdating() {
+	handleMessage([11, 'Bob', '#cc3332', 1]);
+	handleMessage([12]);
+	handleMessage([11, 'Joe', '#cc3332', 1]);
+	handleMessage([11, 'Joe', '#cc3332', 2]);
+	handleMessage([11, 'Joe2', '#cc3332', 1]);
+	handleMessage([11, 'Joe2', '#cc3332', 2]);
+	handleMessage([11, 'Joe2', '#cc3332', 1]);
 }
 
-function updateNextInLine(name, color, numInLine) {
+var latestLineStatus = null; // name, color, line length; instantly updated when new data is available
+var lineStatusBusy = false; // true if effects are running
+var currentDisplayedLineLength = 0; // the value reflecting what is displayed to the user as the line length
+var currentDisplayedNextInLine = null; // name and color; reflecting what is displayed to the user
+
+function setLineStatus(name, color, lineLength) {
+	latestLineStatus = [name, color, lineLength];
+	checkLineStatus();
+}
+
+function checkLineStatus() {
+	if (!lineStatusBusy && latestLineStatus) {
+		lineStatusBusy = true;
+
+		var name = latestLineStatus[0];
+		var color = latestLineStatus[1];
+		var lineLength = latestLineStatus[2];
+
+		if (lineLength > 0) {
+			updateNextInLine(name, color, lineLength);
+		} else {
+			emptyNextInLine();
+		}
+
+		latestLineStatus = null;
+	}
+}
+
+function lineStatusFinished() {
+	lineStatusBusy = false;
+	checkLineStatus();
+}
+
+function updateNextInLine(name, color, lineLength) {
 	var nextInLineButton = $('#chat_nextinlinebutton');
 	var nextInLineButtonWrapper = $('#chat_nextinlinebuttonwrapper');
 	var nextInLineHeader = $('#chat_nextinlineheader');
 	var nextInLineHeaderText = $('#chat_nextinlineheadertext');
 
-	if (!currentNextInLine[0]) {
+	if (!currentDisplayedNextInLine) {
 		// if the next in line button currently isn't showing
 
 		// fade out the text
@@ -150,38 +179,44 @@ function updateNextInLine(name, color, numInLine) {
 			// now that the text is faded out, begin the slide
 			nextInLineHeader.animate({height: '29px'}, 250, function() {
 				// the slide finished, so show the text
-				nextInLineHeaderText.html('Next in line (' + numInLine + ' waiting)');
+				nextInLineHeaderText.html('Next in line (' + lineLength + ' waiting)');
 				nextInLineHeaderText.fadeTo(100, 1);
 
 				nextInLineButton.html(name);
 				nextInLineButton.css('color', color);
 				nextInLineButtonWrapper.fadeTo(100, 1);
+
+				lineStatusFinished();
 			});
 		});
 	} else {
 		// the button is already showing, so find out what needs to be updated (if anything) and do it
-		if (numInLine != lastNumInLine) {
+		if (lineLength != currentDisplayedLineLength) {
 			// fade out the text
 			nextInLineHeaderText.fadeTo(100, 0, function() {
-				nextInLineHeaderText.html('Next in line (' + numInLine + ' waiting)');
+				nextInLineHeaderText.html('Next in line (' + lineLength + ' waiting)');
 				nextInLineHeaderText.fadeTo(100, 1);
+
+				lineStatusFinished();
 			});
 		}
-		if (currentNextInLine[0] != name || currentNextInLine[1] != color) {
+		if (currentDisplayedNextInLine[0] != name || currentDisplayedNextInLine[1] != color) {
 			nextInLineButtonWrapper.fadeTo(100, 0, function() {
 				nextInLineButton.html(name);
 				nextInLineButton.css('color', color);
 				nextInLineButtonWrapper.fadeTo(100, 1);
+
+				lineStatusFinished();
 			});
 		}
 	}
 
-	currentNextInLine = [name, color];
-	lastNumInLine = numInLine;
+	currentDisplayedNextInLine = [name, color];
+	currentDisplayedLineLength = lineLength;
 }
 
 function emptyNextInLine() {
-	if (currentNextInLine[0]) {
+	if (currentDisplayedNextInLine) {
 		var nextInLineButtonWrapper = $('#chat_nextinlinebuttonwrapper');
 		var nextInLineHeader = $('#chat_nextinlineheader');
 		var nextInLineHeaderText = $('#chat_nextinlineheadertext');
@@ -195,14 +230,18 @@ function emptyNextInLine() {
 					// the slide finished, so show the text
 					nextInLineHeaderText.html('No customers waiting');
 					nextInLineHeaderText.fadeTo(100, 1);
+
+					lineStatusFinished();
 				});
 			});
 		});
 	}
 
-	currentNextInLine = [null, null];
-	lastNumInLine = 0;
+	currentDisplayedNextInLine = null;
+	currentDisplayedLineLength = 0;
 }
+
+/* End of line status updating and effects */
 
 function onResize() {
 	if (currentTab == loginTab) {
