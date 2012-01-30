@@ -13,6 +13,7 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.IO as LTI
 import qualified Data.Text.Lazy.Read as LTR
+import Debug.Trace
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.NetworkMessage
@@ -106,19 +107,19 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
         (OperatorLoginRequestMessage,[siteId,username,password]) -> handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar
         _ -> do
           putStrLn "Client (Unregistered) sent an unknown command"
-          closeClientSocket clientDataTVar
+          atomically $ closeClientSocket clientDataTVar
     OCDClientCustomerData clientCustomerData ->
       case (messageType,params) of
         (ChatMessage,[text]) -> handleCustomerChatMessage text clientCustomerData clientDataTVar
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
-          closeClientSocket clientDataTVar
+          atomically $ closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
       case (messageType,params) of
         (AcceptNextChatSessionMessage,[]) -> handleAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
-          closeClientSocket clientDataTVar
+          atomically $ closeClientSocket clientDataTVar
 
 handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar =
@@ -171,43 +172,35 @@ handleOperatorLoginRequest siteId username password clientDataTVar databaseHandl
   let
     matchSiteOperatorCredentials siteOperatorInfo = (sodUsername siteOperatorInfo == username) && (sodPassword siteOperatorInfo == password)
   in
-    withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> do
-      operatorLoginResult <- atomically $ do
-        -- read the site data
-        siteData <- readTVar siteDataTVar
-        -- see if any operators match the given credentials
-        maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
-          [siteOperatorInfo] -> do
-            -- Successful match
-            return $ Just siteOperatorInfo
-          [] -> do
-            -- No match
-            return Nothing
-          _ -> do
-            -- Multiple match -- data integrity error
-            return Nothing
+    withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> atomically $ do
+      -- read the site data
+      siteData <- readTVar siteDataTVar
+      -- see if any operators match the given credentials
+      maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
+        [siteOperatorInfo] -> do
+          -- Successful match
+          return $ Just siteOperatorInfo
+        [] -> do
+          -- No match
+          return Nothing
+        _ -> do
+          -- Multiple match -- data integrity error
+          return Nothing
 
-        case maybeSiteOperatorInfo of
-          Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
-            -- update the site, adding the operator to it
-            let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
-            writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
+      case maybeSiteOperatorInfo of
+        Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
+          -- Operator login successful
+          -- update the site, adding the operator to it
+          let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
+          writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
 
-            -- update the client, associating it with the site
-            clientData <- readTVar clientDataTVar
-            writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
-            return $ Just (name, color, title, iconUrl)
-          Nothing -> return Nothing -- could not authenticate the user
-
-      case operatorLoginResult of
-        -- successful login
-        Just (name, color, title, iconUrl) -> do
-          putStrLn "Operator login successful"
-          createAndSendMessageIO (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
-        -- failed login
+          -- update the client, associating it with the site
+          clientData <- readTVar clientDataTVar
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
+          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
         Nothing -> do
-          putStrLn "Operator login failed: Invalid credentials"
-          createAndSendMessageIO (OperatorLoginFailedMessage, []) clientDataTVar
+          -- Operator login failed: Invalid credentials
+          createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
     )
 
@@ -221,12 +214,14 @@ withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
         LookupFailureNotExist -> do
           putStrLn "Lookup failed: Site does not exist"
           -- TODO: respond with a more specific error
-          createAndSendMessageIO (SomethingWentWrongMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
+          atomically $ do
+            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+            closeClientSocket clientDataTVar
         LookupFailureTechnicalError -> do
           putStrLn "Lookup failed: Technical error"
-          createAndSendMessageIO (SomethingWentWrongMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
+          atomically $ do
+            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+            closeClientSocket clientDataTVar
 
 handleCustomerChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
 handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
@@ -276,17 +271,17 @@ handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = do
             writeTVar chatSessionTVar $ chatSession {
               csOperator = ChatOperatorClient clientDataTVar
             }
-            return Nothing
-          _ -> return Nothing -- ASSERT: Already pattern matched by caller
+            -- update the operators with 'next in line' and waiting customers with their new position
+            onWaitingListUpdated siteDataTVar
+          
+            -- send the NowTalkingToMessage to the customer
+            createAndSendMessage (NowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar chatSession)
+            
+            -- TODO: send the session added packet to the operator
 
-      _ -> return Nothing
+          _ -> return () -- ASSERT: Already pattern matched by caller
 
-    -- update the operators with 'next in line' and waiting customers with their new position
-    onWaitingListUpdated siteDataTVar
-  
-    -- send the NowTalkingTo to the customer
-    
-    -- send the session added packet to the operator
+      _ -> return () -- no waiting sessions, so do nothing
 
   putStrLn "ok"
 
@@ -330,8 +325,8 @@ createAndSendMessage messageTypeAndParams clientDataTVar = do
       writeTChan (cdSendChan clientData) $ SendMessage encodedMessage
     Nothing -> return ()
 
-closeClientSocket :: ClientDataTVar -> IO ()
+closeClientSocket :: ClientDataTVar -> STM ()
 closeClientSocket clientDataTVar = do
-  clientData <- atomically (readTVar clientDataTVar)
-  sClose $ cdSocket clientData
+  clientData <- readTVar clientDataTVar
+  writeTChan (cdSendChan clientData) CloseSocket
 
