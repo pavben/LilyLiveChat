@@ -34,6 +34,7 @@ messageTypeToId messageType = case messageType of
   OperatorLoginFailedMessage -> 10
   LineStatusUpdateMessage -> 11
   LineIsEmptyMessage -> 12
+  AcceptNextChatSessionMessage -> 13
 
 messageIdToType :: Word8 -> Maybe MessageType
 messageIdToType messageId = case messageId of
@@ -49,6 +50,7 @@ messageIdToType messageId = case messageId of
   10 -> Just OperatorLoginFailedMessage
   11 -> Just LineStatusUpdateMessage
   12 -> Just LineIsEmptyMessage
+  13 -> Just AcceptNextChatSessionMessage
   _ -> Nothing
 
 -- createMessage and dependencies

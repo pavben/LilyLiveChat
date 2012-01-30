@@ -19,6 +19,7 @@ data MessageType = CustomerJoinMessage
                  | OperatorLoginFailedMessage
                  | LineStatusUpdateMessage
                  | LineIsEmptyMessage
+                 | AcceptNextChatSessionMessage
   deriving (Show)
 
 type Message = (MessageType, [Text])

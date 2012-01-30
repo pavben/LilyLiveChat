@@ -36,6 +36,12 @@ $(document).ready(function() {
 		changeTabTo(chatTab);
 	});
 
+	// chat tab handlers
+	$('#chat_nextinlinebutton').click(function() {
+		// AcceptNextChatSessionMessage
+		queueAjaxCommand([13]);
+	});
+
 	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
 	//changeTabTo(chatTab);

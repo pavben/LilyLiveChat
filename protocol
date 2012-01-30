@@ -15,6 +15,7 @@ Server to Customer
 Operator to Server
 ================================================================
 8 [siteId, username, password] - Operator login request
+13 - Accept next chat session (if any)
 
 Server to Operator
 ================================================================

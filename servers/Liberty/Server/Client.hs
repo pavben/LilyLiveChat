@@ -115,7 +115,7 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
           closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
       case (messageType,params) of
-        (ChatMessage,[text]) -> handleOperatorChatMessage text clientOperatorData clientDataTVar
+        (AcceptNextChatSessionMessage,[]) -> handleAcceptNextChatSessionMessage clientOperatorData clientDataTVar
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           closeClientSocket clientDataTVar
@@ -271,8 +271,8 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
       putStrLn "TODO: Support operators receiving messages"
     ChatOperatorNobody -> return () -- nothing to do
 
-handleOperatorChatMessage :: Text -> ClientOperatorData -> ClientDataTVar -> IO ()
-handleOperatorChatMessage messageText clientOperatorData clientDataTVar = do
+handleAcceptNextChatSessionMessage :: ClientOperatorData -> ClientDataTVar -> IO ()
+handleAcceptNextChatSessionMessage clientOperatorData clientDataTVar = do
   putStrLn "TODO"
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
