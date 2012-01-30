@@ -32,11 +32,11 @@ data ClientData = ClientData {
 data OtherClientData = OCDClientUnregistered | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData
   deriving (Show)
 data ClientCustomerData = ClientCustomerData {
-  cgdName :: Text,
-  cgdColor :: Text,
-  cgdIconUrl :: Text,
-  cgdSiteDataTVar :: SiteDataTVar,
-  cgdChatSessionTVar :: ChatSessionTVar
+  ccdName :: Text,
+  ccdColor :: Text,
+  ccdIconUrl :: Text,
+  ccdSiteDataTVar :: SiteDataTVar,
+  ccdChatSessionTVar :: ChatSessionTVar
 } deriving (Show)
 data ClientOperatorData = ClientOperatorData {
   codName :: Text,

@@ -115,7 +115,7 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
           closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
       case (messageType,params) of
-        (AcceptNextChatSessionMessage,[]) -> handleAcceptNextChatSessionMessage clientOperatorData clientDataTVar
+        (AcceptNextChatSessionMessage,[]) -> handleAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           closeClientSocket clientDataTVar
@@ -159,7 +159,7 @@ onWaitingListUpdated siteDataTVar = do
         nextChatSession <- readTVar $ nextChatSessionTVar
         nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
         case cdOtherData nextChatSessionClientData of
-          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, sessionsWaiting, Just (cgdName clientCustomerData, cgdColor clientCustomerData))
+          OCDClientCustomerData clientCustomerData -> return $ (onlineOperators, sessionsWaiting, Just (ccdName clientCustomerData, ccdColor clientCustomerData))
           _ -> return (onlineOperators, sessionsWaiting, Nothing)
       _ -> return (onlineOperators, sessionsWaiting, Nothing)
 
@@ -251,17 +251,17 @@ handleCustomerChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO 
 handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
   -- first, append the message to the log and retrieve the chat session operator value
   chatSessionOperator <- atomically $ do
-    let chatSessionTVar = cgdChatSessionTVar clientCustomerData
+    let chatSessionTVar = ccdChatSessionTVar clientCustomerData
     chatSession <- readTVar $ chatSessionTVar
     -- now that the message was sent to all appropriate parties, add it to the log
-    let updatedChatLog = (CLEMessage (cgdName clientCustomerData) (cgdColor clientCustomerData) messageText) : csLog chatSession
+    let updatedChatLog = (CLEMessage (ccdName clientCustomerData) (ccdColor clientCustomerData) messageText) : csLog chatSession
     let updatedChatSession = chatSession { csLog = updatedChatLog }
     writeTVar chatSessionTVar $ updatedChatSession
     return $ csOperator updatedChatSession
 
   -- DEBUG
   log <- atomically $ do
-    cSession <- readTVar $ cgdChatSessionTVar clientCustomerData
+    cSession <- readTVar $ ccdChatSessionTVar clientCustomerData
     return $ csLog cSession
   print log
   -- END DEBUG
@@ -271,9 +271,45 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
       putStrLn "TODO: Support operators receiving messages"
     ChatOperatorNobody -> return () -- nothing to do
 
-handleAcceptNextChatSessionMessage :: ClientOperatorData -> ClientDataTVar -> IO ()
-handleAcceptNextChatSessionMessage clientOperatorData clientDataTVar = do
-  putStrLn "TODO"
+handleAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
+handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = do
+  withSiteMutex siteDataTVar $ do
+    _ <- atomically $ do
+      siteData <- readTVar siteDataTVar
+      case sdSessionsWaiting siteData of
+        chatSessionTVar:remainingChatSessionTVars -> do
+          clientData <- readTVar clientDataTVar
+          case cdOtherData clientData of
+            OCDClientOperatorData clientOperatorData -> do
+              -- add the chat session to the operator
+              writeTVar clientDataTVar $ clientData {
+                cdOtherData = OCDClientOperatorData $ clientOperatorData {
+                  codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
+                }
+              }
+              -- remove the chat session from sdSessionsWaiting
+              writeTVar siteDataTVar $ siteData {
+                sdSessionsWaiting = remainingChatSessionTVars
+              }
+              -- set the operator as the operator for this chat session
+              chatSession <- readTVar chatSessionTVar
+              writeTVar chatSessionTVar $ chatSession {
+                csOperator = ChatOperatorClient clientDataTVar
+              }
+              return Nothing
+            _ -> return Nothing -- ASSERT: Already pattern matched by caller
+
+        _ -> return Nothing
+
+    -- update the operators with 'next in line' and waiting customers with their new position
+    onWaitingListUpdated siteDataTVar
+  
+  -- site mutex released
+
+  -- send the NowTalkingTo to the customer
+  
+  -- send the session added packet to the operator
+  putStrLn "ok"
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
@@ -282,13 +318,13 @@ handleClientExitEvent clientDataTVar = do
     OCDClientCustomerData clientCustomerData -> do
       putStrLn "Client (Customer) exited"
       -- TODO: if there is an operator in the session, notify them that the customer has exited
-      let chatSessionTVar = cgdChatSessionTVar clientCustomerData
+      let chatSessionTVar = ccdChatSessionTVar clientCustomerData
       chatSession <- atomically $ readTVar $ chatSessionTVar
       case csOperator chatSession of
         ChatOperatorNobody -> do
           -- TODO: look into the possibility of requiring the mutex to be held when calling onWaitingListUpdated
           -- client exiting while on the waiting list
-          let siteDataTVar = cgdSiteDataTVar clientCustomerData
+          let siteDataTVar = ccdSiteDataTVar clientCustomerData
           withSiteMutex siteDataTVar $ do
             atomically $ do
               siteData <- readTVar siteDataTVar
