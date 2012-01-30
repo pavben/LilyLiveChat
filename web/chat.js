@@ -121,6 +121,11 @@ function handleMessage(message) {
 			updatePositionInLine(parseInt(message[0]));
 			break;
 		case 3: // NowTalkingToMessage
+			var name = message[0];
+			var color = message[1];
+			var title = message[2];
+			var iconUrl = message[3];
+			replaceThemWith(new Person(name, color, title, iconUrl));
 			break;
 		case 5: // AppendToChatLogMessage
 			break;

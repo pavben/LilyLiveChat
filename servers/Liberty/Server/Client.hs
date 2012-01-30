@@ -248,42 +248,39 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
     ChatOperatorNobody -> return () -- nothing to do
 
 handleAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
-handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = do
-  _ <- atomically $ do
-    siteData <- readTVar siteDataTVar
-    case sdSessionsWaiting siteData of
-      chatSessionTVar:remainingChatSessionTVars -> do
-        clientData <- readTVar clientDataTVar
-        case cdOtherData clientData of
-          OCDClientOperatorData clientOperatorData -> do
-            -- add the chat session to the operator
-            writeTVar clientDataTVar $ clientData {
-              cdOtherData = OCDClientOperatorData $ clientOperatorData {
-                codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
-              }
+handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
+  siteData <- readTVar siteDataTVar
+  case sdSessionsWaiting siteData of
+    chatSessionTVar:remainingChatSessionTVars -> do
+      clientData <- readTVar clientDataTVar
+      case cdOtherData clientData of
+        OCDClientOperatorData clientOperatorData -> do
+          -- add the chat session to the operator
+          writeTVar clientDataTVar $ clientData {
+            cdOtherData = OCDClientOperatorData $ clientOperatorData {
+              codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
             }
-            -- remove the chat session from sdSessionsWaiting
-            writeTVar siteDataTVar $ siteData {
-              sdSessionsWaiting = remainingChatSessionTVars
-            }
-            -- set the operator as the operator for this chat session
-            chatSession <- readTVar chatSessionTVar
-            writeTVar chatSessionTVar $ chatSession {
-              csOperator = ChatOperatorClient clientDataTVar
-            }
-            -- update the operators with 'next in line' and waiting customers with their new position
-            onWaitingListUpdated siteDataTVar
+          }
+          -- remove the chat session from sdSessionsWaiting
+          writeTVar siteDataTVar $ siteData {
+            sdSessionsWaiting = remainingChatSessionTVars
+          }
+          -- set the operator as the operator for this chat session
+          chatSession <- readTVar chatSessionTVar
+          writeTVar chatSessionTVar $ chatSession {
+            csOperator = ChatOperatorClient clientDataTVar
+          }
+          -- update the operators with 'next in line' and waiting customers with their new position
+          onWaitingListUpdated siteDataTVar
+        
+          -- send the NowTalkingToMessage to the customer
+          createAndSendMessage (NowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar chatSession)
           
-            -- send the NowTalkingToMessage to the customer
-            createAndSendMessage (NowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar chatSession)
-            
-            -- TODO: send the session added packet to the operator
+          -- TODO: send the session added packet to the operator
 
-          _ -> return () -- ASSERT: Already pattern matched by caller
+        _ -> return () -- ASSERT: Already pattern matched by caller
 
-      _ -> return () -- no waiting sessions, so do nothing
-
-  putStrLn "ok"
+    _ -> return () -- no waiting sessions, so do nothing
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
