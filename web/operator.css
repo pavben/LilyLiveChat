@@ -163,17 +163,30 @@
 	width:641px;
 	height:400px;
 }
-.chat_sessionslistheader {
-	line-height:29px;
+#chat_nextinlinewrapper {
+	height:71px;
+	border-bottom:1px solid #BBBBBB;
+}
+#chat_nextinlineheader {
+	display:table-cell;
+	width:200px;
+	height:71px;
+	line-height:28px;
 	background-color:#ECECEC;
 	border-bottom:1px solid #BBBBBB;
+	vertical-align:middle;
+}
+#chat_nextinlineheadertext {
 	text-align:center;
 }
-.chat_sessionslistcontent {
-	border-bottom:1px solid #BBBBBB;
+#chat_nextinlinebuttonwrapper {
+	display:none;
+}
+.chat_sessionlistcontent {
 	padding:7px 7px 0px 7px;
 }
 .chat_sessionlistbutton {
+	height:25px;
 	line-height:25px;
 	font-size:18px;
 	background-color:#ECECEC;
@@ -197,3 +210,4 @@
 .chat_sessionlistsep {
 	height:7px;
 }
+
