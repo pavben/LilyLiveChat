@@ -38,8 +38,7 @@ $(document).ready(function() {
 
 	// chat tab handlers
 	$('#chat_nextinlinebutton').click(function() {
-		// OperatorAcceptNextChatSessionMessage
-		queueAjaxCommand([13]);
+		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
 	});
 
 	changeTabTo(loginTab);
@@ -72,8 +71,8 @@ function loginTabOkHandler() {
 
 		ajaxJsonGetSessionId(
 			function() {
-				// OperatorLoginRequestMessage, site id, name, ...
-				queueAjaxCommand([8, "virtivia", username, password]);
+				// site id, name, ...
+				queueAjaxCommand([Messages.OperatorLoginRequestMessage, "virtivia", username, password]);
 
 				// re-enable the OK button
 				loginTabOkActive = false;
@@ -93,9 +92,9 @@ function handleMessage(message) {
 	log(message);
 	messageTypeId = message.shift();
 	switch (messageTypeId) {
-		case 7: // SomethingWentWrongMessage
+		case Messages.SomethingWentWrongMessage:
 			break;
-		case 9: // OperatorLoginSuccessMessage
+		case Messages.OperatorLoginSuccessMessage:
 			if (currentTab == loginTab) {
 				var name = message[0];
 				var color = message[1];
@@ -108,10 +107,10 @@ function handleMessage(message) {
 			}
 			log("Login successful");
 			break;
-		case 10: // OperatorLoginFailedMessage
+		case Messages.OperatorLoginFailedMessage:
 			alert("Login failed: Invalid credentials");
 			break;
-		case 11: // OperatorLineStatusDetailsMessage
+		case Messages.OperatorLineStatusDetailsMessage:
 			var name = message[0];
 			var color = message[1];
 			var lineLength = parseInt(message[2]);
@@ -119,7 +118,7 @@ function handleMessage(message) {
 			setLineStatus(name, color, lineLength);
 
 			break;
-		case 12: // OperatorLineStatusEmptyMessage
+		case Messages.OperatorLineStatusEmptyMessage:
 			setLineStatus(null, null, 0);
 			break;
 		default: // Invalid message type

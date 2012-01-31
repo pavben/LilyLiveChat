@@ -165,6 +165,27 @@ function uriEncodeArray(arr) {
 }
 // End of AJAX stuff
 
+function messageTypeToId(messageType) {
+	return messageTypeToIdTable[messageType];
+}
+
+var Messages = {
+	CustomerJoinMessage : 1,
+	CustomerInLinePositionMessage : 2,
+	CustomerNowTalkingToMessage : 3,
+	CustomerSendChatMessage : 4,
+	CustomerReceiveChatMessage : 5,
+	CustomerEndingChatMessage : 6,
+	SomethingWentWrongMessage : 7,
+	OperatorLoginRequestMessage : 8,
+	OperatorLoginSuccessMessage : 9,
+	OperatorLoginFailedMessage : 10,
+	OperatorLineStatusDetailsMessage : 11,
+	OperatorLineStatusEmptyMessage : 12,
+	OperatorAcceptNextChatSessionMessage : 13,
+	OperatorNowTalkingToMessage : 14
+};
+
 // tab switcher
 
 function changeTabTo(tab) {

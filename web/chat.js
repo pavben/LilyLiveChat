@@ -113,32 +113,38 @@ function handleMessage(message) {
 	log(message);
 	messageTypeId = message.shift();
 	switch (messageTypeId) {
-		case 2: // CustomerInLinePositionMessage
+		case Messages.CustomerInLinePositionMessage:
 			if (currentTab == welcomeTab) {
 				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
 				changeTabTo(chatTab);
 			}
 			updatePositionInLine(parseInt(message[0]));
 			break;
-		case 3: // CustomerNowTalkingToMessage
+		case Messages.CustomerNowTalkingToMessage:
 			var name = message[0];
 			var color = message[1];
 			var title = message[2];
 			var iconUrl = message[3];
 			replaceThemWith(new Person(name, color, title, iconUrl));
 			break;
-		case 5: // CustomerReceiveChatMessage
+		case Messages.CustomerReceiveChatMessage:
+			var text = message[0];
+			if (they == null) {
+				alert("CustomerReceiveChatMessage when no operator is present");
+				return;
+			}
+			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog'));
 			break;
-		case 7: // SomethingWentWrongMessage
+		case Messages.SomethingWentWrongMessage:
 			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}
 }
 
-function writeMessageToChatLog(name, nameColor, msg, chatlogDiv) {
+function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 	var content = '';
-	content += '<span class="chat_msgtext" style="color:' + nameColor + '">' + name + '</span>';
+	content += '<span class="chat_msgtext" style="color:' + color + '">' + name + '</span>';
 	content += '<span class="chat_msgtext">: ' + msg + '</span><br/>';
 
 	writeContentToChatLog(content, chatlogDiv);
@@ -311,8 +317,8 @@ function welcomeTabOkHandler() {
 		}
 		ajaxJsonGetSessionId(
 			function() {
-				// CustomerJoinMessage, site id, name, ...
-				queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
+				// site id, name, ...
+				queueAjaxCommand([Messages.CustomerJoinMessage, "virtivia", myName, myColor, myIcon]);
 
 				// re-enable the OK button
 				welcomeTabOkActive = false;
@@ -332,25 +338,7 @@ var soundManager = null;
 
 function SoundManager() {
 	instance = this;
-/*
-			//////// TEST
-			log("audio..");
-			var dummyAudio = new Audio();
-			log(dummyAudio.canPlayType('audio/ogg; codecs=vorbis'));
-			log(dummyAudio.canPlayType('audio/mpeg'));
-			
-			var s = new Audio('audio/nextinline.ogg');
-			s.addEventListener('canplaythrough', function(ev) {
-				this.removeEventListener('canplaythrough', arguments.callee, false);
-				log("canplaythrough called");
-				s.play();
-			}, false);
-			s.addEventListener('error', function(ev) {
-				log("error!");
-			}, false);
-			s.load();
-			//////// END TEST
-*/
+
 	// formats are listed in order of preference
 	formats = [
 		{
@@ -529,7 +517,7 @@ $(document).ready(function() {
 	// chat tab handlers
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13) { // enter
-			queueAjaxCommand([4, $('#chat_chatbox').val()]);
+			queueAjaxCommand([Messages.CustomerSendChatMessage, $('#chat_chatbox').val()]);
 			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
 			$('#chat_chatbox').val('');
 		}
