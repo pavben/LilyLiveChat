@@ -265,10 +265,13 @@ function replaceIconWith(iconUrl, icon) {
 		icon.css('background-image', 'none');
 
 		var iconCache = new Image();
-		iconCache.onload = function() {
+		iconCache.addEventListener('load', function() {
 			icon.css('background-image', 'url(\'' + iconUrl + '\')');
 			icon.fadeTo(500, 1);
-		}
+		});
+		iconCache.addEventListener('error', function() {
+			icon.fadeTo(500, 1);
+		});
 		iconCache.src = iconUrl;
 	});
 }
