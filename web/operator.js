@@ -14,6 +14,8 @@ $(document).ready(function() {
 	chatTab = $('#chat_tab');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
+	// default next in line header text
+	$('#chat_nextinlineheadertext').text('No customers waiting');
 
 	// login tab handlers
 
@@ -91,6 +93,7 @@ function loginTabOkHandler() {
 function handleMessage(message) {
 	log(message);
 	messageTypeId = message.shift();
+	log("Msg Type Id: " + messageTypeId);
 	switch (messageTypeId) {
 		case Messages.SomethingWentWrongMessage:
 			break;

@@ -142,9 +142,23 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
 
 onWaitingListUpdated :: SiteDataTVar -> STM ()
 onWaitingListUpdated siteDataTVar = do
-  -- first, update the operators
+  -- first, send the line status info to all operators
   siteData <- readTVar siteDataTVar
-  let onlineOperators = sdOnlineOperators siteData
+  lineStatusInfo <- getLineStatusInfo siteDataTVar
+
+  forM_ (sdOnlineOperators siteData) $ sendLineStatusInfoToOperator lineStatusInfo
+
+  -- update the waiting customers with their new positions
+  forM_ (zip ([1..] :: [Integer]) (sdSessionsWaiting siteData)) (\(positionInLine, chatSessionTVar) -> do
+    chatSession <- readTVar chatSessionTVar
+    let clientDataTVar = csCustomerClientDataTVar chatSession
+    createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
+
+data LineStatusInfo = LineStatusInfo (Maybe (Text, Text)) Int
+
+getLineStatusInfo :: SiteDataTVar -> STM LineStatusInfo
+getLineStatusInfo siteDataTVar = do
+  siteData <- readTVar siteDataTVar
   let sessionsWaiting = sdSessionsWaiting siteData
   maybeNextCustomerInfo <- case headMay sessionsWaiting of
     Just nextChatSessionTVar -> do
@@ -154,16 +168,16 @@ onWaitingListUpdated siteDataTVar = do
         OCDClientCustomerData clientCustomerData -> return $ Just (ccdName clientCustomerData, ccdColor clientCustomerData)
         _ -> return Nothing
     _ -> return Nothing
+  return $ LineStatusInfo maybeNextCustomerInfo (length sessionsWaiting)
 
-  case maybeNextCustomerInfo of
-    Just (nextCustomerName, nextCustomerColor) -> forM_ onlineOperators $ createAndSendMessage (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ length $ sessionsWaiting])
-    Nothing -> forM_ onlineOperators $ createAndSendMessage (OperatorLineStatusEmptyMessage, [])
-
-  -- update the waiting customers with their new positions
-  forM_ (zip ([1..] :: [Integer]) sessionsWaiting) (\(positionInLine, chatSessionTVar) -> do
-    chatSession <- readTVar chatSessionTVar
-    let clientDataTVar = csCustomerClientDataTVar chatSession
-    createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
+sendLineStatusInfoToOperator :: LineStatusInfo -> ClientDataTVar -> STM ()
+sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersInLine) clientDataTVar =
+  let
+    message = case maybeNextCustomerInfo of
+      Just (nextCustomerName, nextCustomerColor) -> (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ numCustomersInLine])
+      Nothing -> (OperatorLineStatusEmptyMessage, [])
+  in
+    createAndSendMessage message clientDataTVar
 
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar =
@@ -196,6 +210,10 @@ handleOperatorLoginRequest siteId username password clientDataTVar databaseHandl
           clientData <- readTVar clientDataTVar
           writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
           createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
+
+          -- send the line status
+          lineStatusInfo <- getLineStatusInfo siteDataTVar
+          sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
         Nothing -> do
           -- Operator login failed: Invalid credentials
           createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
