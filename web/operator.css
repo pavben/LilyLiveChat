@@ -167,17 +167,20 @@
 	height:71px;
 	border-bottom:1px solid #BBBBBB;
 }
-#chat_nextinlineheader {
+.chat_sessionlistheader {
 	display:table-cell;
 	width:200px;
-	height:71px;
-	line-height:28px;
+	line-height:29px;
 	background-color:#ECECEC;
 	border-bottom:1px solid #BBBBBB;
 	vertical-align:middle;
-}
-#chat_nextinlineheadertext {
 	text-align:center;
+}
+#chat_nextinlineheader {
+	height:71px;
+}
+#chat_activechatsheader {
+	height:29px;
 }
 #chat_nextinlinebuttonwrapper {
 	display:none;

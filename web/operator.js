@@ -14,8 +14,9 @@ $(document).ready(function() {
 	chatTab = $('#chat_tab');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
-	// default next in line header text
+	// default these labels
 	$('#chat_nextinlineheadertext').text('No customers waiting');
+	$('#chat_activechatsheader').text('No active chats');
 
 	// login tab handlers
 
@@ -124,9 +125,28 @@ function handleMessage(message) {
 		case Messages.OperatorLineStatusEmptyMessage:
 			setLineStatus(null, null, 0);
 			break;
+		case Messages.OperatorNowTalkingToMessage:
+			var chatSessionId = message[0];
+			var name = message[1];
+			var color = message[2];
+			var iconUrl = message[3];
+			addActiveChatSession(chatSessionId, name, color, iconUrl);
+			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}
+}
+
+function addActiveChatSession(chatSessionId, name, color, iconUrl) {
+	var buttonWrapper = $('<div/>').attr('id', 'chat_activesessionbuttonwrapper_' + chatSessionId).append(
+		$('<div/>').attr('id', 'chat_activesessionbutton_' + chatSessionId).addClass('chat_sessionlistbutton').css('color', color).text(name)
+	).append(
+		$('<div/>').addClass('chat_sessionlistsep')
+	);
+
+	$('#chat_activechatscontainer').prepend(buttonWrapper);
+
+	buttonWrapper.hide().slideDown().fadeTo(200, 1);
 }
 
 /* Line status updating and effects */
