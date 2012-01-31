@@ -1,14 +1,24 @@
 // communication protocol globals
-var mySessionId = 'NEW';
-var lastInSequence = null;
-var nextOutSequence = 0;
+var mySessionId;
+var lastInSequence;
+var nextOutSequence;
 
-var ajaxCommandQueue = [];
-var ajaxCommandSendInProgress = false;
+var ajaxCommandQueue;
+var ajaxCommandSendInProgress;
+
+resetSession();
+
+function resetSession() {
+	mySessionId = null;
+	lastInSequence = null;
+	nextOutSequence = 0;
+	ajaxCommandQueue = [];
+	ajaxCommandSendInProgress = false;
+}
 
 function queueAjaxCommand(data) {
 	if (!mySessionId) {
-		log("queueAjaxCommand not allowed due to !mySessionId");
+		log("queueAjaxCommand failed due to !mySessionId");
 		return;
 	}
 
@@ -20,6 +30,11 @@ function queueAjaxCommand(data) {
 }
 
 function sendAjaxCommands() {
+	if (!mySessionId) {
+		log("sendAjaxCommands failed due to !mySessionId");
+		return;
+	}
+
 	if (!ajaxCommandSendInProgress && ajaxCommandQueue.length > 0) {
 		ajaxCommandSendInProgress = true;
 
@@ -64,6 +79,15 @@ function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
 	);
 }
 
+var sessionExpiryTimeout = null;
+
+function sessionEnded() {
+	log("Session ended");
+	resetSession();
+
+	// TODO: Call a page-specific cleanup function
+}
+
 function ajaxJsonLongPoll() {
 	if (!mySessionId) {
 		log("ajaxJsonLongPoll not allowed due to !mySessionId");
@@ -72,6 +96,10 @@ function ajaxJsonLongPoll() {
 	ajaxJson(
 		[mySessionId, lastInSequence],
 		function(data) {
+			if (sessionExpiryTimeout) {
+				clearTimeout(sessionExpiryTimeout);
+			}
+
 			log(data);
 
 			var messages = data.m;
@@ -91,19 +119,21 @@ function ajaxJsonLongPoll() {
 			if (!data.sessionEnded) {
 				setTimeout(ajaxJsonLongPoll, 0);
 			} else {
-				alert("Session ended");
+				sessionEnded();
 			}
 		},
 		function (errorThrown) {
-			if (errorThrown == 'timeout') {
-				setTimeout(ajaxJsonLongPoll, 0);
-			}
-			else {
-				log("Long Poll Error: " + errorThrown);
-				setTimeout(ajaxJsonLongPoll, 4000); // schedule a retry in 4 seconds
+			log("Long Poll Error: " + errorThrown);
+			setTimeout(ajaxJsonLongPoll, 3000); // schedule a retry in 3 seconds
+
+			// if there isn't already a session expiry timeout, set one
+			if (!sessionExpiryTimeout) {
+				sessionExpiryTimeout = setTimeout(function() {
+					sessionEnded();
+				}, 10000);
 			}
 		},
-		10000
+		15000
 	);
 }
 

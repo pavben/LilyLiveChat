@@ -8,7 +8,8 @@ module Liberty.WebGateway.Sessions (
   SessionMapTVar,
   createSessionMapTVar,
   createSession,
-  resetSessionTimeout
+  resetSessionTimeout,
+  deleteSession
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
@@ -147,8 +148,8 @@ establishProxyConnection = do
         (\(SomeException _) -> return Nothing)
     Left (SomeException _) -> return Nothing
 
-resetSessionTimeout :: SessionMapTVar -> SessionId -> SessionDataTVar -> IO ()
-resetSessionTimeout sessionMapTVar sessionId sessionDataTVar = do
+resetSessionTimeout :: SessionDataTVar -> SessionId -> SessionMapTVar -> IO ()
+resetSessionTimeout sessionDataTVar sessionId sessionMapTVar = do
   (oldSessionTimeoutAbortTVar, newSessionTimeoutAbortTVar) <- atomically $ do
     sessionData <- readTVar sessionDataTVar
     let oldSessionTimeoutAbortTVar' = sdSessionTimeoutAbortTVar sessionData
@@ -160,23 +161,26 @@ resetSessionTimeout sessionMapTVar sessionId sessionDataTVar = do
   void $ abortTimeout oldSessionTimeoutAbortTVar
 
   -- create the new timeout
-  setTimeout 10 newSessionTimeoutAbortTVar $ do
-    putStrLn "Session cleanup triggered"
-    maybeProxySocket <- atomically $ do
-      sessionData <- readTVar sessionDataTVar
-      let maybeProxySocket' = sdProxySocket sessionData
+  setTimeout 10 newSessionTimeoutAbortTVar $ deleteSession sessionDataTVar sessionId sessionMapTVar
 
-      -- remove the session from the session map
-      sessionMap <- readTVar sessionMapTVar
-      writeTVar sessionMapTVar $ Map.delete sessionId sessionMap
-      
-      -- return the proxy socket so that it can be closed
-      return maybeProxySocket'
+deleteSession :: SessionDataTVar -> SessionId -> SessionMapTVar -> IO ()
+deleteSession sessionDataTVar sessionId sessionMapTVar = do
+  putStrLn "Session cleanup triggered"
+  maybeProxySocket <- atomically $ do
+    sessionData <- readTVar sessionDataTVar
+    let maybeProxySocket' = sdProxySocket sessionData
 
-    -- close the proxy socket, if any
-    case maybeProxySocket of
-      Just proxySocket -> sClose proxySocket
-      Nothing -> return ()
+    -- remove the session from the session map
+    sessionMap <- readTVar sessionMapTVar
+    writeTVar sessionMapTVar $ Map.delete sessionId sessionMap
+    
+    -- return the proxy socket so that it can be closed
+    return maybeProxySocket'
 
-    return ()
+  -- close the proxy socket, if any
+  case maybeProxySocket of
+    Just proxySocket -> sClose proxySocket
+    Nothing -> return ()
+
+  return ()
 
