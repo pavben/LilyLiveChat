@@ -23,34 +23,36 @@ import Liberty.Common.Types
 messageTypeToId :: MessageType -> Word8
 messageTypeToId messageType = case messageType of
   CustomerJoinMessage -> 1
-  InLinePositionMessage -> 2
-  NowTalkingToMessage -> 3
-  ChatMessage -> 4
-  AppendToChatLogMessage -> 5
-  EndChatMessage -> 6
+  CustomerInLinePositionMessage -> 2
+  CustomerNowTalkingToMessage -> 3
+  CustomerSendChatMessage -> 4
+  CustomerReceiveChatMessage -> 5
+  CustomerEndingChatMessage -> 6
   SomethingWentWrongMessage -> 7
   OperatorLoginRequestMessage -> 8
   OperatorLoginSuccessMessage -> 9
   OperatorLoginFailedMessage -> 10
-  LineStatusUpdateMessage -> 11
-  LineIsEmptyMessage -> 12
-  AcceptNextChatSessionMessage -> 13
+  OperatorLineStatusDetailsMessage -> 11
+  OperatorLineStatusEmptyMessage -> 12
+  OperatorAcceptNextChatSessionMessage -> 13
+  OperatorNowTalkingToMessage -> 14
 
 messageIdToType :: Word8 -> Maybe MessageType
 messageIdToType messageId = case messageId of
   1 -> Just CustomerJoinMessage
-  2 -> Just InLinePositionMessage
-  3 -> Just NowTalkingToMessage
-  4 -> Just ChatMessage
-  5 -> Just AppendToChatLogMessage
-  6 -> Just EndChatMessage
+  2 -> Just CustomerInLinePositionMessage
+  3 -> Just CustomerNowTalkingToMessage
+  4 -> Just CustomerSendChatMessage
+  5 -> Just CustomerReceiveChatMessage
+  6 -> Just CustomerEndingChatMessage
   7 -> Just SomethingWentWrongMessage
   8 -> Just OperatorLoginRequestMessage
   9 -> Just OperatorLoginSuccessMessage
   10 -> Just OperatorLoginFailedMessage
-  11 -> Just LineStatusUpdateMessage
-  12 -> Just LineIsEmptyMessage
-  13 -> Just AcceptNextChatSessionMessage
+  11 -> Just OperatorLineStatusDetailsMessage
+  12 -> Just OperatorLineStatusEmptyMessage
+  13 -> Just OperatorAcceptNextChatSessionMessage
+  14 -> Just OperatorNowTalkingToMessage
   _ -> Nothing
 
 -- createMessage and dependencies

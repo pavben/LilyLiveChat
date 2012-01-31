@@ -8,18 +8,19 @@ import Data.Text.Lazy (Text)
 
 -- common
 data MessageType = CustomerJoinMessage
-                 | InLinePositionMessage
-                 | NowTalkingToMessage
-                 | ChatMessage
-                 | AppendToChatLogMessage
-                 | EndChatMessage
+                 | CustomerInLinePositionMessage
+                 | CustomerNowTalkingToMessage
+                 | CustomerSendChatMessage
+                 | CustomerReceiveChatMessage
+                 | CustomerEndingChatMessage
                  | SomethingWentWrongMessage
                  | OperatorLoginRequestMessage
                  | OperatorLoginSuccessMessage
                  | OperatorLoginFailedMessage
-                 | LineStatusUpdateMessage
-                 | LineIsEmptyMessage
-                 | AcceptNextChatSessionMessage
+                 | OperatorLineStatusDetailsMessage
+                 | OperatorLineStatusEmptyMessage
+                 | OperatorAcceptNextChatSessionMessage
+                 | OperatorNowTalkingToMessage
   deriving (Show)
 
 type Message = (MessageType, [Text])

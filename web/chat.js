@@ -113,23 +113,21 @@ function handleMessage(message) {
 	log(message);
 	messageTypeId = message.shift();
 	switch (messageTypeId) {
-		case 2: // InLinePositionMessage
+		case 2: // CustomerInLinePositionMessage
 			if (currentTab == welcomeTab) {
 				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
 				changeTabTo(chatTab);
 			}
 			updatePositionInLine(parseInt(message[0]));
 			break;
-		case 3: // NowTalkingToMessage
+		case 3: // CustomerNowTalkingToMessage
 			var name = message[0];
 			var color = message[1];
 			var title = message[2];
 			var iconUrl = message[3];
 			replaceThemWith(new Person(name, color, title, iconUrl));
 			break;
-		case 5: // AppendToChatLogMessage
-			break;
-		case 6: // EndChatMessage
+		case 5: // CustomerReceiveChatMessage
 			break;
 		case 7: // SomethingWentWrongMessage
 			break;
@@ -313,7 +311,7 @@ function welcomeTabOkHandler() {
 		}
 		ajaxJsonGetSessionId(
 			function() {
-				// CustomerJoinCommand, site id, name, ...
+				// CustomerJoinMessage, site id, name, ...
 				queueAjaxCommand([1, "virtivia", myName, myColor, myIcon]);
 
 				// re-enable the OK button

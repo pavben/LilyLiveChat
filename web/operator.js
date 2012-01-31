@@ -38,7 +38,7 @@ $(document).ready(function() {
 
 	// chat tab handlers
 	$('#chat_nextinlinebutton').click(function() {
-		// AcceptNextChatSessionMessage
+		// OperatorAcceptNextChatSessionMessage
 		queueAjaxCommand([13]);
 	});
 
@@ -111,7 +111,7 @@ function handleMessage(message) {
 		case 10: // OperatorLoginFailedMessage
 			alert("Login failed: Invalid credentials");
 			break;
-		case 11: // LineStatusUpdateMessage
+		case 11: // OperatorLineStatusDetailsMessage
 			var name = message[0];
 			var color = message[1];
 			var lineLength = parseInt(message[2]);
@@ -119,7 +119,7 @@ function handleMessage(message) {
 			setLineStatus(name, color, lineLength);
 
 			break;
-		case 12: // LineIsEmptyMessage
+		case 12: // OperatorLineStatusEmptyMessage
 			setLineStatus(null, null, 0);
 			break;
 		default: // Invalid message type

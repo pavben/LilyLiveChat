@@ -110,13 +110,13 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
           atomically $ closeClientSocket clientDataTVar
     OCDClientCustomerData clientCustomerData ->
       case (messageType,params) of
-        (ChatMessage,[text]) -> handleCustomerChatMessage text clientCustomerData clientDataTVar
+        (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
       case (messageType,params) of
-        (AcceptNextChatSessionMessage,[]) -> handleAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
+        (OperatorAcceptNextChatSessionMessage,[]) -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -157,14 +157,14 @@ onWaitingListUpdated siteDataTVar = do
     _ -> return Nothing
 
   case maybeNextCustomerInfo of
-    Just (nextCustomerName, nextCustomerColor) -> forM_ onlineOperators $ createAndSendMessage (LineStatusUpdateMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ length $ sessionsWaiting])
-    Nothing -> forM_ onlineOperators $ createAndSendMessage (LineIsEmptyMessage, [])
+    Just (nextCustomerName, nextCustomerColor) -> forM_ onlineOperators $ createAndSendMessage (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ length $ sessionsWaiting])
+    Nothing -> forM_ onlineOperators $ createAndSendMessage (OperatorLineStatusEmptyMessage, [])
 
   -- update the waiting customers with their new positions
   forM_ (zip ([1..] :: [Integer]) sessionsWaiting) (\(positionInLine, chatSessionTVar) -> do
     chatSession <- readTVar chatSessionTVar
     let clientDataTVar = csCustomerClientDataTVar chatSession
-    createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
+    createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
 
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar =
@@ -222,8 +222,8 @@ withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
             createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
             closeClientSocket clientDataTVar
 
-handleCustomerChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
-handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
+handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
+handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar = do
   -- first, append the message to the log and retrieve the chat session operator value
   chatSessionOperator <- atomically $ do
     let chatSessionTVar = ccdChatSessionTVar clientCustomerData
@@ -246,8 +246,8 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
       putStrLn "TODO: Support operators receiving messages"
     ChatOperatorNobody -> return () -- nothing to do
 
-handleAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
-handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
+handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
+handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
   siteData <- readTVar siteDataTVar
   case sdSessionsWaiting siteData of
     chatSessionTVar:remainingChatSessionTVars -> do
@@ -272,8 +272,8 @@ handleAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
           -- update the operators with 'next in line' and waiting customers with their new position
           onWaitingListUpdated siteDataTVar
         
-          -- send the NowTalkingToMessage to the customer
-          createAndSendMessage (NowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar chatSession)
+          -- send the CustomerNowTalkingToMessage to the customer
+          createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar chatSession)
           
           -- TODO: send the session added packet to the operator
 
