@@ -231,14 +231,8 @@ handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar = do
     let updatedChatLog = (CLEMessage (ccdName clientCustomerData) (ccdColor clientCustomerData) messageText) : csLog chatSession
     let updatedChatSession = chatSession { csLog = updatedChatLog }
     writeTVar chatSessionTVar $ updatedChatSession
+    return $ trace (show updatedChatLog) ()
     return $ csOperator updatedChatSession
-
-  -- DEBUG
-  logMsg <- atomically $ do
-    cSession <- readTVar $ ccdChatSessionTVar clientCustomerData
-    return $ csLog cSession
-  print logMsg
-  -- END DEBUG
 
   case chatSessionOperator of
     ChatOperatorClient operatorClientDataTVar -> do
@@ -268,15 +262,22 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
           writeTVar chatSessionTVar $ chatSession {
             csOperator = ChatOperatorClient clientDataTVar
           }
+          -- read additional data that will be needed below
+          updatedChatSession <- readTVar chatSessionTVar
+          customerClientData <- readTVar (csCustomerClientDataTVar updatedChatSession)
+          (customerName, customerColor, customerIconUrl) <- case cdOtherData customerClientData of
+            OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData)
+            _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty)
           -- update the operators with 'next in line' and waiting customers with their new position
           onWaitingListUpdated siteDataTVar
         
           -- send the CustomerNowTalkingToMessage to the customer
-          createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar chatSession)
+          createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar updatedChatSession)
           
-          -- TODO: send the session added packet to the operator
+          -- send the OperatorNowTalkingToMessage to the operator
+          createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl]) clientDataTVar
 
-        _ -> return () -- ASSERT: Already pattern matched by caller
+        _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
 
     _ -> return () -- no waiting sessions, so do nothing
 
