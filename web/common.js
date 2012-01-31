@@ -165,6 +165,10 @@ function uriEncodeArray(arr) {
 }
 // End of AJAX stuff
 
+function encodeHtml(str) {
+	return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 function messageTypeToId(messageType) {
 	return messageTypeToIdTable[messageType];
 }
@@ -239,10 +243,10 @@ function replaceCardTextWith(person, card, name, title) {
 	if (card) {
 		card.fadeTo(100, 0);
 	}
-	name.html(person.name);
+	name.text(person.name);
 	name.css('color', person.color);
 
-	title.html(person.title);
+	title.text(person.title);
 
 	if (card) {
 		card.fadeTo(1000, 1);

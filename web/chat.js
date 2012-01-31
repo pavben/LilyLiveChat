@@ -143,16 +143,18 @@ function handleMessage(message) {
 }
 
 function writeMessageToChatLog(name, color, msg, chatlogDiv) {
-	var content = '';
-	content += '<span class="chat_msgtext" style="color:' + color + '">' + name + '</span>';
-	content += '<span class="chat_msgtext">: ' + msg + '</span><br/>';
+	var tempDiv = $('<div/>');
+	tempDiv.append($('<span/>').addClass('chat_msgtext').css('color', color).text(name));
+	tempDiv.append($('<span/>').addClass('chat_msgtext').text(': ' + msg));
+	tempDiv.append($('<br/>'));
 
-	writeContentToChatLog(content, chatlogDiv);
+	// append the contents of tempDiv to chatlogDiv
+	chatlogDiv.append(tempDiv.html());
+
+	chatLogWritten(chatlogDiv);
 }
 
-function writeContentToChatLog(content, chatlogDiv) {
-	chatlogDiv.append(content);
-
+function chatLogWritten(chatlogDiv) {
 	if (this.lastScrollTopTarget && chatlogDiv.scrollTop() >= this.lastScrollTopTarget - 30) {
 		// if they scroll within 200px of the bottom
 		this.scrollLock = false;
@@ -252,10 +254,10 @@ function getOrdinalSuffixFor(number) {
 }
 
 function updatePositionInLine(position) {
-	var newContent = position + '<sup>' + getOrdinalSuffixFor(position) + '</sup>';
-
 	changeRightSpaceDivTo($('#chat_inlinecell'), function() {
-		$('#chat_inlinepos').html(newContent);
+		$('#chat_inlinepos').text(position).append(
+			$('<sup/>').text(getOrdinalSuffixFor(position))
+		);
 	});
 }
 

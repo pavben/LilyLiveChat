@@ -101,7 +101,7 @@ function handleMessage(message) {
 				var title = message[2];
 				var iconUrl = message[3];
 				me = new Person(name, color, title, iconUrl);
-				$('#menu_welcomelabel').html('Hey, ' + name + '!');
+				$('#menu_welcomelabel').text('Hey, ' + name + '!');
 				//changeTabTo(menuTab); // TODO: for now, we jump directly to the chat tab
 				changeTabTo(chatTab);
 			}
@@ -186,10 +186,10 @@ function updateNextInLine(name, color, lineLength) {
 			// now that the text is faded out, begin the slide
 			nextInLineHeader.animate({height: '29px'}, 250, function() {
 				// the slide finished, so show the text
-				nextInLineHeaderText.html('Next in line (' + lineLength + ' waiting)');
+				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
 				nextInLineHeaderText.fadeTo(100, 1);
 
-				nextInLineButton.html(name);
+				nextInLineButton.text(name);
 				nextInLineButton.css('color', color);
 				nextInLineButtonWrapper.fadeTo(100, 1);
 
@@ -203,7 +203,7 @@ function updateNextInLine(name, color, lineLength) {
 		if (lineLength != currentDisplayedLineLength) {
 			// fade out the text
 			nextInLineHeaderText.fadeTo(100, 0, function() {
-				nextInLineHeaderText.html('Next in line (' + lineLength + ' waiting)');
+				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
 				nextInLineHeaderText.fadeTo(100, 1);
 
 				lineStatusFinished();
@@ -213,7 +213,7 @@ function updateNextInLine(name, color, lineLength) {
 		}
 		if (currentDisplayedNextInLine[0] != name || currentDisplayedNextInLine[1] != color) {
 			nextInLineButtonWrapper.fadeTo(100, 0, function() {
-				nextInLineButton.html(name);
+				nextInLineButton.text(name);
 				nextInLineButton.css('color', color);
 				nextInLineButtonWrapper.fadeTo(100, 1);
 
@@ -248,7 +248,7 @@ function emptyNextInLine() {
 				// now that the button has been hidden and the text is faded out, begin the slide
 				nextInLineHeader.animate({height: '71px'}, 250, function() {
 					// the slide finished, so show the text
-					nextInLineHeaderText.html('No customers waiting');
+					nextInLineHeaderText.text('No customers waiting');
 					nextInLineHeaderText.fadeTo(100, 1);
 
 					lineStatusFinished();

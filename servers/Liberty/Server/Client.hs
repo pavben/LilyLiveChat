@@ -123,7 +123,6 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
 
 handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar =
-  -- TODO: make sure all fields are HTML-safe
   withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> atomically $ do
     siteData <- readTVar siteDataTVar
     let thisChatSessionId = sdNextSessionId siteData
