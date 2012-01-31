@@ -133,7 +133,7 @@ function ajaxJsonLongPoll() {
 				}, 10000);
 			}
 		},
-		15000
+		65000
 	);
 }
 

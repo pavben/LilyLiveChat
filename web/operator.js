@@ -168,7 +168,7 @@ function checkLineStatus() {
 
 function lineStatusFinished() {
 	lineStatusBusy = false;
-	checkLineStatus();
+	setTimeout(checkLineStatus, 0);
 }
 
 function updateNextInLine(name, color, lineLength) {
@@ -176,6 +176,8 @@ function updateNextInLine(name, color, lineLength) {
 	var nextInLineButtonWrapper = $('#chat_nextinlinebuttonwrapper');
 	var nextInLineHeader = $('#chat_nextinlineheader');
 	var nextInLineHeaderText = $('#chat_nextinlineheadertext');
+
+	var effectsActivated = false;
 
 	if (!currentDisplayedNextInLine) {
 		// if the next in line button currently isn't showing
@@ -195,6 +197,8 @@ function updateNextInLine(name, color, lineLength) {
 				lineStatusFinished();
 			});
 		});
+
+		effectsActivated = true;
 	} else {
 		// the button is already showing, so find out what needs to be updated (if anything) and do it
 		if (lineLength != currentDisplayedLineLength) {
@@ -205,6 +209,8 @@ function updateNextInLine(name, color, lineLength) {
 
 				lineStatusFinished();
 			});
+
+			effectsActivated = true;
 		}
 		if (currentDisplayedNextInLine[0] != name || currentDisplayedNextInLine[1] != color) {
 			nextInLineButtonWrapper.fadeTo(100, 0, function() {
@@ -214,14 +220,23 @@ function updateNextInLine(name, color, lineLength) {
 
 				lineStatusFinished();
 			});
+
+			effectsActivated = true;
 		}
 	}
 
 	currentDisplayedNextInLine = [name, color];
 	currentDisplayedLineLength = lineLength;
+
+	// if no effects to activate, signal that we're done
+	if (!effectsActivated) {
+		lineStatusFinished();
+	}
 }
 
 function emptyNextInLine() {
+	var effectsActivated = false;
+
 	if (currentDisplayedNextInLine) {
 		var nextInLineButtonWrapper = $('#chat_nextinlinebuttonwrapper');
 		var nextInLineHeader = $('#chat_nextinlineheader');
@@ -241,10 +256,17 @@ function emptyNextInLine() {
 				});
 			});
 		});
+
+		effectsActivated = true;
 	}
 
 	currentDisplayedNextInLine = null;
 	currentDisplayedLineLength = 0;
+
+	// if no effects to activate, signal that we're done
+	if (!effectsActivated) {
+		lineStatusFinished();
+	}
 }
 
 /* End of line status updating and effects */

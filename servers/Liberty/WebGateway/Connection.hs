@@ -221,8 +221,7 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
   void $ abortTimeout sessionTimeoutAbortTVar
 
   -- set the long poll timeout
-  -- TODO: increase the session timeout and add instant session expiry if the client closes the connection before we do
-  setTimeout 10 myLongPollAbortTVar $ do
+  setTimeout 60 myLongPollAbortTVar $ do
     putStrLn "Long poll timeout!"
     -- set myLongPollTimeoutTVar to True, signalling that this long poll request has timed out
     atomically $ writeTVar myLongPollTimeoutTVar $ True
