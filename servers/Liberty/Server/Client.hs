@@ -11,13 +11,13 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.IO as LTI
-import qualified Data.Text.Lazy.Read as LTR
+--import qualified Data.Text.Lazy.IO as LTI
+--import qualified Data.Text.Lazy.Read as LTR
 import Debug.Trace
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.NetworkMessage
-import Liberty.Common.Utils
+--import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
@@ -161,12 +161,11 @@ onWaitingListUpdated siteDataTVar = do
     Nothing -> forM_ onlineOperators $ createAndSendMessage (LineIsEmptyMessage, [])
 
   -- update the waiting customers with their new positions
-  forM_ (zip [1..] sessionsWaiting) (\(positionInLine, chatSessionTVar) -> do
+  forM_ (zip ([1..] :: [Integer]) sessionsWaiting) (\(positionInLine, chatSessionTVar) -> do
     chatSession <- readTVar chatSessionTVar
     let clientDataTVar = csCustomerClientDataTVar chatSession
     createAndSendMessage (InLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
 
-data OperatorLoginResult = OperatorLoginResultSuccess | OperatorLoginResultFailedMatch | OperatorLoginResultFailedDuplicate
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar =
   let
@@ -236,10 +235,10 @@ handleCustomerChatMessage messageText clientCustomerData clientDataTVar = do
     return $ csOperator updatedChatSession
 
   -- DEBUG
-  log <- atomically $ do
+  logMsg <- atomically $ do
     cSession <- readTVar $ ccdChatSessionTVar clientCustomerData
     return $ csLog cSession
-  print log
+  print logMsg
   -- END DEBUG
 
   case chatSessionOperator of
@@ -310,9 +309,6 @@ handleClientExitEvent clientDataTVar = do
       --   consider re-queueing the customer (though perhaps we can't be reporting position in line then)
     OCDClientUnregistered -> do
       putStrLn "Client (Unregistered) exited -- nothing to cleanup"
-
-createAndSendMessageIO :: Message -> ClientDataTVar -> IO ()
-createAndSendMessageIO messageTypeAndParams clientDataTVar = atomically $ createAndSendMessage messageTypeAndParams clientDataTVar
 
 createAndSendMessage :: Message -> ClientDataTVar -> STM ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do

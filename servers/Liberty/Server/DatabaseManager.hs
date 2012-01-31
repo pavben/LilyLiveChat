@@ -10,7 +10,7 @@ module Liberty.Server.DatabaseManager (
 import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Exception
+import Control.Exception hiding (handle)
 import Control.Monad.STM
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -129,12 +129,11 @@ getSiteDataFromDb databaseHandleTVar siteId =
         if length docs == 1 then
           let firstDoc = head $ docs
           in
-            case (,,) <$>
-              (asMaybeText $ lookup "siteId" firstDoc) <*>
+            case (,) <$>
               (asMaybeText $ lookup "name" firstDoc) <*>
               (lookup "operators" firstDoc :: Maybe [Document])
             of
-              Just (siteId, siteName, operatorsDocs) ->
+              Just (siteName, operatorsDocs) ->
                 case mapM
                   (\operatorDoc ->
                     case (,,,,,) <$>

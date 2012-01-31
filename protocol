@@ -1,26 +1,26 @@
 Customer to Server
 ================================================================
-1 [siteId, name, color, icon] - Customer join
-4 [text] - Chat message
-6 - End chat
+1 [siteId, name, color, icon] - CustomerJoinMessage
+4 [text] - ChatMessage
+6 - EndChatMessage
 
 Server to Customer
 ================================================================
-2 [position] - In line count
-3 [name, color, icon] - Now talking to
-5 [name, text] - Append to message log
-6 - End chat
-7 - Something went wrong
+2 [position] - InLinePositionMessage
+3 [name, color, icon] - NowTalkingToMessage
+5 [name, text] - AppendToChatLogMessage
+6 - EndChatMessage
+7 - SomethingWentWrongMessage
 
 Operator to Server
 ================================================================
-8 [siteId, username, password] - Operator login request
-13 - Accept next chat session (if any)
+8 [siteId, username, password] - OperatorLoginRequestMessage
+13 - AcceptNextChatSessionMessage
 
 Server to Operator
 ================================================================
-9 [name, color, title, icon] - Operator login success response
-10 - Operator login failed response
-11 [next customer name, their color, number of waiters] - Line status update
-12 - Line is empty
+9 [name, color, title, icon] - OperatorLoginSuccessMessage
+10 - OperatorLoginFailedMessage
+11 [next customer name, their color, number of waiters] - LineStatusUpdateMessage
+12 - LineIsEmptyMessage
 

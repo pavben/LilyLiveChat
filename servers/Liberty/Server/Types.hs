@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Liberty.Server.Types (
   ClientData(..),
   OtherClientData(..),
