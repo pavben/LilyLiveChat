@@ -144,9 +144,12 @@ function handleMessage(message) {
 
 function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 	var tempDiv = $('<div/>');
-	tempDiv.append($('<span/>').addClass('chat_msgtext').css('color', color).text(name));
-	tempDiv.append($('<span/>').addClass('chat_msgtext').text(': ' + msg));
-	tempDiv.append($('<br/>'));
+	tempDiv.append($('<span/>').addClass('chat_msgtext').css('color', color).text(name + ': '));
+	var lines = msg.split('\n');
+	for (var i in lines) {
+		tempDiv.append($('<span/>').addClass('chat_msgtext').text(lines[i]));
+		tempDiv.append($('<br/>'));
+	}
 
 	// append the contents of tempDiv to chatlogDiv
 	chatlogDiv.append(tempDiv.html());
@@ -518,12 +521,48 @@ $(document).ready(function() {
 
 	// chat tab handlers
 	$('#chat_chatbox').keypress(function(e) {
-		if (e.which == 13) { // enter
+		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			queueAjaxCommand([Messages.CustomerSendChatMessage, $('#chat_chatbox').val()]);
 			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
+			log("[" + $('#chat_chatbox').val() + "]");
+			log(e);
 			$('#chat_chatbox').val('');
+			return false;
 		}
 	});
+	// auto-growing textarea
+	{
+		var chatBox = $('#chat_chatbox');
+
+		var shadow = $('<div/>').addClass("chatboxshadow").appendTo(document.body);
+
+		var checkHeight = function() {
+			shadow.css('width', $('#chat_chatbox').width());
+
+			var newContentHtml = chatBox.val().replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/&/g, '&amp;')
+				.replace(/\n$/, '<br/>.')
+				.replace(/\n/g, '<br/>')
+				.replace(/ {2,}/g, function(space) { return (new Array(space.length).join('&nbsp;')) + ' '; })
+				.replace(/^$/g, '.');
+
+			shadow.html(newContentHtml);
+
+			var shadowHeight = shadow.height();
+
+			if (shadowHeight > 150) {
+				shadowHeight = 150;
+			}
+			chatBox.css('height', shadowHeight);
+			onResize();
+		};
+		chatBox.change(checkHeight);
+		chatBox.keyup(checkHeight);
+
+		// call it initially to set the initial height
+		checkHeight();
+	}
 
 	// we start on welcometab
 	changeTabTo(welcomeTab);

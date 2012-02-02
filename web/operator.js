@@ -146,7 +146,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 
 	$('#chat_activechatscontainer').prepend(buttonWrapper);
 
-	buttonWrapper.hide().slideDown().fadeTo(200, 1);
+	buttonWrapper.hide().slideDown();
 }
 
 /* Line status updating and effects */
