@@ -59,7 +59,7 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                         if LBS.length textRemainder == fromIntegral contentLength then do
                           -- got all data
                           putStrLn "Got all data"
-                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second (LBS.drop 1) $ C8.span (/='=')) $ C8.split '&' textRemainder
+                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second (LBS.drop 1) . C8.span (/='=')) $ C8.split '&' textRemainder
                           case mapM (convertToLBSMaybe . Url.decode . C8.unpack) urlEncodedArgs of
                             Just rawArgs ->
                               case mapM decodeUtf8Maybe rawArgs of
@@ -232,7 +232,7 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
     sessionData <- readTVar sessionDataTVar
     -- filter the list to contain only the messages the client has not yet acknowledged receiving
     let filteredMessageList = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
-        sessionActive = isJust $ sdProxySockey sessionData
+        sessionActive = isJust $ sdProxySocket sessionData
 
     abortedFlag <- readTVar myLongPollAbortTVar
     timeoutFlag <- readTVar myLongPollTimeoutTVar

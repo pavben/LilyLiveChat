@@ -4,6 +4,7 @@ module Liberty.Common.Timeouts (
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
+import Control.Monad
 import Control.Monad.STM
 
 setTimeout :: Int -> TVar Bool -> IO () -> IO ()
