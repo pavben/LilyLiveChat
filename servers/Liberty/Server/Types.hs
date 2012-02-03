@@ -94,14 +94,3 @@ instance Show (TVar a) where
 instance Show (TChan a) where
   show _ = "TChan"
 
-
-newtype Handler a = ReaderT ClientDataTVar IO a
-  deriving (Functor, Monad, MonadReader ClientDataTVar, MonadIO)
-
-runHandler :: Handler a -> ClientDataTVar -> IO a
-runHandler (Handler f) cdtvar = runReaderT f cdtvar
-
-instance Monad (Reader r) where
-  return x = \_ -> x
-  x >>= f = 
-

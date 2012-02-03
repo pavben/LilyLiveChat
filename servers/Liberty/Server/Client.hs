@@ -99,7 +99,7 @@ clientSocketReadLoop clientDataTVar buffer databaseHandleTVar siteMapTVar = do
 
 handleMessage :: Message -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
 handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVar = do
-  clientData <- liftIO $ atomically $ readTVar clientDataTVar
+  clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
     OCDClientUnregistered ->
       case (messageType,params) of

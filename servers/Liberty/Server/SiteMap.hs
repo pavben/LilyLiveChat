@@ -6,6 +6,7 @@ module Liberty.Server.SiteMap (
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
+import Control.Monad
 import Control.Monad.STM
 import Data.Map (Map)
 import qualified Data.Map as Map

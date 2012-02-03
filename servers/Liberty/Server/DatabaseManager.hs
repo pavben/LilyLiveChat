@@ -11,9 +11,11 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Exception hiding (handle)
+import Control.Monad
 import Control.Monad.STM
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
+import Data.Maybe
 import Database.MongoDB
 import Prelude hiding (catch, lookup)
 import Liberty.Server.Types
@@ -65,7 +67,8 @@ notifyDatabaseFailure databaseHandleTVar = do
       Nothing -> return Nothing
 
   -- when Nothing, someone already reported this failure, so they would have closed the pipe
-  maybe close (return ()) pipeToMaybeClose
+  -- close if not Nothing
+  maybe (return ()) close pipeToMaybeClose
 
 connectToDatabase :: IO (Maybe DatabaseHandle)
 connectToDatabase =
@@ -121,9 +124,9 @@ getSiteDataFromDb databaseHandleTVar siteId =
       Just docs -> do
         putStrLn $ "num docs: " ++ show (length docs)
         case length docs of
-          0 -> return $ Left $ LookupFailureNotExist
-          1 -> do
-            let firstDoc = head $ docs
+          0 -> return $ Left LookupFailureNotExist
+          1 ->
+            let firstDoc = head docs
             in
               case (,) <$>
                 (asMaybeText $ lookup "name" firstDoc) <*>

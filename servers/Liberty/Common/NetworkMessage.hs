@@ -9,6 +9,7 @@ module Liberty.Common.NetworkMessage (
   createMessage,
   parseMessage
 ) where
+import Control.Monad
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.ByteString.Lazy (ByteString)
@@ -18,38 +19,40 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding as LE
+import Data.Tuple
 import Data.Word
 import Liberty.Common.Utils
 import Liberty.Common.Types
 
-messageTypesAndIds = [
-  (CustomerJoinMessage, 1),
-  (CustomerInLinePositionMessage, 2),
-  (CustomerNowTalkingToMessage, 3),
-  (CustomerSendChatMessage, 4),
-  (CustomerReceiveChatMessage, 5),
-  (CustomerEndingChatMessage, 6),
-  (SomethingWentWrongMessage, 7),
-  (OperatorLoginRequestMessage, 8),
-  (OperatorLoginSuccessMessage, 9),
-  (OperatorLoginFailedMessage, 10),
-  (OperatorLineStatusDetailsMessage, 11),
-  (OperatorLineStatusEmptyMessage, 12),
-  (OperatorAcceptNextChatSessionMessage, 13),
-  (OperatorNowTalkingToMessage, 14)
+messageIdsAndTypes :: [(Word8, MessageType)]
+messageIdsAndTypes = [
+    (1, CustomerJoinMessage),
+    (2, CustomerInLinePositionMessage),
+    (3, CustomerNowTalkingToMessage),
+    (4, CustomerSendChatMessage),
+    (5, CustomerReceiveChatMessage),
+    (6, CustomerEndingChatMessage),
+    (7, SomethingWentWrongMessage),
+    (8, OperatorLoginRequestMessage),
+    (9, OperatorLoginSuccessMessage),
+    (10, OperatorLoginFailedMessage),
+    (11, OperatorLineStatusDetailsMessage),
+    (12, OperatorLineStatusEmptyMessage),
+    (13, OperatorAcceptNextChatSessionMessage),
+    (14, OperatorNowTalkingToMessage)
   ]
 
 messageTypeById :: Map Word8 MessageType
-messageTypeById = Map.fromList $ map swap messageTypesAndIds
+messageTypeById = Map.fromList messageIdsAndTypes
 
 messageIdToType :: Word8 -> Maybe MessageType
 messageIdToType = flip Map.lookup messageTypeById
 
 messageIdByType :: Map MessageType Word8
-messageIdByType = Map.fromList messageTypesAndIds
+messageIdByType = Map.fromList $ map swap messageIdsAndTypes
 
 messageTypeToId :: MessageType -> Word8
-messageTypeToId = (messageIdByType !)
+messageTypeToId = (Map.!) messageIdByType
 
 -- createMessage and dependencies
 createMessage :: Message -> Maybe EncodedMessage
@@ -64,17 +67,17 @@ createMessage (messageType, params) =
 textToBytestringWithLen :: Text -> Maybe ByteString
 textToBytestringWithLen text =
   case textToBytestringAndLen text of
-    Just (bytestring, len :: Word32) -> Just $ runPut $ do
+    Just (byteString, len :: Word32) -> Just $ runPut $ do
       putWord32be len
-      putLazyByteString bytestring
+      putLazyByteString byteString
     Nothing -> Nothing
 
 textToBytestringAndLen :: (Integral a, Bounded a) => Text -> Maybe (ByteString, a)
 textToBytestringAndLen text =
   let
-    bytestring = LE.encodeUtf8 text
-    maybeLen = fromIntegerCheckBounds $ toInteger $ LBS.length bytestring
-  in fmap ((,) bytestring) maybeLen
+    byteString = LE.encodeUtf8 text
+    maybeLen = fromIntegerCheckBounds $ toInteger $ LBS.length byteString
+  in fmap ((,) byteString) maybeLen
 
 -- parseMessage and dependencies
 
@@ -118,7 +121,7 @@ readNextChunk = do
     Just chunkLength -> do
       let chunkLengthAsInt64 = fromIntegral chunkLength :: Int64
       maybeByteString <- safeGet chunkLengthAsInt64 $ getLazyByteString chunkLengthAsInt64
-      return $ fmap (eitherToMaybe . fmap LE.decodeUtf8') maybeByteString
+      return $ join $ fmap eitherToMaybe $ fmap LE.decodeUtf8' maybeByteString
     Nothing -> return Nothing
 
 safeGet :: Int64 -> Get a -> Get (Maybe a)

@@ -146,6 +146,9 @@ function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 	var tempDiv = $('<div/>');
 	tempDiv.append($('<span/>').addClass('chat_msgtext').css('color', color).text(name + ': '));
 	var lines = msg.split('\n');
+	if (lines.length > 1) {
+		tempDiv.append($('<br/>'));
+	}
 	for (var i in lines) {
 		tempDiv.append($('<span/>').addClass('chat_msgtext').text(lines[i]));
 		tempDiv.append($('<br/>'));

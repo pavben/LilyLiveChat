@@ -59,7 +59,7 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                         if LBS.length textRemainder == fromIntegral contentLength then do
                           -- got all data
                           putStrLn "Got all data"
-                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second tail . C8.span (/=p)) $ C8.split '&' textRemainder
+                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second (LBS.drop 1) $ C8.span (/='=')) $ C8.split '&' textRemainder
                           case mapM (convertToLBSMaybe . Url.decode . C8.unpack) urlEncodedArgs of
                             Just rawArgs ->
                               case mapM decodeUtf8Maybe rawArgs of
