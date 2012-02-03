@@ -3,7 +3,8 @@
 module Liberty.Common.Utils (
   parseIntegralCheckBounds,
   parseIntegral,
-  fromIntegerCheckBounds
+  fromIntegerCheckBounds,
+  eitherToMaybe
 ) where
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -32,4 +33,8 @@ fromIntegerCheckBounds x | toInteger (maxBound `asTypeOf` i) < toInteger x = Not
                          | otherwise = Just i
   where
     i = fromIntegral x
+
+eitherToMaybe :: forall a b . Either a b -> Maybe b
+eitherToMaybe (Right b) = Just b
+eitherToMaybe (Left _) = Nothing
 

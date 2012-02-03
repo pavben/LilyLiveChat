@@ -21,7 +21,7 @@ data MessageType = CustomerJoinMessage
                  | OperatorLineStatusEmptyMessage
                  | OperatorAcceptNextChatSessionMessage
                  | OperatorNowTalkingToMessage
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 type Message = (MessageType, [Text])
 type EncodedMessage = ByteString

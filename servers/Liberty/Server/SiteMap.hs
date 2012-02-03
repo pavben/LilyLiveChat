@@ -18,8 +18,8 @@ type SiteMapTVar = TVar (Map SiteId (TVar SiteEntry))
 -- private data
 data SiteEntry = SiteEntryLoaded SiteDataTVar | SiteEntryLoading | SiteEntryLoadFailed LookupFailureReason
 
-initializeSiteMap :: IO (SiteMapTVar)
-initializeSiteMap = atomically $ newTVar $ Map.empty
+initializeSiteMap :: IO SiteMapTVar
+initializeSiteMap = atomically $ newTVar Map.empty
 
 -- TODO: make idle sites expire
 lookupSite :: DatabaseHandleTVar -> SiteMapTVar -> SiteId -> IO (Either LookupFailureReason SiteDataTVar)
@@ -34,19 +34,15 @@ lookupSite databaseHandleTVar siteMapTVar siteId = do
         case siteEntry of
           -- if it currently has a failed value, set it to loading and signal that a load is to be performed
           SiteEntryLoadFailed _ -> do
-            writeTVar siteEntryTVar $ SiteEntryLoading
+            writeTVar siteEntryTVar SiteEntryLoading
             return (True, siteEntryTVar)
           _ -> return (False, siteEntryTVar)
       Nothing -> do
-        newSiteEntryTVar <- newTVar $ SiteEntryLoading
+        newSiteEntryTVar <- newTVar SiteEntryLoading
         writeTVar siteMapTVar $ Map.insert siteId newSiteEntryTVar siteMap
         return (True, newSiteEntryTVar)
   
-  if threadResponsibleForLoading then do
-    _ <- forkIO $ loadSiteDataFromDb databaseHandleTVar siteId siteEntryTVar
-    return ()
-  else
-    return ()
+  when threadResponsibleForLoading $ void $ forkIO $ loadSiteDataFromDb databaseHandleTVar siteId siteEntryTVar
 
   siteEntry <- atomically $ do
     siteEntry' <- readTVar siteEntryTVar

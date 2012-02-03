@@ -2,6 +2,7 @@ module Liberty.WebGateway.Connection (
   processConnection
 ) where
 import qualified Codec.Binary.Url as Url
+import Control.Arrow (second)
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Exception
@@ -11,6 +12,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
 import qualified Data.Map as Map
+import Data.Maybe (isJust)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LE
@@ -57,8 +59,8 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                         if LBS.length textRemainder == fromIntegral contentLength then do
                           -- got all data
                           putStrLn "Got all data"
-                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (\s -> (C8.takeWhile (/= '=') s, LBS.drop 1 $ C8.dropWhile (/= '=') s)) $ C8.split '&' textRemainder
-                          case mapM convertToLBSMaybe $ map Url.decode $ map C8.unpack urlEncodedArgs of
+                          let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second tail . C8.span (/=p)) $ C8.split '&' textRemainder
+                          case mapM (convertToLBSMaybe . Url.decode . C8.unpack) urlEncodedArgs of
                             Just rawArgs ->
                               case mapM decodeUtf8Maybe rawArgs of
                                 Just textArgs -> processClientRequest textArgs clientSocket sessionMapTVar
@@ -91,11 +93,8 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
     )
     (\(SomeException ex) -> putStrLn $ "Client disconnecting due to exception: " ++ show ex)
   where
-    convertToLBSMaybe maybeUrlDecodedListOfWord8 =
-      case maybeUrlDecodedListOfWord8 of
-        Just listOfWord8 -> Just $ LBS.pack listOfWord8
-        Nothing -> Nothing
-    decodeUtf8Maybe s = do
+    convertToLBSMaybe = fmap LBS.pack
+    decodeUtf8Maybe s =
       case LE.decodeUtf8' s of
         Right decodedStr -> Just decodedStr
         Left _ -> Nothing
@@ -224,7 +223,7 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
   setTimeout 60 myLongPollAbortTVar $ do
     putStrLn "Long poll timeout!"
     -- set myLongPollTimeoutTVar to True, signalling that this long poll request has timed out
-    atomically $ writeTVar myLongPollTimeoutTVar $ True
+    atomically $ writeTVar myLongPollTimeoutTVar True
 
   -- spawn a thread to set the activity tvar if the connection is closed or sends any extra data
   _ <- forkIO $ setTVarOnConnectionActivity clientSocket myLongPollActivityTVar
@@ -233,10 +232,7 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
     sessionData <- readTVar sessionDataTVar
     -- filter the list to contain only the messages the client has not yet acknowledged receiving
     let filteredMessageList = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
-        sessionActive =
-          case sdProxySocket sessionData of
-            Just _ -> True
-            Nothing -> False
+        sessionActive = isJust $ sdProxySockey sessionData
 
     abortedFlag <- readTVar myLongPollAbortTVar
     timeoutFlag <- readTVar myLongPollTimeoutTVar
@@ -267,21 +263,17 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
       -- set a new session cleanup timeout, because this session has timed out and was not replaced by a newer one which would have to set the session timeout on its' exit
       sendLongPollJsonResponse clientSocket [] True
       resetSessionTimeout sessionDataTVar sessionId sessionMapTVar
-    LongPollWaitResultAborted -> do
-      putStrLn "Long poll aborted without timeout set"
-      return ()
+    LongPollWaitResultAborted -> putStrLn "Long poll aborted without timeout set"
     LongPollWaitResultActivity -> do
       putStrLn "Long poll aborted by client socket activity (likely disconnect)"
-      deleteSession  sessionDataTVar sessionId sessionMapTVar
-      return ()
-
+      deleteSession sessionDataTVar sessionId sessionMapTVar
   return ()
 
 setTVarOnConnectionActivity :: Socket -> TVar Bool -> IO ()
 setTVarOnConnectionActivity clientSocket tvar = do
   catch (recv clientSocket 1 >> return ()) (\(SomeException _) -> return ())
   putStrLn "setTVarOnConnectionActivity triggered"
-  atomically $ writeTVar tvar $ True
+  atomically $ writeTVar tvar True
 
 sendLongPollJsonResponse :: Socket -> [(OutSequence, Message)] -> Bool -> IO ()
 sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
@@ -305,7 +297,7 @@ sendJsonResponse clientSocket jsObject = do
   print $ encodedData
   sendAllIgnoreExceptions clientSocket $ LBS.concat [C8.pack
     (
-      "HTTP/1.1 200 OK" ++
+      "HTTP/1.1 200 OK\r\n" ++
       "Server: Liberty.WebGateway\r\n" ++
       "Access-Control-Allow-Origin: *\r\n" ++
       "Content-Length: " ++ show (LBS.length encodedData) ++ "\r\n" ++
@@ -316,7 +308,7 @@ sendJsonResponse clientSocket jsObject = do
 sendEmptyTextResponse :: Socket -> IO ()
 sendEmptyTextResponse clientSocket = do
   sendAllIgnoreExceptions clientSocket $ C8.pack (
-      "HTTP/1.1 200 OK" ++
+      "HTTP/1.1 200 OK\r\n" ++
       "Server: Liberty.WebGateway\r\n" ++
       "Access-Control-Allow-Origin: *\r\n" ++
       "Content-Length: 0\r\n" ++
@@ -328,7 +320,7 @@ sendAllIgnoreExceptions s byteString =
   catch (sendAll s byteString) (\(SomeException _) -> return ())
 
 readMaybeInt :: ByteString -> Maybe Int
-readMaybeInt s = do
+readMaybeInt s =
   case C8.readInt s of
     Just (num, remainder) ->
       if LBS.null remainder then
@@ -336,4 +328,3 @@ readMaybeInt s = do
       else
         Nothing
     Nothing -> Nothing
-

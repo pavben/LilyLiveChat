@@ -15,7 +15,7 @@ setTimeout seconds abortTVar timeoutAction = do
     -- wait the requested number of seconds
     threadDelay $ seconds * 1000 * 1000
     -- then set the timeout tvar to true, indicating a timeout
-    atomically $ writeTVar timeoutTVar $ True
+    atomically $ writeTVar timeoutTVar True
 
   -- this is the thread that waits for abort or timeout and conditionally runs timeoutAction
   _ <- forkIO $ do
@@ -30,10 +30,7 @@ setTimeout seconds abortTVar timeoutAction = do
         -- otherwise, timeout was triggered, so run the timeoutAction
         (_, True)      -> return True
 
-    if runActionFlag then
-      timeoutAction
-    else
-      return ()
+    when runActionFlag timeoutAction
   return ()
 
 -- ensure the abort flag is set to False and return False if the abort flag was already set

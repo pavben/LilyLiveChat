@@ -27,7 +27,7 @@ data LookupFailureReason = LookupFailureNotExist | LookupFailureTechnicalError
 data DatabaseHandle = DatabaseHandle Pipe
 
 initializeDatabaseManager :: IO (DatabaseHandleTVar)
-initializeDatabaseManager = atomically $ newTVar $ Nothing -- initially, no connection
+initializeDatabaseManager = atomically $ newTVar Nothing -- initially, no connection
 
 runDatabaseManager :: DatabaseHandleTVar -> IO ()
 runDatabaseManager databaseHandleTVar = do
@@ -38,9 +38,7 @@ databaseManagerLoop :: DatabaseHandleTVar -> IO ()
 databaseManagerLoop databaseHandleTVar = do
   atomically $ do
     databaseHandle <- readTVar databaseHandleTVar
-    case databaseHandle of
-      Just _ -> retry -- do nothing while the connection is active
-      Nothing -> return ()
+    when (isJust databaseHandle) retry
 
   putStrLn "No active database connection available. Connecting..."
 
@@ -66,9 +64,8 @@ notifyDatabaseFailure databaseHandleTVar = do
         return $ Just pipe
       Nothing -> return Nothing
 
-  case pipeToMaybeClose of
-    Just pipe -> close pipe
-    Nothing -> return () -- someone already reported this failure, so they would have closed the pipe
+  -- when Nothing, someone already reported this failure, so they would have closed the pipe
+  maybe close (return ()) pipeToMaybeClose
 
 connectToDatabase :: IO (Maybe DatabaseHandle)
 connectToDatabase =
@@ -77,10 +74,7 @@ connectToDatabase =
     pipe <- runIOE $ connect' 5 (host "127.0.0.1")
     return $ Just $ DatabaseHandle pipe
   )
-  (\ex -> do
-    let _ = ex :: SomeException
-    return Nothing
-  )
+  (\(SomeException _) -> return Nothing)
 
 connectionKeepAliveLoop :: DatabaseHandleTVar -> IO ()
 connectionKeepAliveLoop databaseHandleTVar = do
@@ -126,34 +120,32 @@ getSiteDataFromDb databaseHandleTVar siteId =
     case res of
       Just docs -> do
         putStrLn $ "num docs: " ++ show (length docs)
-        if length docs == 1 then
-          let firstDoc = head $ docs
-          in
-            case (,) <$>
-              (asMaybeText $ lookup "name" firstDoc) <*>
-              (lookup "operators" firstDoc :: Maybe [Document])
-            of
-              Just (siteName, operatorsDocs) ->
-                case mapM
-                  (\operatorDoc ->
-                    case (,,,,,) <$>
-                      (asMaybeText $ lookup "username" operatorDoc) <*>
-                      (asMaybeText $ lookup "password" operatorDoc) <*>
-                      (asMaybeText $ lookup "name" operatorDoc) <*>
-                      (asMaybeText $ lookup "color" operatorDoc) <*>
-                      (asMaybeText $ lookup "title" operatorDoc) <*>
-                      (asMaybeText $ lookup "icon" operatorDoc)
-                    of
-                      Just (username, password, name, color, title, icon) -> Just $ SiteOperatorInfo username password name color title icon
-                      Nothing -> Nothing
-                  )
-                  (operatorsDocs)
-                of
-                  Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos [] 0
-                  Nothing -> return $ Left $ LookupFailureTechnicalError
-              Nothing -> return $ Left $ LookupFailureTechnicalError
-          else
-            return $ Left $ LookupFailureNotExist
+        case length docs of
+          0 -> return $ Left $ LookupFailureNotExist
+          1 -> do
+            let firstDoc = head $ docs
+            in
+              case (,) <$>
+                (asMaybeText $ lookup "name" firstDoc) <*>
+                (lookup "operators" firstDoc :: Maybe [Document])
+              of
+                Just (siteName, operatorsDocs) ->
+                  case mapM
+                    (\operatorDoc ->
+                      SiteOperatorInfo <$>
+                        (asMaybeText $ lookup "username" operatorDoc) <*>
+                        (asMaybeText $ lookup "password" operatorDoc) <*>
+                        (asMaybeText $ lookup "name" operatorDoc) <*>
+                        (asMaybeText $ lookup "color" operatorDoc) <*>
+                        (asMaybeText $ lookup "title" operatorDoc) <*>
+                        (asMaybeText $ lookup "icon" operatorDoc)
+                    )
+                    operatorsDocs
+                  of
+                    Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos [] 0
+                    Nothing -> return $ Left $ LookupFailureTechnicalError
+                Nothing -> return $ Left $ LookupFailureTechnicalError
+          _ -> return $ Left $ LookupFailureTechnicalError
       Nothing -> return $ Left $ LookupFailureTechnicalError
 
 asMaybeText :: Maybe String -> Maybe Text

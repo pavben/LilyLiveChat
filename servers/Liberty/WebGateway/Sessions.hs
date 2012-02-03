@@ -45,7 +45,7 @@ type SessionDataTVar = TVar SessionData
 type SessionMapTVar = TVar (Map SessionId SessionDataTVar)
 
 createSessionMapTVar :: IO SessionMapTVar
-createSessionMapTVar = atomically $ newTVar $ Map.empty
+createSessionMapTVar = atomically $ newTVar Map.empty
 
 createSession :: SessionMapTVar -> IO (Maybe (SessionId, SessionDataTVar))
 createSession sessionMapTVar = do
@@ -77,7 +77,7 @@ proxySocketReaderLoop proxySocket buffer sessionDataTVar =
                 if not $ LBS.null recvResult then do
                   return $ Just recvResult
                 else do
-                  putStrLn $ "Proxy connection ending -- recv returned nothing"
+                  putStrLn "Proxy connection ending -- recv returned nothing"
                   return Nothing
                 )
                 (\(SomeException ex) -> do
