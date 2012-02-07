@@ -303,13 +303,14 @@ function onChatTabResize() {
 		- stripPx(chatlogDiv.css('border-bottom-width'))
 		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
 		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
-		- stripPx(chatboxWrapper.css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
-	// TODO: Do we still need to allow for the extra height of a spacer or does overflow-y hidden resolve the problem?
+		- stripPx($('#chat_tab').css('padding-bottom')); // remove the height of the spacer below the chatbox
+
 	if (newChatLogHeight < 200) {
 		newChatLogHeight = 200;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
+
 	chatlogDiv.css('height', newChatLogHeight);
 	$('#chat_chatbox').focus();
 }

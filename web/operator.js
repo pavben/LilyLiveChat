@@ -337,6 +337,7 @@ function updateChatLogHeight() {
 			- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
 			- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
 			- stripPx(chatMaincell.css('padding-bottom')); // remove the height of the padding below the chatbox
+
 		chatlogDiv.css('height', newChatLogHeight);
 		$('#chat_chatbox_' + visibleChatSessionId).focus();
 	}
