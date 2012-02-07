@@ -144,13 +144,13 @@ function handleMessage(message) {
 
 function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 	var tempDiv = $('<div/>');
-	tempDiv.append($('<span/>').addClass('chat_msgtext').css('color', color).text(name + ': '));
+	tempDiv.append($('<span/>').addClass('chatmsgtext').css('color', color).text(name + ': '));
 	var lines = msg.split('\n');
 	if (lines.length > 1) {
 		tempDiv.append($('<br/>'));
 	}
 	for (var i in lines) {
-		tempDiv.append($('<span/>').addClass('chat_msgtext').text(lines[i]));
+		tempDiv.append($('<span/>').addClass('chatmsgtext').text(lines[i]));
 		tempDiv.append($('<br/>'));
 	}
 
@@ -294,21 +294,23 @@ function onChatTabResize() {
 	// disable scrolling as it interferes with calculations and causes visual glitches
 	$('body').css('overflow-y', 'hidden');
 	var chatlogDiv = $('#chat_chatlog');
+	var chatboxWrapper = $('#chat_chatboxwrapper');
 	var newChatLogHeight = $(window).height() // start with the full height
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
-		- stripPx($('#chat_chatlog').css('padding-top')) // top and bottom paddings are not counted in the height
-		- stripPx($('#chat_chatlog').css('padding-bottom'))
-		- stripPx($('#chat_chatlog').css('border-top-width')) // same for border
-		- stripPx($('#chat_chatlog').css('border-bottom-width'))
-		- stripPx($('#chat_chatboxwrapper').css('margin-top')) // remove the height of the spacer above the chatbox
-		- $('#chat_chatboxwrapper').outerHeight() // remove the height of the chatbox wrapper
-		- stripPx($('#chat_chatboxwrapper').css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
+		- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
+		- stripPx(chatlogDiv.css('padding-bottom'))
+		- stripPx(chatlogDiv.css('border-top-width')) // same for border
+		- stripPx(chatlogDiv.css('border-bottom-width'))
+		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
+		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
+		- stripPx(chatboxWrapper.css('margin-top')); // allow an extra height of a spacer below the chatbox wrapper (it doesn't actually exist, but we need to account for the space there)
+	// TODO: Do we still need to allow for the extra height of a spacer or does overflow-y hidden resolve the problem?
 	if (newChatLogHeight < 200) {
 		newChatLogHeight = 200;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
-	$('#chat_chatlog').css('height', newChatLogHeight);
+	chatlogDiv.css('height', newChatLogHeight);
 	$('#chat_chatbox').focus();
 }
 
@@ -533,39 +535,8 @@ $(document).ready(function() {
 			return false;
 		}
 	});
-	// auto-growing textarea
-	{
-		var chatBox = $('#chat_chatbox');
-
-		var shadow = $('<div/>').addClass("chatboxshadow").appendTo(document.body);
-
-		var checkHeight = function() {
-			shadow.css('width', $('#chat_chatbox').width());
-
-			var newContentHtml = chatBox.val().replace(/</g, '&lt;')
-				.replace(/>/g, '&gt;')
-				.replace(/&/g, '&amp;')
-				.replace(/\n$/, '<br/>.')
-				.replace(/\n/g, '<br/>')
-				.replace(/ {2,}/g, function(space) { return (new Array(space.length).join('&nbsp;')) + ' '; })
-				.replace(/^$/g, '.');
-
-			shadow.html(newContentHtml);
-
-			var shadowHeight = shadow.height();
-
-			if (shadowHeight > 150) {
-				shadowHeight = 150;
-			}
-			chatBox.css('height', shadowHeight);
-			onResize();
-		};
-		chatBox.change(checkHeight);
-		chatBox.keyup(checkHeight);
-
-		// call it initially to set the initial height
-		checkHeight();
-	}
+	
+	initializeAutoGrowingTextArea($('#chat_chatbox'));
 
 	// we start on welcometab
 	changeTabTo(welcomeTab);

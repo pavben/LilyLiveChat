@@ -85,13 +85,19 @@ input {
 	line-height:140%;
 	color:#7C7C7C;
 }
-.inputboxwrapper {
+.inputboxwrapper, .chatboxwrapper {
 	display:block;
-	height:20px;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 	padding:3px 3px 3px 3px;
+}
+.inputboxwrapper {
+	height:20px;
+}
+.chatboxwrapper {
+	margin-top:9px;
+	overflow:hidden;
 }
 .inputbox {
 	display:block;
@@ -147,6 +153,7 @@ input {
 	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 }
+/* TODO: Consolidate this and shadow */
 .chatbox {
 	display:block;
 	width:100%;
@@ -175,4 +182,18 @@ input {
 	white-space: -pre-wrap;     /* Opera <7 */   
 	white-space: -o-pre-wrap;   /* Opera 7 */    
 	word-wrap: break-word;      /* IE */
+}
+.chatlog {
+	height:400px;
+	padding:1px 10px 3px 6px;
+	background-color:#F4F4F4;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	margin-top:9px;
+	overflow-x:hidden;
+	overflow-y:auto;
+}
+.chatmsgtext {
+	font-size:18px;
+	line-height:120%;
 }

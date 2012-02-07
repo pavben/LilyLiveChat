@@ -44,6 +44,9 @@ $(document).ready(function() {
 		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
 	});
 
+	/* TODO: this is temp */
+	initializeAutoGrowingTextArea($('#chat_chatbox_X'));
+
 	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
 	//changeTabTo(chatTab);
@@ -293,28 +296,74 @@ function emptyNextInLine() {
 
 /* End of line status updating and effects */
 
+var visibleChatSessionId = null;
+
+/* null for no visible chat session */
+function setVisibleChatSessionId(chatSessionId) {
+	// hide the current one
+	chatSessionIdToChatMaincell(visibleChatSessionId).fadeOut();
+
+	// set the new one
+	visibleChatSessionId = chatSessionId;
+
+	// show the new one
+	chatSessionIdToChatMaincell(visibleChatSessionId).fadeIn();
+
+	updateChatLogHeight();
+}
+
+function chatSessionIdToChatMaincell(chatSessionId) {
+	var divId = '#chat_maincell_';
+	if (chatSessionId) {
+		divId += chatSessionId;
+	} else {
+		divId += 'none';
+	}
+
+	return $(divId);
+}
+
+function updateChatLogHeight() {
+	if (visibleChatSessionId) {
+		var chatlogDiv = $('#chat_chatlog_' + visibleChatSessionId);
+		var chatboxWrapper = $('#chat_chatboxwrapper_' + visibleChatSessionId);
+		var chatMaincell = $('#chat_maincell');
+		var newChatLogHeight = chatMaincell.height()
+			- (chatlogDiv.offset().top - $('#chat_maincell').offset().top) // remove the space from the start of maincell to the start of chatlog
+			- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
+			- stripPx(chatlogDiv.css('padding-bottom'))
+			- stripPx(chatlogDiv.css('border-top-width')) // same for border
+			- stripPx(chatlogDiv.css('border-bottom-width'))
+			- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
+			- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
+			- stripPx(chatMaincell.css('padding-bottom')); // remove the height of the padding below the chatbox
+		chatlogDiv.css('height', newChatLogHeight);
+		$('#chat_chatbox_' + visibleChatSessionId).focus();
+	}
+}
+
 function onResize() {
 	if (currentTab == loginTab) {
 		onBasicVCenterResize('login', 600);
 	} else if (currentTab == menuTab) {
 		onBasicVCenterResize('menu', 600);
+	} else if (currentTab == chatTab) {
+		onChatTabResize();
 	}
 }
 
-function onBasicVCenterResize(tabName, minHeight) {
-	// disable scrolling as it causes visual glitches
+function onChatTabResize() {
+	// disable scrolling as it causes scrollbar flickering
 	$('body').css('overflow-y', 'hidden');
-	var newTabHeight = $(window).height();
-	if (newTabHeight < minHeight) {
-		newTabHeight = minHeight;
+	var chatMaincellDiv = $('#chat_maincell');
+	var newChatMaincellHeight = $(window).height() - chatMaincellDiv.offset().top;
+	if (newChatMaincellHeight < 500) {
+		newChatMaincellHeight = 500;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
-	var spaceToFill = newTabHeight - $('#' + tabName + '_middle').outerHeight();
-	var newTabTopHeight = Math.floor(spaceToFill / 2);
-	var newTabBottomHeight = Math.ceil(spaceToFill / 2); // bottom gets the extra pixel
-	$('#' + tabName + '_top').css('height', newTabTopHeight);
-	$('#' + tabName + '_bottom').css('height', newTabBottomHeight);
-	$('#' + tabName + '_tab').css('height', newTabHeight);
+	chatMaincellDiv.css('height', newChatMaincellHeight);
+
+	updateChatLogHeight();
 }
 

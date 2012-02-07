@@ -82,21 +82,4 @@
 	border-top:1px solid #BBBBBB;
 	vertical-align:bottom;
 }
-#chat_chatlog {
-	height:400px;
-	padding:1px 10px 3px 6px;
-	background-color:#F4F4F4;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-	margin-top:9px;
-	overflow-x:hidden;
-	overflow-y:auto;
-}
-.chat_msgtext {
-	font-size:18px;
-	line-height:120%;
-}
-#chat_chatboxwrapper {
-	margin-top:9px;
-}
 

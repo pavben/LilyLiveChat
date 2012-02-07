@@ -190,6 +190,38 @@ var Messages = {
 	OperatorNowTalkingToMessage : 14
 };
 
+function initializeAutoGrowingTextArea(chatBox) {
+	/* TODO: Add a cleanup mechanism for operators to destroy the shadow when a conversation window is closed */
+	var shadow = $('<div/>').addClass("chatboxshadow").appendTo(document.body);
+
+	var checkHeight = function() {
+		shadow.css('width', $('#chat_chatbox').width());
+
+		var newContentHtml = chatBox.val().replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/&/g, '&amp;')
+			.replace(/\n$/, '<br/>.')
+			.replace(/\n/g, '<br/>')
+			.replace(/ {2,}/g, function(space) { return (new Array(space.length).join('&nbsp;')) + ' '; })
+			.replace(/^$/g, '.');
+
+		shadow.html(newContentHtml);
+
+		var shadowHeight = shadow.height();
+
+		if (shadowHeight > 150) {
+			shadowHeight = 150;
+		}
+		chatBox.css('height', shadowHeight);
+		onResize();
+	};
+	chatBox.change(checkHeight);
+	chatBox.keyup(checkHeight);
+
+	// call it initially to set the initial height
+	checkHeight();
+}
+
 // tab switcher
 
 function changeTabTo(tab) {
