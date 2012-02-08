@@ -545,6 +545,9 @@ $(document).ready(function() {
 	//changeTabTo(chatTab);
 	//updatePositionInLine(5);
 	// END OF DEBUG
+	
+	// TEMP: remove this
+	$('#welcome_btn_ok').click();
 
 	$(window).resize(onResize);
 });
