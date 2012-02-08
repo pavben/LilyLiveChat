@@ -45,7 +45,7 @@ $(document).ready(function() {
 	});
 
 	/* TODO: this is temp */
-	initializeAutoGrowingTextArea($('#chat_chatbox_X'));
+	initializeAutoGrowingTextArea($('#chat_chatbox_X'), $('#chat_chatboxwrapper_X'));
 
 	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
@@ -203,7 +203,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 		)
 	);
 
-	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId));
+	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId), $('#chat_chatboxwrapper_' + chatSessionId));
 
 	setVisibleChatSessionId(chatSessionId);
 }

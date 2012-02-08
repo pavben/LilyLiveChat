@@ -537,7 +537,8 @@ $(document).ready(function() {
 		}
 	});
 	
-	initializeAutoGrowingTextArea($('#chat_chatbox'));
+	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
+	initializeAutoGrowingTextArea($('#chat_chatbox'), $('#chat_chatboxwrapper'));
 
 	// we start on welcometab
 	changeTabTo(welcomeTab);
