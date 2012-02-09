@@ -129,7 +129,7 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
     clientData <- readTVar clientDataTVar
 
     -- create a new chat session with this client as the customer and no operator
-    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [CLEJoin name color]
+    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] [CLEJoin name color]
     writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
 
     -- add the newly-created chat session to the site data's waiting list
@@ -241,21 +241,20 @@ withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
 
 handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
 handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar = do
-  -- first, append the message to the log and retrieve the chat session operator value
-  chatSessionOperator <- atomically $ do
+  atomically $ do
     let chatSessionTVar = ccdChatSessionTVar clientCustomerData
     chatSession <- readTVar $ chatSessionTVar
-    -- now that the message was sent to all appropriate parties, add it to the log
-    let updatedChatLog = (CLEMessage (ccdName clientCustomerData) (ccdColor clientCustomerData) messageText) : csLog chatSession
-    let updatedChatSession = chatSession { csLog = updatedChatLog }
-    writeTVar chatSessionTVar $ updatedChatSession
-    return $ trace (show updatedChatLog) ()
-    return $ csOperator updatedChatSession
-
-  case chatSessionOperator of
-    ChatOperatorClient operatorClientDataTVar -> do
-      putStrLn "TODO: Support operators receiving messages"
-    ChatOperatorNobody -> return () -- nothing to do
+    writeTVar chatSessionTVar $ chatSession {
+      csLog = (CLEMessage (ccdName clientCustomerData) (ccdColor clientCustomerData) messageText) : csLog chatSession,
+      csMessagesWaiting = case csOperator chatSession of
+        -- if there is no operator, buffer the message
+        ChatOperatorNobody -> messageText : csMessagesWaiting chatSession
+        -- otherwise, don't buffer the message since it'll be immediately sent to the operator
+        _ -> csMessagesWaiting chatSession
+    }
+    case csOperator chatSession of
+      ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [messageText]) operatorClientDataTVar
+      ChatOperatorNobody -> return () -- we have buffered the message above
 
 handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
 handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
@@ -278,7 +277,8 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
           -- set the operator as the operator for this chat session
           chatSession <- readTVar chatSessionTVar
           writeTVar chatSessionTVar $ chatSession {
-            csOperator = ChatOperatorClient clientDataTVar
+            csOperator = ChatOperatorClient clientDataTVar,
+            csMessagesWaiting = []
           }
           -- read additional data that will be needed below
           updatedChatSession <- readTVar chatSessionTVar
@@ -294,6 +294,10 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
           
           -- send the OperatorNowTalkingToMessage to the operator
           createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl]) clientDataTVar
+
+          -- send all csMessagesWaiting to the operator
+          -- note: chatSession is a snapshot from before we emptied csMessagesWaiting
+          forM_ (reverse $ csMessagesWaiting chatSession) (\messageText -> createAndSendMessage (OperatorReceiveChatMessage, [messageText]) clientDataTVar)
 
         _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
 

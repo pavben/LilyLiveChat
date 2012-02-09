@@ -52,6 +52,7 @@ data ChatSession = ChatSession {
   csId :: Integer,
   csCustomerClientDataTVar :: ClientDataTVar,
   csOperator :: ChatOperatorEntry,
+  csMessagesWaiting :: [Text],
   csLog :: [ChatLogEntry]
 } deriving (Show)
 type ChatSessionTVar = TVar ChatSession
