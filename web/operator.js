@@ -95,9 +95,9 @@ function loginTabOkHandler() {
 }
 
 function handleMessage(message) {
-	log(message);
 	messageTypeId = message.shift();
 	log("Msg Type Id: " + messageTypeId);
+	log(message);
 	switch (messageTypeId) {
 		case Messages.SomethingWentWrongMessage:
 			break;
@@ -143,7 +143,7 @@ function handleMessage(message) {
 
 			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
 			break;
-		case Messages.OperatorEndingChatMessage:
+		case Messages.OperatorChatEndedMessage:
 			var chatSessionId = message[0];
 			// TODO
 			break;

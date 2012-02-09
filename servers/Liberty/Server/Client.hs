@@ -318,36 +318,62 @@ handleOperatorSendChatMessage chatSessionId text clientDataTVar chatSessionTVars
       [chatSessionTVar] -> do
         chatSession <- readTVar chatSessionTVar
         createAndSendMessage (CustomerReceiveChatMessage, [text]) (csCustomerClientDataTVar chatSession)
-      _ -> closeClientSocket clientDataTVar -- if no match or too many matches, something went wrong
+      _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
-  clientData <- atomically $ readTVar clientDataTVar
-  case cdOtherData clientData of
-    OCDClientCustomerData clientCustomerData -> do
-      putStrLn "Client (Customer) exited"
-      -- TODO: if there is an operator in the session, notify them that the customer has exited
-      let chatSessionTVar = ccdChatSessionTVar clientCustomerData
-      chatSession <- atomically $ readTVar $ chatSessionTVar
-      case csOperator chatSession of
-        ChatOperatorNobody -> do
-          -- client exiting while on the waiting list
-          let siteDataTVar = ccdSiteDataTVar clientCustomerData
-          atomically $ do
+  atomically $ do
+    clientData <- readTVar clientDataTVar
+    case cdOtherData clientData of
+      OCDClientCustomerData clientCustomerData -> do
+        let chatSessionTVar = ccdChatSessionTVar clientCustomerData
+        chatSession <- readTVar $ chatSessionTVar
+        case csOperator chatSession of
+          ChatOperatorNobody -> do
+            -- customer exiting while on the waiting list
+            let siteDataTVar = ccdSiteDataTVar clientCustomerData
             siteData <- readTVar siteDataTVar
-            let newSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
-            writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting }
-
+            writeTVar siteDataTVar $ siteData {
+              sdSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
+            }
             onWaitingListUpdated siteDataTVar
-        ChatOperatorClient operatorClientDataTVar -> do
-          putStrLn "TODO: Client disconnected while talking to an operator"
-    OCDClientOperatorData clientOperatorData -> do
-      putStrLn "Client (Operator) exited"
-      -- TODO: for each active chat session
-      --   end it (for now?)
-      --   consider re-queueing the customer (though perhaps we can't be reporting position in line then)
-    OCDClientUnregistered -> do
-      putStrLn "Client (Unregistered) exited -- nothing to cleanup"
+          ChatOperatorClient operatorClientDataTVar ->
+            -- customer exiting while talking to a client operator
+            endChatSession chatSessionTVar
+      OCDClientOperatorData clientOperatorData -> do
+        -- end all chat sessions
+        mapM_ endChatSession $ codChatSessions clientOperatorData
+        
+        -- remove the operator from sdOnlineOperators
+        let siteDataTVar = codSiteDataTVar clientOperatorData
+        siteData <- readTVar siteDataTVar
+        writeTVar siteDataTVar $ siteData {
+          sdOnlineOperators = filter (/= clientDataTVar) $ sdOnlineOperators siteData
+        }
+      OCDClientUnregistered -> return () -- nothing to cleanup
+
+endChatSession :: ChatSessionTVar -> STM ()
+endChatSession chatSessionTVar = do
+  chatSession <- readTVar chatSessionTVar
+  -- notify the customer that the chat session has ended
+  createAndSendMessage (CustomerChatEndedMessage, []) (csCustomerClientDataTVar chatSession)
+  
+  case csOperator chatSession of
+    ChatOperatorClient operatorClientDataTVar -> do
+      -- remove the operator from the session
+      writeTVar chatSessionTVar $ chatSession { csOperator = ChatOperatorNobody }
+
+      -- remove the session from the operator
+      operatorClientData <- readTVar operatorClientDataTVar
+      case cdOtherData operatorClientData of
+        OCDClientOperatorData clientOperatorData -> do
+          writeTVar operatorClientDataTVar $ operatorClientData {
+            cdOtherData = OCDClientOperatorData clientOperatorData {
+              codChatSessions = filter (/= chatSessionTVar) $ codChatSessions clientOperatorData
+            }
+          }
+        _ -> trace "ASSERT: operatorClientData contains a non-operator" $ return ()
+      createAndSendMessage (OperatorChatEndedMessage, [LT.pack $ show $ csId chatSession]) operatorClientDataTVar
 
 createAndSendMessage :: Message -> ClientDataTVar -> STM ()
 createAndSendMessage messageTypeAndParams clientDataTVar = do

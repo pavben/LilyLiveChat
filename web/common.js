@@ -190,7 +190,9 @@ var Messages = {
 	OperatorNowTalkingToMessage : 14,
 	OperatorReceiveChatMessage : 15,
 	OperatorSendChatMessage : 16,
-	OperatorEndingChatMessage : 17
+	OperatorEndingChatMessage : 17,
+	OperatorChatEndedMessage : 18,
+	CustomerChatEndedMessage : 19
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {

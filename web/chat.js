@@ -137,6 +137,9 @@ function handleMessage(message) {
 			break;
 		case Messages.SomethingWentWrongMessage:
 			break;
+		case Messages.CustomerChatEndedMessage:
+			// TODO
+			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}

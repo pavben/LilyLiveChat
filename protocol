@@ -10,12 +10,14 @@ Server to Customer
 3  - CustomerNowTalkingToMessage [name, color, icon]
 5  - CustomerReceiveChatMessage [text]
 7  - SomethingWentWrongMessage
+19 - CustomerChatEndedMessage
 
 Operator to Server
 ================================================================
 8  - OperatorLoginRequestMessage [siteId, username, password]
 13 - OperatorAcceptNextChatSessionMessage
 16 - OperatorSendChatMessage [session id, text]
+17 - OperatorEndingChatMessage [session id]
 
 Server to Operator
 ================================================================
@@ -25,5 +27,5 @@ Server to Operator
 12 - OperatorLineStatusEmptyMessage
 14 - OperatorNowTalkingToMessage [session id, name, color, iconUrl]
 15 - OperatorReceiveChatMessage [session id, text]
-17 - OperatorEndingChatMessage [session id]
+18 - OperatorChatEndedMessage [session id]
 
