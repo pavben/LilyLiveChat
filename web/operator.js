@@ -157,7 +157,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 		$('<div/>').attr('id', 'chat_maincell_' + chatSessionId).addClass('tab').append(
 			$('<div/>').addClass('fixedtable').append(
 				$('<div/>').addClass('tablerow').append(
-					$('<div/>').addClass('cell').append(
+					$('<div/>').attr('id', 'chat_mycardcell_' + chatSessionId).addClass('cell').append(
 						$('<div/>').addClass('fixedtable').append(
 							$('<div/>').addClass('tablerow').append(
 								$('<div/>').addClass('iconcell').append(
@@ -180,7 +180,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 							$('<div/>').addClass('tablerow').append(
 								$('<div/>').addClass('cell')
 							).append(
-								$('<div/>').attr('id', 'chat_theircardtext_' + chatSessionId).addClass('rightcardtext').append(
+								$('<div/>').addClass('rightcardtext').append(
 									$('<div/>').attr('id', 'chat_theirname_' + chatSessionId).addClass('personname')
 								).append(
 									$('<div/>').attr('id', 'chat_theirtitle_' + chatSessionId).addClass('persontitle')
@@ -202,6 +202,13 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 			)
 		)
 	);
+
+	replaceIconWith(me.iconUrl, $('#chat_myicon_' + chatSessionId));
+	replaceCardTextWith(me, $('#chat_mycardcell_' + chatSessionId), $('#chat_myname_' + chatSessionId), $('#chat_mytitle_' + chatSessionId));
+
+	var they = new Person(name, color, 'Customer', iconUrl);
+	replaceIconWith(they.iconUrl, $('#chat_theiricon_' + chatSessionId));
+	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
 
 	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId), $('#chat_chatboxwrapper_' + chatSessionId));
 

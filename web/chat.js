@@ -201,7 +201,7 @@ var they = null;
 function replaceMeWith(person) {
 	me = person;
 	replaceIconWith(person.iconUrl, $('#chat_myicon'));
-	replaceCardTextWith(person, $('#chat_mycard'), $('#chat_myname'), $('#chat_mytitle'));
+	replaceCardTextWith(person, $('#chat_mycardcell'), $('#chat_myname'), $('#chat_mytitle'));
 }
 
 function replaceThemWith(person) {
@@ -466,7 +466,7 @@ $(document).ready(function() {
 
 	// initially, these are invisible
 	$('#welcome_icon').fadeTo(0, 0);
-	$('#chat_mycard').fadeTo(0, 0);
+	$('#chat_mycardcell').fadeTo(0, 0);
 	$('#chat_myicon').fadeTo(0, 0);
 	$('#chat_theiricon').fadeTo(0, 0);
 	// and these are hidden
