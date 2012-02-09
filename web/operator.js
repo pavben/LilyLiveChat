@@ -139,6 +139,7 @@ function handleMessage(message) {
 			var chatSessionId = message[0];
 			var text = message[1];
 			// TODO
+			//writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog'));
 			break;
 		case Messages.OperatorEndingChatMessage:
 			var chatSessionId = message[0];
