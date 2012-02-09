@@ -331,18 +331,19 @@ function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 }
 
 function chatLogWritten(chatlogDiv) {
-	if (chatlogDiv.lastScrollTopTarget && chatlogDiv.scrollTop() >= chatlogDiv.lastScrollTopTarget - 30) {
+	var chatlogObject = chatlogDiv[0];
+	if (chatlogObject.lastScrollTopTarget && chatlogDiv.scrollTop() >= chatlogObject.lastScrollTopTarget - 30) {
 		// if they scroll within 200px of the bottom
-		chatlogDiv.scrollLock = false;
+		chatlogObject.scrollLock = false;
 	}
-	else if (chatlogDiv.lastScrollTop && chatlogDiv.scrollTop() < chatlogDiv.lastScrollTop) {
+	else if (chatlogObject.lastScrollTop && chatlogDiv.scrollTop() < chatlogObject.lastScrollTop) {
 		// if the user scrolled up the chat log
-		chatlogDiv.scrollLock = true;
+		chatlogObject.scrollLock = true;
 	}
 
 	var scrollTopTarget = getScrollTopTarget(chatlogDiv);
 
-	if (!chatlogDiv.scrollLock)
+	if (!chatlogObject.scrollLock)
 	{
 		// here we use a custom "scroll" queue to make sure scrolling does not interfere with other animations
 		// we do this because we are using .stop() and clearing the queue, and we only want scroll tasks cleared
@@ -354,8 +355,8 @@ function chatLogWritten(chatlogDiv) {
 		.dequeue('scroll');
 	}
 
-	chatlogDiv.lastScrollTop = chatlogDiv.scrollTop();
-	chatlogDiv.lastScrollTopTarget = scrollTopTarget;
+	chatlogObject.lastScrollTop = chatlogDiv.scrollTop();
+	chatlogObject.lastScrollTopTarget = scrollTopTarget;
 
 	function getScrollTopTarget(theDiv) {
 		return theDiv[0].scrollHeight // start with the total scroll height
