@@ -295,17 +295,17 @@ function updateNextInLine(name, color, lineLength) {
 	if (!currentDisplayedNextInLine) {
 		// if the next in line button currently isn't showing
 
-		// fade out the text
-		nextInLineHeaderText.fadeTo(100, 0, function() {
-			// now that the text is faded out, begin the slide
-			nextInLineHeader.animate({height: '29px'}, 250, function() {
+		// first, do the slide
+		nextInLineHeader.animate({height: '29px'}, 250, function() {
+			// then fade the text
+			nextInLineHeaderText.delay(100).fadeTo(100, 0, function() {
 				// the slide finished, so show the text
 				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
-				nextInLineHeaderText.fadeTo(100, 1);
+				nextInLineHeaderText.fadeTo(200, 1);
 
 				nextInLineButton.text(name);
 				nextInLineButton.css('color', color);
-				nextInLineButtonWrapper.fadeTo(100, 1);
+				nextInLineButtonWrapper.fadeTo(200, 1);
 
 				lineStatusFinished();
 			});
@@ -318,7 +318,7 @@ function updateNextInLine(name, color, lineLength) {
 			// fade out the text
 			nextInLineHeaderText.fadeTo(100, 0, function() {
 				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
-				nextInLineHeaderText.fadeTo(100, 1);
+				nextInLineHeaderText.fadeTo(200, 1);
 
 				lineStatusFinished();
 			});
@@ -329,7 +329,7 @@ function updateNextInLine(name, color, lineLength) {
 			nextInLineButtonWrapper.fadeTo(100, 0, function() {
 				nextInLineButton.text(name);
 				nextInLineButton.css('color', color);
-				nextInLineButtonWrapper.fadeTo(100, 1);
+				nextInLineButtonWrapper.fadeTo(200, 1);
 
 				lineStatusFinished();
 			});
@@ -358,12 +358,12 @@ function emptyNextInLine() {
 		nextInLineButtonWrapper.fadeTo(100, 0, function() {
 			nextInLineButtonWrapper.hide();
 
-			nextInLineHeaderText.fadeTo(100, 0, function() {
-				// now that the button has been hidden and the text is faded out, begin the slide
-				nextInLineHeader.animate({height: '71px'}, 250, function() {
-					// the slide finished, so show the text
+			// first, do the slide
+			nextInLineHeader.animate({height: '71px'}, 250, function() {
+				// fade out the text
+				nextInLineHeaderText.delay(100).fadeTo(100, 0, function() {
 					nextInLineHeaderText.text('No customers waiting');
-					nextInLineHeaderText.fadeTo(100, 1);
+					nextInLineHeaderText.fadeTo(200, 1);
 
 					lineStatusFinished();
 				});
