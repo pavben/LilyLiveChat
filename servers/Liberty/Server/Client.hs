@@ -17,7 +17,7 @@ import Debug.Trace
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.NetworkMessage
---import Liberty.Common.Utils
+import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
@@ -117,6 +117,9 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
     OCDClientOperatorData clientOperatorData ->
       case (messageType,params) of
         (OperatorAcceptNextChatSessionMessage,[]) -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
+        (OperatorSendChatMessage,[chatSessionIdT,text]) -> case parseIntegral chatSessionIdT of
+          Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text clientDataTVar (codChatSessions clientOperatorData)
+          Nothing -> atomically $ closeClientSocket clientDataTVar
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -302,6 +305,20 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
         _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
 
     _ -> return () -- no waiting sessions, so do nothing
+
+handleOperatorSendChatMessage :: Integer -> Text -> ClientDataTVar -> [ChatSessionTVar] -> IO ()
+handleOperatorSendChatMessage chatSessionId text clientDataTVar chatSessionTVars =
+  atomically $ do
+    matchedSessions <- filterM (\chatSessionTVar -> do
+      chatSession <- readTVar chatSessionTVar
+      return $ chatSessionId == csId chatSession
+      ) chatSessionTVars
+
+    case matchedSessions of
+      [chatSessionTVar] -> do
+        chatSession <- readTVar chatSessionTVar
+        createAndSendMessage (CustomerReceiveChatMessage, [text]) (csCustomerClientDataTVar chatSession)
+      _ -> closeClientSocket clientDataTVar -- if no match or too many matches, something went wrong
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
