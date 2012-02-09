@@ -21,6 +21,9 @@ data MessageType = CustomerJoinMessage
                  | OperatorLineStatusEmptyMessage
                  | OperatorAcceptNextChatSessionMessage
                  | OperatorNowTalkingToMessage
+                 | OperatorReceiveChatMessage
+                 | OperatorSendChatMessage
+                 | OperatorEndingChatMessage
   deriving (Show, Eq, Ord)
 
 type Message = (MessageType, [Text])

@@ -15,6 +15,7 @@ Operator to Server
 ================================================================
 8  - OperatorLoginRequestMessage [siteId, username, password]
 13 - OperatorAcceptNextChatSessionMessage
+16 - OperatorSendChatMessage [session id, text]
 
 Server to Operator
 ================================================================
@@ -22,5 +23,7 @@ Server to Operator
 10 - OperatorLoginFailedMessage
 11 - OperatorLineStatusDetailsMessage [next customer name, their color, number of waiters]
 12 - OperatorLineStatusEmptyMessage
-13 - OperatorNowTalkingToMessage [session id, name, color, iconUrl]
+14 - OperatorNowTalkingToMessage [session id, name, color, iconUrl]
+15 - OperatorReceiveChatMessage [session id, text]
+17 - OperatorEndingChatMessage [session id]
 

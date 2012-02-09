@@ -187,7 +187,10 @@ var Messages = {
 	OperatorLineStatusDetailsMessage : 11,
 	OperatorLineStatusEmptyMessage : 12,
 	OperatorAcceptNextChatSessionMessage : 13,
-	OperatorNowTalkingToMessage : 14
+	OperatorNowTalkingToMessage : 14,
+	OperatorReceiveChatMessage : 15,
+	OperatorSendChatMessage : 16,
+	OperatorEndingChatMessage : 17
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {

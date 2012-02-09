@@ -39,7 +39,10 @@ messageIdsAndTypes = [
     (11, OperatorLineStatusDetailsMessage),
     (12, OperatorLineStatusEmptyMessage),
     (13, OperatorAcceptNextChatSessionMessage),
-    (14, OperatorNowTalkingToMessage)
+    (14, OperatorNowTalkingToMessage),
+    (15, OperatorReceiveChatMessage),
+    (16, OperatorSendChatMessage),
+    (17, OperatorEndingChatMessage)
   ]
 
 messageTypeById :: Map Word8 MessageType

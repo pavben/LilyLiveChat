@@ -135,6 +135,15 @@ function handleMessage(message) {
 			var iconUrl = message[3];
 			addActiveChatSession(chatSessionId, name, color, iconUrl);
 			break;
+		case Messages.OperatorReceiveChatMessage:
+			var chatSessionId = message[0];
+			var text = message[1];
+			// TODO
+			break;
+		case Messages.OperatorEndingChatMessage:
+			var chatSessionId = message[0];
+			// TODO
+			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}
