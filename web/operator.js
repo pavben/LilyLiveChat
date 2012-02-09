@@ -138,8 +138,10 @@ function handleMessage(message) {
 		case Messages.OperatorReceiveChatMessage:
 			var chatSessionId = message[0];
 			var text = message[1];
-			// TODO
-			//writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog'));
+
+			var they = $('#chat_maincell_' + chatSessionId)[0].they;
+
+			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
 			break;
 		case Messages.OperatorEndingChatMessage:
 			var chatSessionId = message[0];
@@ -216,11 +218,24 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	replaceIconWith(me.iconUrl, $('#chat_myicon_' + chatSessionId));
 	replaceCardTextWith(me, $('#chat_mycardcell_' + chatSessionId), $('#chat_myname_' + chatSessionId), $('#chat_mytitle_' + chatSessionId));
 
-	var they = new Person(name, color, 'Customer', iconUrl);
+	var they = ($('#chat_maincell_' + chatSessionId)[0].they = new Person(name, color, 'Customer', iconUrl));
 	replaceIconWith(they.iconUrl, $('#chat_theiricon_' + chatSessionId));
 	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
 
 	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId), $('#chat_chatboxwrapper_' + chatSessionId));
+
+	// send handler
+	var chatBox = $('#chat_chatbox_' + chatSessionId);
+	chatBox.keypress(function(e) {
+		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
+			queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
+			writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
+			log("[" + chatBox.val() + "]");
+			log(e);
+			chatBox.val('');
+			return false;
+		}
+	});
 
 	setVisibleChatSessionId(chatSessionId);
 }

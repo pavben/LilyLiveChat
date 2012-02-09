@@ -256,7 +256,7 @@ handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar = do
         _ -> csMessagesWaiting chatSession
     }
     case csOperator chatSession of
-      ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [messageText]) operatorClientDataTVar
+      ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession,messageText]) operatorClientDataTVar
       ChatOperatorNobody -> return () -- we have buffered the message above
 
 handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
@@ -300,7 +300,7 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
 
           -- send all csMessagesWaiting to the operator
           -- note: chatSession is a snapshot from before we emptied csMessagesWaiting
-          forM_ (reverse $ csMessagesWaiting chatSession) (\messageText -> createAndSendMessage (OperatorReceiveChatMessage, [messageText]) clientDataTVar)
+          forM_ (reverse $ csMessagesWaiting chatSession) (\messageText -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession, messageText]) clientDataTVar)
 
         _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
 
