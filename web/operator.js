@@ -43,6 +43,9 @@ $(document).ready(function() {
 	$('#chat_nextinlinebutton').click(function() {
 		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
 	});
+	$('#chat_btn_back').click(function() {
+		changeTabTo(menuTab);
+	});
 
 	/* TODO: this is temp */
 	initializeAutoGrowingTextArea($('#chat_chatbox_X'), $('#chat_chatboxwrapper_X'));
