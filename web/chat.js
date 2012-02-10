@@ -495,6 +495,7 @@ $(document).ready(function() {
 	
 	// TEMP: remove this
 	$('#welcome_btn_ok').click();
+	setTimeout(function() { $('#welcome_btn_ok').click(); }, 400);
 
 	$(window).resize(onResize);
 });

@@ -146,10 +146,35 @@ function handleMessage(message) {
 		case Messages.OperatorChatEndedMessage:
 			var chatSessionId = message[0];
 			// TODO
+			decreaseNumActiveChats();
 			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}
+}
+
+var numActiveChats = 0;
+
+function increaseNumActiveChats() {
+	numActiveChats++;
+	updateActiveChatsLabel();
+}
+
+function decreaseNumActiveChats() {
+	numActiveChats--;
+	updateActiveChatsLabel();
+}
+
+function updateActiveChatsLabel() {
+	var activeChatsHeader = $('#chat_activechatsheader');
+	activeChatsHeader.fadeTo(250, 0, function() {
+		if (numActiveChats == 0) {
+			activeChatsHeader.text('No active chats');
+		} else {
+			activeChatsHeader.text('My chats (' + numActiveChats + ' active)');
+		}
+		activeChatsHeader.fadeTo(500, 1);
+	});
 }
 
 function addActiveChatSession(chatSessionId, name, color, iconUrl) {
@@ -238,6 +263,9 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	});
 
 	setVisibleChatSessionId(chatSessionId);
+
+	// increase the count and update the header
+	increaseNumActiveChats();
 }
 
 /* Line status updating and effects */
@@ -298,14 +326,14 @@ function updateNextInLine(name, color, lineLength) {
 		// first, do the slide
 		nextInLineHeader.animate({height: '29px'}, 250, function() {
 			// then fade the text
-			nextInLineHeaderText.delay(100).fadeTo(100, 0, function() {
+			nextInLineHeaderText.delay(100).fadeTo(250, 0, function() {
 				// the slide finished, so show the text
 				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
-				nextInLineHeaderText.fadeTo(200, 1);
+				nextInLineHeaderText.fadeTo(500, 1);
 
 				nextInLineButton.text(name);
 				nextInLineButton.css('color', color);
-				nextInLineButtonWrapper.fadeTo(200, 1);
+				nextInLineButtonWrapper.fadeTo(500, 1);
 
 				lineStatusFinished();
 			});
@@ -316,9 +344,9 @@ function updateNextInLine(name, color, lineLength) {
 		// the button is already showing, so find out what needs to be updated (if anything) and do it
 		if (lineLength != currentDisplayedLineLength) {
 			// fade out the text
-			nextInLineHeaderText.fadeTo(100, 0, function() {
+			nextInLineHeaderText.fadeTo(250, 0, function() {
 				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
-				nextInLineHeaderText.fadeTo(200, 1);
+				nextInLineHeaderText.fadeTo(500, 1);
 
 				lineStatusFinished();
 			});
@@ -326,10 +354,10 @@ function updateNextInLine(name, color, lineLength) {
 			effectsActivated = true;
 		}
 		if (currentDisplayedNextInLine[0] != name || currentDisplayedNextInLine[1] != color) {
-			nextInLineButtonWrapper.fadeTo(100, 0, function() {
+			nextInLineButtonWrapper.fadeTo(250, 0, function() {
 				nextInLineButton.text(name);
 				nextInLineButton.css('color', color);
-				nextInLineButtonWrapper.fadeTo(200, 1);
+				nextInLineButtonWrapper.fadeTo(500, 1);
 
 				lineStatusFinished();
 			});
@@ -361,9 +389,9 @@ function emptyNextInLine() {
 			// first, do the slide
 			nextInLineHeader.animate({height: '71px'}, 250, function() {
 				// fade out the text
-				nextInLineHeaderText.delay(100).fadeTo(100, 0, function() {
+				nextInLineHeaderText.delay(120).fadeTo(250, 0, function() {
 					nextInLineHeaderText.text('No customers waiting');
-					nextInLineHeaderText.fadeTo(200, 1);
+					nextInLineHeaderText.fadeTo(500, 1);
 
 					lineStatusFinished();
 				});
