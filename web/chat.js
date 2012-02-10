@@ -8,6 +8,8 @@ var myName = null;
 var myColor = null;
 var myIcon = null;
 
+var chatSessionEnded = false;
+
 function randomizeNameAndIcon() {
 	var iconsAndSuffix = [
 		['images/cc/batty.png', 'Bat'],
@@ -130,7 +132,9 @@ function handleMessage(message) {
 		case Messages.SomethingWentWrongMessage:
 			break;
 		case Messages.CustomerChatEndedMessage:
-			// TODO
+			chatSessionEnded = true;
+
+			writeInfoTextToChatLog('The operator has ended the chat session.', $('#chat_chatlog'));
 			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
@@ -474,8 +478,12 @@ $(document).ready(function() {
 	// chat tab handlers
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
-			queueAjaxCommand([Messages.CustomerSendChatMessage, $('#chat_chatbox').val()]);
-			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
+			if (!chatSessionEnded) {
+				queueAjaxCommand([Messages.CustomerSendChatMessage, $('#chat_chatbox').val()]);
+				writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
+			} else {
+				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog'));
+			}
 			$('#chat_chatbox').val('');
 			return false;
 		}
