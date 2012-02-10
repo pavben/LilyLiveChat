@@ -8,24 +8,19 @@ var myName = null;
 var myColor = null;
 var myIcon = null;
 
-function randomizeProfileIcon(justNot) {
-	var icons = [
-		'images/cc/dog1.png',
-		'images/cc/foxy.png',
-		'images/cc/tuqui.png'
+function randomizeNameAndIcon() {
+	var iconsAndSuffix = [
+		['images/cc/batty.png', 'Bat'],
+		['images/cc/bird.png', 'Bird'],
+		['images/cc/dog.png', 'Dog'],
+		['images/cc/froggy.png', 'Frog'],
+		['images/cc/kitty.png', 'Cat'],
+		['images/cc/lion.png', 'Lion'],
+		['images/cc/panda.png', 'Panda'],
+		['images/cc/penguin.png', 'Penguin']
 	];
 
-	var newIcon;
-	do {
-		newIcon = icons[Math.floor(Math.random() * icons.length)];
-	} while (justNot && newIcon == justNot); // loop until unique
-
-	return newIcon;
-}
-
-function generateName(justNot)
-{
-	var descriptive = [
+	var descriptives = [
 		"Mystical",
 		"Scholarly",
 		"Dramatic",
@@ -100,13 +95,10 @@ function generateName(justNot)
 		"Benevolent"
 	];
 
-	var newName;
-	do {
-		descriptiveVal = descriptive[Math.floor(Math.random() * descriptive.length)];
-		newName = descriptiveVal + ' Bear';
-	} while (justNot && newName == justNot); // loop until unique
+	var iconAndSuffix = iconsAndSuffix[Math.floor(Math.random() * iconsAndSuffix.length)];
+	var descriptive = descriptives[Math.floor(Math.random() * descriptives.length)];
 
-	return newName;
+	return [descriptive + ' ' + iconAndSuffix[1], iconAndSuffix[0]];
 }
 
 function handleMessage(message) {
@@ -272,9 +264,12 @@ function welcomeTabOkHandler() {
 		welcomeTabOkActive = true;
 
 		myName = $.trim($('#welcome_myname').val());
-		// if no valid name was entered, generate one
+		// if no valid name was entered, randomize instead of logging in -- next click will login
+		// this allows the customer to see their profile before it's used
 		if (myName.length == 0) {
-			myName = generateName();
+			$('#welcome_btn_randomize').click();
+			welcomeTabOkActive = false;
+			return;
 		}
 		ajaxJsonGetSessionId(
 			function() {
@@ -443,7 +438,7 @@ $(document).ready(function() {
 	$('#welcome_myname').css('color', myColor);
 
 	// also pick a random icon to start with
-	myIcon = randomizeProfileIcon();
+	myIcon = randomizeNameAndIcon()[1];
 	replaceIconWith(myIcon, $('#welcome_icon'));
 
 	// set the waiting clock icon
@@ -453,13 +448,14 @@ $(document).ready(function() {
 	// TODO: If the user has changed the name value to something non-empty, do not reset it with Randomize
 	$('#welcome_btn_randomize').click(function(e) {
 		$('#welcome_myname').fadeTo(100, 0, function() {
+			var nameAndIcon = randomizeNameAndIcon();
 			// name
-			$('#welcome_myname').val(generateName($('#welcome_myname').val()));
+			$('#welcome_myname').val(nameAndIcon[0]);
 			// color
 			myColor = generatePersonColor();
 			$('#welcome_myname').css('color', myColor);
 			// icon
-			myIcon = randomizeProfileIcon(myIcon);
+			myIcon = nameAndIcon[1];
 			replaceIconWith(myIcon, $('#welcome_icon'));
 			// and fade the name back to 1
 			$('#welcome_myname').fadeTo(100, 1);
