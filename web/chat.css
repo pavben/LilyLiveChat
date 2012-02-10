@@ -44,6 +44,9 @@
 	padding-top:5px;
 	text-align:center;
 }
+#welcome_card .inputboxwrapper {
+	margin-bottom:9px;
+}
 
 /* chat tab */
 
