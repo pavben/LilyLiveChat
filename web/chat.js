@@ -476,8 +476,6 @@ $(document).ready(function() {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			queueAjaxCommand([Messages.CustomerSendChatMessage, $('#chat_chatbox').val()]);
 			writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
-			log("[" + $('#chat_chatbox').val() + "]");
-			log(e);
 			$('#chat_chatbox').val('');
 			return false;
 		}

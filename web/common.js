@@ -199,7 +199,9 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 	var shadow = $('<div/>').addClass('chatboxshadow').appendTo(appendShadowTo);
 
 	var checkHeight = function() {
-		shadow.css('width', $('#chat_chatbox').width());
+		// manually control scrolling as it causes visual glitches
+		chatBox.css('overflow-y', 'hidden');
+		shadow.css('width', chatBox.width());
 
 		var newContentHtml = chatBox.val().replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;')
@@ -215,6 +217,9 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 		var minHeight = stripPx(chatBox.css('line-height'));
 		if (targetHeight > 150) {
 			targetHeight = 150;
+
+			// now scrolling will be needed
+			chatBox.css('overflow-y', 'auto');
 		} else if (targetHeight < minHeight) {
 			targetHeight = minHeight;
 		}
@@ -328,6 +333,12 @@ function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 
 	// append the contents of tempDiv to chatlogDiv
 	chatlogDiv.append(tempDiv.html());
+
+	chatLogWritten(chatlogDiv);
+}
+
+function writeInfoTextToChatLog(text, chatlogDiv) {
+	chatlogDiv.append($('<div/>').addClass('chatinfotext').text(text));
 
 	chatLogWritten(chatlogDiv);
 }

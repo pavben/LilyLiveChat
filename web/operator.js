@@ -47,9 +47,6 @@ $(document).ready(function() {
 		changeTabTo(menuTab);
 	});
 
-	/* TODO: this is temp */
-	initializeAutoGrowingTextArea($('#chat_chatbox_X'), $('#chat_chatboxwrapper_X'));
-
 	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
 	//changeTabTo(chatTab);
@@ -142,13 +139,21 @@ function handleMessage(message) {
 			var chatSessionId = message[0];
 			var text = message[1];
 
-			var they = $('#chat_maincell_' + chatSessionId)[0].they;
+			var they = getChatSessionData(chatSessionId).they;
 
 			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
 			break;
 		case Messages.OperatorChatEndedMessage:
 			var chatSessionId = message[0];
-			// TODO
+
+			var chatSessionData = getChatSessionData(chatSessionId);
+			if (chatSessionData !== null) {
+				// if the chat window still exists, it means the customer (not the operator) ended the chat session
+				writeInfoTextToChatLog('The customer has ended the chat session.', $('#chat_chatlog_' + chatSessionId));
+
+				chatSessionData.chatSessionEnded = true;
+			}
+
 			decreaseNumActiveChats();
 			break;
 		default: // Invalid message type
@@ -246,7 +251,8 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	replaceIconWith(me.iconUrl, $('#chat_myicon_' + chatSessionId));
 	replaceCardTextWith(me, $('#chat_mycardcell_' + chatSessionId), $('#chat_myname_' + chatSessionId), $('#chat_mytitle_' + chatSessionId));
 
-	var they = ($('#chat_maincell_' + chatSessionId)[0].they = new Person(name, color, 'Customer', iconUrl));
+	var they = (getChatSessionData(chatSessionId).they = new Person(name, color, 'Customer', iconUrl));
+
 	replaceIconWith(they.iconUrl, $('#chat_theiricon_' + chatSessionId));
 	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
 
@@ -256,10 +262,12 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	var chatBox = $('#chat_chatbox_' + chatSessionId);
 	chatBox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
-			queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
-			writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
-			log("[" + chatBox.val() + "]");
-			log(e);
+			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
+				queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
+				writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
+			} else {
+				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog_' + chatSessionId));
+			}
 			chatBox.val('');
 			return false;
 		}
@@ -269,6 +277,20 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 
 	// increase the count and update the header
 	increaseNumActiveChats();
+}
+
+/* Session-specific storage functions */
+function getChatSessionData(chatSessionId) {
+	var mainCell = $('#chat_maincell_' + chatSessionId);
+	
+	if (mainCell.length !== 0) {
+		if (mainCell[0].libertyData === undefined) {
+			mainCell[0].libertyData = {}; // create a new object
+		}
+		return mainCell[0].libertyData;
+	} else {
+		return null; // invalid chat session
+	}
 }
 
 /* Line status updating and effects */
