@@ -208,6 +208,8 @@ function getOrdinalSuffixFor(number) {
 	}
 }
 
+var firstPositionUpdateProcessed = false;
+
 function updatePositionInLine(position) {
 	changeRightSpaceDivTo($('#chat_inlinecell'), function() {
 		$('#chat_inlinepos').text(position).append(
@@ -215,36 +217,40 @@ function updatePositionInLine(position) {
 		);
 	});
 
-	switch (position) {
-		case 9:
-			playSoundAfterDing('youare9thinline');
-			break;
-		case 8:
-			playSoundAfterDing('youarenow8thinline');
-			break;
-		case 7:
-			playSoundAfterDing('7thinline');
-			break;
-		case 6:
-			playSoundAfterDing('youarenow6thinline');
-			break;
-		case 5:
-			playSoundAfterDing('youarenow5thinline');
-			break;
-		case 4:
-			playSoundAfterDing('youre4thinline');
-			break;
-		case 3:
-			playSoundAfterDing('youarenow3rd');
-			break;
-		case 2:
-			playSoundAfterDing('youre2ndinline');
-			break;
-		case 1:
-			playSoundAfterDing('getreadyyourenextinline');
-			break;
-		default:
-			// no sound
+	if (firstPositionUpdateProcessed) {
+		switch (position) {
+			case 9:
+				playSoundAfterDing('youare9thinline');
+				break;
+			case 8:
+				playSoundAfterDing('youarenow8thinline');
+				break;
+			case 7:
+				playSoundAfterDing('7thinline');
+				break;
+			case 6:
+				playSoundAfterDing('youarenow6thinline');
+				break;
+			case 5:
+				playSoundAfterDing('youarenow5thinline');
+				break;
+			case 4:
+				playSoundAfterDing('youre4thinline');
+				break;
+			case 3:
+				playSoundAfterDing('youarenow3rd');
+				break;
+			case 2:
+				playSoundAfterDing('youre2ndinline');
+				break;
+			case 1:
+				playSoundAfterDing('getreadyyourenextinline');
+				break;
+			default:
+				// no sound
+		}
+	} else {
+		firstPositionUpdateProcessed = true;
 	}
 }
 
@@ -353,6 +359,7 @@ soundManager.onready(function() {
 		soundManager.createSound({
 			id: soundName,
 			volume: (soundName != 'hding-lding') ? 80 : 100,
+			autoLoad: true,
 			url: 'audio/' + soundName + '.mp3'
 		});
 	}

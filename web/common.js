@@ -141,7 +141,7 @@ function ajaxJson(data, successFunction, errorFunction, timeout) {
 	$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 	$.ajax({
 		type: "POST",
-		url: "http://localhost:9802/c",
+		url: '/c',
 		data: uriEncodeArray(data),
 		dataType: 'json',
 		timeout: timeout,
