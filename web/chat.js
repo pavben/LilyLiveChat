@@ -113,6 +113,7 @@ function handleMessage(message) {
 				changeTabTo(chatTab);
 			}
 			updatePositionInLine(parseInt(message[0]));
+
 			break;
 		case Messages.CustomerNowTalkingToMessage:
 			var name = message[0];
@@ -120,6 +121,8 @@ function handleMessage(message) {
 			var title = message[2];
 			var iconUrl = message[3];
 			replaceThemWith(new Person(name, color, title, iconUrl));
+
+			playSoundAfterDing('nowspeakingwithrep');
 			break;
 		case Messages.CustomerReceiveChatMessage:
 			var text = message[0];
@@ -211,6 +214,38 @@ function updatePositionInLine(position) {
 			$('<sup/>').text(getOrdinalSuffixFor(position))
 		);
 	});
+
+	switch (position) {
+		case 9:
+			playSoundAfterDing('youare9thinline');
+			break;
+		case 8:
+			playSoundAfterDing('youarenow8thinline');
+			break;
+		case 7:
+			playSoundAfterDing('7thinline');
+			break;
+		case 6:
+			playSoundAfterDing('youarenow6thinline');
+			break;
+		case 5:
+			playSoundAfterDing('youarenow5thinline');
+			break;
+		case 4:
+			playSoundAfterDing('youre4thinline');
+			break;
+		case 3:
+			playSoundAfterDing('youarenow3rd');
+			break;
+		case 2:
+			playSoundAfterDing('youre2ndinline');
+			break;
+		case 1:
+			playSoundAfterDing('getreadyyourenextinline');
+			break;
+		default:
+			// no sound
+	}
 }
 
 function generatePersonColor() {
@@ -294,37 +329,11 @@ function welcomeTabOkHandler() {
 	}
 }
 
-var soundManager = null;
+/* SoundManager2 */
+soundManager.url = 'soundmanager2';
 
-function SoundManager() {
-	instance = this;
-
-	// formats are listed in order of preference
-	formats = [
-		{
-			mime: 'audio/ogg; codecs=vorbis',
-			ext: 'ogg'
-		},
-		{
-			mime: 'audio/mpeg',
-			ext: 'mp3'
-		}
-	];
-
-	// determine which audio format to use, if any
-	{
-		var dummyAudio = new Audio();
-		for (var i = 0; i < formats.length; i++) {
-			currentFormat = formats[i];
-
-			if (dummyAudio.canPlayType(currentFormat.mime)) {
-				this.fileExt = currentFormat.ext;
-				break;
-			}
-		}
-	}
-
-	filesToLoad = [
+soundManager.onready(function() {
+	soundsToLoad = [
 		'youare9thinline',
 		'youarenow8thinline',
 		'7thinline',
@@ -334,79 +343,27 @@ function SoundManager() {
 		'youarenow3rd',
 		'youre2ndinline',
 		'getreadyyourenextinline',
-		'nowspeakingwithrep'
+		'nowspeakingwithrep',
+		'hding-lding'
 	];
 
-	if (!this.fileExt) {
-		log("Cannot load SoundManager due to no compatible formats. Audio will be disabled.");
-		return;
-	}
+	for (var i in soundsToLoad) {
+		var soundName = soundsToLoad[i];
 
-	this.sounds = {};
-	{
-		soundsLoaded = 0;
-		this.allSoundsLoaded = false;
-		for (var i = 0; i < filesToLoad.length; i++) {
-			var currentFile = filesToLoad[i];
-			var filePath = 'audio/' + currentFile + '.' + this.fileExt;
-			var s = new Audio(filePath);
-			s.addEventListener('canplaythrough', function() {
-				log("canplaythrough called");
-				this.removeEventListener('canplaythrough', arguments.callee, false);
-				soundsLoaded++;
-				log("sounds loaded: " + soundsLoaded);
-				if (soundsLoaded == filesToLoad.length) {
-					instance.allSoundsLoaded = true;
-					instance.considerPlayNextSafe();
-				}
-			}, false);
-			s.addEventListener('error', function() {
-				log("Unable to load sound: " + filePath);
-			}, false);
-			s.load();
-			instance.sounds[currentFile] = s;
+		soundManager.createSound({
+			id: soundName,
+			volume: (soundName != 'hding-lding') ? 80 : 100,
+			url: 'audio/' + soundName + '.mp3'
+		});
+	}
+});
+
+function playSoundAfterDing(soundName) {
+	soundManager.play('hding-lding', {
+		onfinish: function() {
+			soundManager.play(soundName);
 		}
-	}
-
-	this.playlist = [];
-
-	this.currentlyPlaying = false;
-
-	this.play = function(soundName) {
-		log("play called with sound = " + soundName);
-		var s = instance.sounds[soundName];
-		if (s) {
-			log('added to playlist');
-			instance.playlist.push(s);
-
-			instance.considerPlayNextSafe();
-		} else {
-			log('Invalid sound name: ' + soundName);
-		}
-	}
-
-	this.considerPlayNextSafe = function() {
-		if (!instance.currentlyPlaying && instance.allSoundsLoaded) {
-			instance.considerPlayNext();
-		}
-	}
-
-	this.considerPlayNext = function() {
-		instance.currentlyPlaying = true;
-
-		if (instance.playlist.length > 0) {
-			var s = instance.playlist.shift();
-			s.addEventListener('ended', function() {
-				log("ended");
-				this.removeEventListener('ended', arguments.callee, false);
-
-				instance.currentlyPlaying = false;
-
-				setTimeout(instance.considerPlayNext, 0);
-			});
-			s.play();
-		}
-	}
+	});
 }
 
 $(document).ready(function() {
@@ -421,21 +378,6 @@ $(document).ready(function() {
 	// and these are hidden
 	$('#chat_theircardcell').hide();
 	$('#chat_inlinecell').hide();
-
-	// initialize the sound manager
-	soundManager = new SoundManager();
-	/*
-	soundManager.play('youare9thinline');
-	soundManager.play('youarenow8thinline');
-	soundManager.play('7thinline');
-	soundManager.play('youarenow6thinline');
-	soundManager.play('youarenow5thinline');
-	soundManager.play('youre4thinline');
-	soundManager.play('youarenow3rd');
-	soundManager.play('youre2ndinline');
-	soundManager.play('getreadyyourenextinline');
-	soundManager.play('nowspeakingwithrep');
-	*/
 
 	// generate an initial color and set it
 	myColor = generatePersonColor();
