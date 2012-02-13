@@ -187,6 +187,7 @@ handleSendCommand messageType messageTexts sessionDataTVar inSequence clientSock
             return ()
       else do
         -- invalid inSequence
+        putStrLn "Closing proxy socket due to invalid inSequence from the client"
         sClose proxySocket
         atomically $ do
           sessionData <- readTVar sessionDataTVar
@@ -271,7 +272,9 @@ handleLongPoll sessionDataTVar outSequence clientSocket sessionMapTVar sessionId
 
 setTVarOnConnectionActivity :: Socket -> TVar Bool -> IO ()
 setTVarOnConnectionActivity clientSocket tvar = do
-  catch (recv clientSocket 1 >> return ()) (\(SomeException _) -> return ())
+  catch
+    (recv clientSocket 1 >> return ())
+    (\(SomeException _) -> return ())
   putStrLn "setTVarOnConnectionActivity triggered"
   atomically $ writeTVar tvar True
 
