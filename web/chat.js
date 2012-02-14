@@ -209,6 +209,8 @@ function getOrdinalSuffixFor(number) {
 }
 
 var firstPositionUpdateProcessed = false;
+// TODO: Don't play the sound for repetitive in-line position updates (implement this on the server)
+var lastPositionInLine = null;
 
 function updatePositionInLine(position) {
 	changeRightSpaceDivTo($('#chat_inlinecell'), function() {
@@ -450,7 +452,7 @@ $(document).ready(function() {
 	
 	// TEMP: remove this
 	$('#welcome_btn_ok').click();
-	setTimeout(function() { $('#welcome_btn_ok').click(); }, 400);
+	setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 
 	$(window).resize(onResize);
 });
