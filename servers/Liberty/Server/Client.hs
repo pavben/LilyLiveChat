@@ -111,6 +111,7 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
     OCDClientCustomerData clientCustomerData ->
       case (messageType,params) of
         (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
+        (CustomerEndingChatMessage,[]) -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData)
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -135,7 +136,7 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
     clientData <- readTVar clientDataTVar
 
     -- create a new chat session with this client as the customer and no operator
-    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] [CLEJoin name color] Nothing
+    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] [CLEJoin name color] siteDataTVar Nothing
     writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
 
     -- add the newly-created chat session to the site data's waiting list
@@ -275,6 +276,9 @@ handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar = do
       ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession,messageText]) operatorClientDataTVar
       ChatOperatorNobody -> return () -- we have buffered the message above
 
+handleCustomerEndingChatMessage :: ChatSessionTVar -> IO ()
+handleCustomerEndingChatMessage chatSessionTVar = atomically $ endChatSession chatSessionTVar
+
 handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
 handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
   siteData <- readTVar siteDataTVar
@@ -355,19 +359,7 @@ handleClientExitEvent clientDataTVar = do
     case cdOtherData clientData of
       OCDClientCustomerData clientCustomerData -> do
         let chatSessionTVar = ccdChatSessionTVar clientCustomerData
-        chatSession <- readTVar $ chatSessionTVar
-        case csOperator chatSession of
-          ChatOperatorNobody -> do
-            -- customer exiting while on the waiting list
-            let siteDataTVar = ccdSiteDataTVar clientCustomerData
-            siteData <- readTVar siteDataTVar
-            writeTVar siteDataTVar $ siteData {
-              sdSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
-            }
-            onWaitingListUpdated siteDataTVar
-          ChatOperatorClient operatorClientDataTVar ->
-            -- customer exiting while talking to a client operator
-            endChatSession chatSessionTVar
+        endChatSession chatSessionTVar
       OCDClientOperatorData clientOperatorData -> do
         -- end all chat sessions
         mapM_ endChatSession $ codChatSessions clientOperatorData
@@ -387,6 +379,14 @@ endChatSession chatSessionTVar = do
   createAndSendMessage (CustomerChatEndedMessage, []) (csCustomerClientDataTVar chatSession)
   
   case csOperator chatSession of
+    ChatOperatorNobody -> do
+      -- session ended while on the waiting list
+      let siteDataTVar = csSiteDataTVar chatSession
+      siteData <- readTVar siteDataTVar
+      writeTVar siteDataTVar $ siteData {
+        sdSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
+      }
+      onWaitingListUpdated siteDataTVar
     ChatOperatorClient operatorClientDataTVar -> do
       -- remove the operator from the session
       writeTVar chatSessionTVar $ chatSession { csOperator = ChatOperatorNobody }
