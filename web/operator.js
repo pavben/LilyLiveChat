@@ -187,11 +187,16 @@ function updateActiveChatsLabel() {
 
 function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	// create the chat button
+	var activeSessionButton = $('<div/>').attr('id', 'chat_activesessionbutton_' + chatSessionId).addClass('chat_sessionlistbutton').css('color', color).text(name);
 	var buttonWrapper = $('<div/>').attr('id', 'chat_activesessionbuttonwrapper_' + chatSessionId).append(
-		$('<div/>').attr('id', 'chat_activesessionbutton_' + chatSessionId).addClass('chat_sessionlistbutton').css('color', color).text(name)
+		activeSessionButton
 	).append(
 		$('<div/>').addClass('chat_sessionlistsep')
 	);
+
+	activeSessionButton.click(function() {
+		setVisibleChatSessionId(chatSessionId);
+	});
 
 	$('#chat_activechatscontainer').prepend(buttonWrapper);
 
