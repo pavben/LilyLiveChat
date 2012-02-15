@@ -445,7 +445,6 @@ function emptyNextInLine() {
 var visibleChatSessionId = null;
 var visibleChatSessionIdTarget = null;
 
-// TODO: test setVisibleChatSessionId with concurrent calls
 /* null for no visible chat session */
 function setVisibleChatSessionId(chatSessionId) {
 	var alreadyBusy = (visibleChatSessionIdTarget !== null);
@@ -454,6 +453,20 @@ function setVisibleChatSessionId(chatSessionId) {
 	if (!alreadyBusy) {
 		followVisibleChatSessionIdTarget();
 	}
+}
+
+// TODO: test setVisibleChatSessionId with concurrent calls (DONE, remove the code)
+function testSetVisibleChatSessionId(sessions) {
+	setVisibleChatSessionId(sessions[0]);
+	setTimeout(function() {
+		setVisibleChatSessionId(sessions[1]);
+	}, 50);
+	setTimeout(function() {
+		setVisibleChatSessionId(sessions[2]);
+	}, 100);
+	setTimeout(function() {
+		setVisibleChatSessionId(sessions[0]);
+	}, 150);
 }
 
 function followVisibleChatSessionIdTarget() {
