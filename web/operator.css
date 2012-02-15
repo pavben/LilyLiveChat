@@ -150,6 +150,13 @@
 	width:150px;
 	vertical-align:middle;
 }
+.chat_operstatus {
+	width:140px;
+	padding: 0px 5px 0px 5px;
+	overflow:hidden;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+}
 .chat_toprighttable {
 	display:table;
 	width:100%;
@@ -200,6 +207,10 @@
 	border-radius:5px;
 	text-shadow:1px 1px 0px #f4f4f4;
 	text-align:center;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	width:174px;
+	padding:0px 5px 0px 5px;
 	cursor:pointer;
 	-webkit-transition: all 0.1s ease-in-out;
 	-moz-transition: all 0.1s ease-in-out;

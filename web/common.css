@@ -79,11 +79,15 @@ input {
 }
 .personname {
 	font-size:24px;
+	overflow:hidden;
+	text-overflow:ellipsis;
 }
 .persontitle {
 	font-size:18px;
 	line-height:140%;
 	color:#7C7C7C;
+	overflow:hidden;
+	text-overflow:ellipsis;
 }
 .inputboxwrapper, .chatboxwrapper {
 	display:block;
