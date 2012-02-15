@@ -132,7 +132,7 @@ handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar site
     clientData <- readTVar clientDataTVar
 
     -- create a new chat session with this client as the customer and no operator
-    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] [CLEJoin name color]
+    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] [CLEJoin name color] Nothing
     writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
 
     -- add the newly-created chat session to the site data's waiting list
@@ -154,8 +154,21 @@ onWaitingListUpdated siteDataTVar = do
   -- update the waiting customers with their new positions
   forM_ (zip ([1..] :: [Integer]) (sdSessionsWaiting siteData)) (\(positionInLine, chatSessionTVar) -> do
     chatSession <- readTVar chatSessionTVar
-    let clientDataTVar = csCustomerClientDataTVar chatSession
-    createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) clientDataTVar)
+    case csLastPositionUpdate chatSession of
+      Just lastPositionUpdate ->
+        -- if the last update sent doesn't match the current position, send the update
+        if lastPositionUpdate /= positionInLine then
+          sendPositionUpdate chatSessionTVar chatSession positionInLine
+        else
+          return ()
+      Nothing ->
+        -- if this is the first update, send it
+        sendPositionUpdate chatSessionTVar chatSession positionInLine
+    )
+  where
+    sendPositionUpdate chatSessionTVar chatSession positionInLine = do
+      createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) (csCustomerClientDataTVar chatSession)
+      writeTVar chatSessionTVar $ chatSession { csLastPositionUpdate = Just $ positionInLine }
 
 data LineStatusInfo = LineStatusInfo (Maybe (Text, Text)) Int
 
