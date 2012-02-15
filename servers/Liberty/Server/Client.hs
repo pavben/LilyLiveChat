@@ -120,6 +120,9 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
         (OperatorSendChatMessage,[chatSessionIdT,text]) -> case parseIntegral chatSessionIdT of
           Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text clientDataTVar (codChatSessions clientOperatorData)
           Nothing -> atomically $ closeClientSocket clientDataTVar
+        (OperatorEndingChatMessage, [chatSessionIdT]) -> case parseIntegral chatSessionIdT of
+          Just chatSessionId -> handleOperatorEndingChatMessage chatSessionId clientDataTVar (codChatSessions clientOperatorData)
+          Nothing -> atomically $ closeClientSocket clientDataTVar
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -333,6 +336,18 @@ handleOperatorSendChatMessage chatSessionId text clientDataTVar chatSessionTVars
         createAndSendMessage (CustomerReceiveChatMessage, [text]) (csCustomerClientDataTVar chatSession)
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
+handleOperatorEndingChatMessage :: Integer -> ClientDataTVar -> [ChatSessionTVar] -> IO ()
+handleOperatorEndingChatMessage chatSessionId clientDataTVar chatSessionTVars = do
+  atomically $ do
+    matchedSessions <- filterM (\chatSessionTVar -> do
+      chatSession <- readTVar chatSessionTVar
+      return $ chatSessionId == csId chatSession
+      ) chatSessionTVars
+
+    case matchedSessions of
+      [chatSessionTVar] -> endChatSession chatSessionTVar
+      _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
+
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
   atomically $ do
@@ -386,6 +401,7 @@ endChatSession chatSessionTVar = do
             }
           }
         _ -> trace "ASSERT: operatorClientData contains a non-operator" $ return ()
+      -- notify the operator that the chat session has ended
       createAndSendMessage (OperatorChatEndedMessage, [LT.pack $ show $ csId chatSession]) operatorClientDataTVar
 
 createAndSendMessage :: Message -> ClientDataTVar -> STM ()
