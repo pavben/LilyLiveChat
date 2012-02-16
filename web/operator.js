@@ -357,7 +357,7 @@ function updateNextInLine(name, color, lineLength) {
 		nextInLineHeader.animate({height: '29px'}, 250, function() {
 			// then fade the text
 			nextInLineHeaderText.delay(100).fadeTo(250, 0, function() {
-				// the slide finished, so show the text
+				// show the text
 				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
 				nextInLineHeaderText.fadeTo(500, 1);
 
