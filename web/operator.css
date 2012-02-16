@@ -173,6 +173,15 @@
 	padding:9px 9px 9px 9px;
 	background-color:#E3E3E3;
 }
+#chat_maincell_none_infodiv {
+	padding:9px 9px 9px 9px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	color:#707070;
+	line-height:24px;
+	text-align:center;
+}
 #chat_nextinlinewrapper {
 	height:71px;
 	border-bottom:1px solid #BBBBBB;

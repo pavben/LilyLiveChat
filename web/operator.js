@@ -565,34 +565,6 @@ function chatSessionIdToObject(prefix, chatSessionId) {
 	return $(divId);
 }
 
-function updateChatLogHeight() {
-	if (visibleChatSessionId) {
-		// disable scrolling as it causes scrollbar flickering
-		$('body').css('overflow-y', 'hidden');
-
-		var chatlogDiv = $('#chat_chatlog_' + visibleChatSessionId);
-		var chatboxWrapper = $('#chat_chatboxwrapper_' + visibleChatSessionId);
-		var chatMaincellDiv = $('#chat_maincell');
-		var newChatLogHeight = $(window).height()
-			- chatlogDiv.offset().top // remove the space from the start of maincell to the start of chatlog
-			- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
-			- stripPx(chatlogDiv.css('padding-bottom'))
-			- stripPx(chatlogDiv.css('border-top-width')) // same for border
-			- stripPx(chatlogDiv.css('border-bottom-width'))
-			- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
-			- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
-			- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
-
-		if (newChatLogHeight < 200) {
-			newChatLogHeight = 200;
-			// if the scrollbars are needed, enable them
-			$('body').css('overflow-y', 'auto');
-		}
-		chatlogDiv.css('height', newChatLogHeight);
-		$('#chat_chatbox_' + visibleChatSessionId).focus();
-	}
-}
-
 function onResize() {
 	if (currentTab == loginTab) {
 		onBasicVCenterResize('login', 600);
@@ -618,6 +590,35 @@ function onChatTabResize() {
 			$('body').css('overflow-y', 'auto');
 		}
 		chatMaincellDiv.css('height', newChatMaincellHeight);
+	}
+}
+
+// only called by onChatTabResize
+function updateChatLogHeight() {
+	if (visibleChatSessionId) {
+		// disable scrolling as it causes scrollbar flickering
+		$('body').css('overflow-y', 'hidden');
+
+		var chatlogDiv = $('#chat_chatlog_' + visibleChatSessionId);
+		var chatboxWrapper = $('#chat_chatboxwrapper_' + visibleChatSessionId);
+		var chatMaincellDiv = $('#chat_maincell');
+		var newChatLogHeight = $(window).height()
+			- chatlogDiv.offset().top // remove the space from the start of maincell to the start of chatlog
+			- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
+			- stripPx(chatlogDiv.css('padding-bottom'))
+			- stripPx(chatlogDiv.css('border-top-width')) // same for border
+			- stripPx(chatlogDiv.css('border-bottom-width'))
+			- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
+			- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
+			- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
+
+		if (newChatLogHeight < 200) {
+			newChatLogHeight = 200;
+			// if the scrollbars are needed, enable them
+			$('body').css('overflow-y', 'auto');
+		}
+		chatlogDiv.css('height', newChatLogHeight);
+		$('#chat_chatbox_' + visibleChatSessionId).focus();
 	}
 }
 
