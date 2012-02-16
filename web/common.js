@@ -319,7 +319,7 @@ function replaceIconWith(iconUrl, icon) {
 	});
 }
 
-function writeMessageToChatLog(name, color, msg, chatlogDiv) {
+function writeMessageToChatLog(name, color, msg, chatLogDiv) {
 	var tempDiv = $('<div/>');
 	tempDiv.append($('<span/>').addClass('chatmsgtext').css('color', color).text(name + ': '));
 	var lines = msg.split('\n');
@@ -327,14 +327,21 @@ function writeMessageToChatLog(name, color, msg, chatlogDiv) {
 		tempDiv.append($('<br/>'));
 	}
 	for (var i in lines) {
+		// TODO: lines in a multi-line message starting with spaces lose their spaces
 		tempDiv.append($('<span/>').addClass('chatmsgtext').text(lines[i]));
 		tempDiv.append($('<br/>'));
 	}
 
-	// append the contents of tempDiv to chatlogDiv
-	chatlogDiv.append(tempDiv.html());
+	// append the contents of tempDiv to chatLogDiv
+	chatLogDiv.append(tempDiv.html());
 
-	chatLogWritten(chatlogDiv);
+	/*
+	chatLogDiv.append(tempDiv.fadeTo(1, 0.5, function() {
+		tempDiv.fadeTo(500, 1);
+	}));
+	*/
+
+	chatLogWritten(chatLogDiv);
 }
 
 function writeInfoTextToChatLog(text, chatlogDiv) {
@@ -370,12 +377,17 @@ function chatLogWritten(chatlogDiv) {
 
 	chatlogObject.lastScrollTop = chatlogDiv.scrollTop();
 	chatlogObject.lastScrollTopTarget = scrollTopTarget;
+}
 
-	function getScrollTopTarget(theDiv) {
+function getScrollTopTarget(theDiv) {
+	// scrollHeight of 0 means the div is out of view, so we check for that case to avoid returning a negative
+	if (theDiv[0].scrollHeight > 0) {
 		return theDiv[0].scrollHeight // start with the total scroll height
 			- theDiv.outerHeight() // subtract (height + padding + border)
 			+ parseInt(theDiv.css('border-top-width')) // readd the top border
 			+ parseInt(theDiv.css('border-bottom-width')) // readd the bottom border
+	} else {
+		return 0;
 	}
 }
 

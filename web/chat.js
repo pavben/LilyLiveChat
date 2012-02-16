@@ -439,6 +439,7 @@ $(document).ready(function() {
 	});
 
 	$('#chat_btn_endchat').click(function() {
+		// TODO: set a variable to indicate that the customer ended the chat and not the operator
 		$('#chat_btn_endchat').off('click').removeClass('personmenubuttonenabled');
 		$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
 		queueAjaxCommand([Messages.CustomerEndingChatMessage]);

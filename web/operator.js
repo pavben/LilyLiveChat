@@ -443,11 +443,11 @@ function emptyNextInLine() {
 /* End of line status updating and effects */
 
 var visibleChatSessionId = null;
-var visibleChatSessionIdTarget = null;
+var visibleChatSessionIdTarget = undefined;
 
 /* null for no visible chat session */
 function setVisibleChatSessionId(chatSessionId) {
-	var alreadyBusy = (visibleChatSessionIdTarget !== null);
+	var alreadyBusy = (visibleChatSessionIdTarget !== undefined);
 	visibleChatSessionIdTarget = chatSessionId;
 
 	if (!alreadyBusy) {
@@ -470,19 +470,24 @@ function testSetVisibleChatSessionId(sessions) {
 }
 
 function followVisibleChatSessionIdTarget() {
-	if (visibleChatSessionIdTarget !== null) {
-		chatSessionIdToChatMaincell(visibleChatSessionId).fadeOut(200, function() {
+	if (visibleChatSessionIdTarget !== undefined) {
+		chatSessionIdToObject('#chat_maincell_', visibleChatSessionId).fadeOut(200, function() {
 			var currentVisibleChatSessionIdTarget = visibleChatSessionIdTarget;
 			visibleChatSessionId = currentVisibleChatSessionIdTarget;
 
-			var targetCell = chatSessionIdToChatMaincell(currentVisibleChatSessionIdTarget);
+			var targetCell = chatSessionIdToObject('#chat_maincell_', currentVisibleChatSessionIdTarget);
 
 			targetCell.fadeTo(0, 0, function() {
 				updateChatLogHeight();
+				var chatLogDiv = chatSessionIdToObject('#chat_chatlog_', currentVisibleChatSessionIdTarget);
+				// scroll to the bottom, if possible
+				chatLogDiv.scrollTop(getScrollTopTarget(chatLogDiv));
 				targetCell.fadeTo(300, 1, function() {
 					if (currentVisibleChatSessionIdTarget === visibleChatSessionIdTarget) {
-						// if the target hasn't changed during the fadeIn, we're done
-						visibleChatSessionIdTarget = null;
+						// if the target hasn't changed during the fade-in, we're done
+						visibleChatSessionIdTarget = undefined;
+						// and scroll to the bottom again, in case something messed up our last scroll
+						chatLogWritten(chatLogDiv);
 					} else {
 						// otherwise, transition to the new target
 						setTimeout(followVisibleChatSessionIdTarget, 0);
@@ -493,8 +498,8 @@ function followVisibleChatSessionIdTarget() {
 	}
 }
 
-function chatSessionIdToChatMaincell(chatSessionId) {
-	var divId = '#chat_maincell_';
+function chatSessionIdToObject(prefix, chatSessionId) {
+	var divId = prefix;
 	if (chatSessionId) {
 		divId += chatSessionId;
 	} else {
