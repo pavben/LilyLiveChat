@@ -78,16 +78,23 @@ input {
 	text-align:right;
 }
 .personname {
+	height:28px;
 	font-size:24px;
 	overflow:hidden;
 	text-overflow:ellipsis;
 }
 .persontitle {
+	height:30px;
 	font-size:18px;
-	line-height:140%;
 	color:#7C7C7C;
 	overflow:hidden;
 	text-overflow:ellipsis;
+}
+.personmenucellright {
+	display:table-cell;
+	width:204px;
+	height:42px;
+	vertical-align:bottom;
 }
 .inputboxwrapper, .chatboxwrapper {
 	display:block;
@@ -139,6 +146,40 @@ input {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
 .basicbutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+.personmenubuttonwrapper {
+	display:table-cell;
+}
+.personmenubutton {
+	padding:0px 0px 1px 0px;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	background-color:#ECECEC;
+	text-shadow:1px 1px 0px #f4f4f4;
+	text-align:center;
+	line-height:24px;
+	font-size:18px;
+	color:#707070;
+	vertical-align:top;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+}
+.personmenubuttonenabled {
+	cursor:pointer;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	transition: all 0.1s ease-in-out;
+}
+.personmenubuttonenabled:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.personmenubuttonenabled:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
 .edgelinesleft, .edgelinesright, .edgelinesboth {

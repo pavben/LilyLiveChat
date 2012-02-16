@@ -437,6 +437,12 @@ $(document).ready(function() {
 			return false;
 		}
 	});
+
+	$('#chat_btn_endchat').click(function() {
+		$('#chat_btn_endchat').off('click').removeClass('personmenubuttonenabled');
+		$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
+		queueAjaxCommand([Messages.CustomerEndingChatMessage]);
+	});
 	
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chat_chatbox'), $('#chat_chatboxwrapper'));

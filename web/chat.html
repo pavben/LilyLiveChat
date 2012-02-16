@@ -30,9 +30,11 @@
 									<input id="welcome_myname" class="inputbox" type="text" placeholder="My name is..." maxlength="20" autocomplete="off" />
 								</div>
 								<div class="fixedtable">
-									<div id="welcome_btn_randomize" class="basicbutton" style="width:120px;">Randomize!</div>
-									<div class="cell"></div>
-									<div id="welcome_btn_ok" class="basicbutton" style="width:82px;">OK</div>
+									<div class="tablerow">
+										<div id="welcome_btn_randomize" class="basicbutton" style="width:120px;">Randomize!</div>
+										<div class="cell"></div>
+										<div id="welcome_btn_ok" class="basicbutton" style="width:82px;">OK</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -66,6 +68,16 @@
 							<div id="chat_theircardtext" class="rightcardtext">
 								<div id="chat_theirname" class="personname"></div>
 								<div id="chat_theirtitle" class="persontitle"></div>
+								<div class="personmenucellright">
+									<div class="fixedtable">
+										<div class="tablerow">
+											<div class="cell"></div>
+											<div id="chat_btn_endchat_wrapper" class="personmenubuttonwrapper" style="width:100px;">
+												<div id="chat_btn_endchat" class="personmenubutton personmenubuttonenabled">End Chat</div>
+											</div>
+										</div>
+									</div>
+								</div>
 							</div>
 							<div class="iconcell">
 								<div id="chat_theiricon" class="framedicon"></div>
