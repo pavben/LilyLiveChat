@@ -152,6 +152,9 @@ function handleMessage(message) {
 				writeInfoTextToChatLog('The customer has ended the chat session.', $('#chat_chatlog_' + chatSessionId));
 
 				chatSessionData.chatSessionEnded = true;
+
+				// and set the "End Chat" button label to "Close"
+				$('#chat_btn_endchat_' + chatSessionId).text('Close');
 			}
 
 			decreaseNumActiveChats();
@@ -234,6 +237,16 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 									$('<div/>').attr('id', 'chat_theirname_' + chatSessionId).addClass('personname')
 								).append(
 									$('<div/>').attr('id', 'chat_theirtitle_' + chatSessionId).addClass('persontitle')
+								).append(
+									$('<div/>').addClass('personmenucellright').append(
+										$('<div/>').addClass('fixedtable').append(
+											$('<div/>').addClass('cell')
+										).append(
+											$('<div/>').addClass('personmenubuttonwrapper').css('width', '100px').append(
+												$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
+											)
+										)
+									)
 								)
 							).append(
 								$('<div/>').addClass('iconcell').append(
@@ -262,6 +275,30 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
 
 	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId), $('#chat_chatboxwrapper_' + chatSessionId));
+
+	// close handler
+	$('#chat_btn_endchat_' + chatSessionId).click(function() {
+		// setVisibleChatSessionId to another chat session, if any
+		var openChatSessionIds = getOpenChatSessionIds().filter(function(x) { return (x !== chatSessionId); });
+		var targetSessionId = (openChatSessionIds.length > 0) ? openChatSessionIds[0] : null;
+
+		setVisibleChatSessionId(targetSessionId);
+
+		// disable the session button click handler
+		activeSessionButton.off('click');
+		buttonWrapper.slideUp(300, function() {
+			// when the slide is finished, remove the button wrapper and everything inside
+			buttonWrapper.remove();
+
+			// if this chat session hasn't already been ended by the customer, tell the server that we're ending it
+			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
+				queueAjaxCommand([Messages.OperatorEndingChatMessage, chatSessionId]);
+			}
+
+			// by now, setVisibleChatSessionId should have finished, so also remove chat_maincell_X
+			$('#chat_maincell_' + chatSessionId).remove();
+		});
+	});
 
 	// send handler
 	var chatBox = $('#chat_chatbox_' + chatSessionId);
@@ -296,6 +333,21 @@ function getChatSessionData(chatSessionId) {
 	} else {
 		return null; // invalid chat session
 	}
+}
+
+function getOpenChatSessionIds() {
+	var objects = $('[id^=chat_maincell_]');
+
+	var chatSessionIds = [];
+
+	for (var i = 0; i < objects.length; i++) {
+		var objectId = objects[i].id;
+		if (objectId !== 'chat_maincell_none') {
+			chatSessionIds.push(objectId.replace(/^chat_maincell_/, ''));
+		}
+	}
+
+	return chatSessionIds;
 }
 
 /* Line status updating and effects */
@@ -471,23 +523,27 @@ function testSetVisibleChatSessionId(sessions) {
 
 function followVisibleChatSessionIdTarget() {
 	if (visibleChatSessionIdTarget !== undefined) {
-		chatSessionIdToObject('#chat_maincell_', visibleChatSessionId).fadeOut(200, function() {
+		chatSessionIdToObject('#chat_maincell_', visibleChatSessionId).fadeOut(200, function() { // NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
 			var currentVisibleChatSessionIdTarget = visibleChatSessionIdTarget;
 			visibleChatSessionId = currentVisibleChatSessionIdTarget;
 
 			var targetCell = chatSessionIdToObject('#chat_maincell_', currentVisibleChatSessionIdTarget);
 
 			targetCell.fadeTo(0, 0, function() {
-				updateChatLogHeight();
-				var chatLogDiv = chatSessionIdToObject('#chat_chatlog_', currentVisibleChatSessionIdTarget);
-				// scroll to the bottom, if possible
-				chatLogDiv.scrollTop(getScrollTopTarget(chatLogDiv));
+				onChatTabResize();
+				if (currentVisibleChatSessionIdTarget !== null) {
+					var chatLogDiv = chatSessionIdToObject('#chat_chatlog_', currentVisibleChatSessionIdTarget);
+					// scroll to the bottom, if possible
+					chatLogDiv.scrollTop(getScrollTopTarget(chatLogDiv));
+				}
 				targetCell.fadeTo(300, 1, function() {
 					if (currentVisibleChatSessionIdTarget === visibleChatSessionIdTarget) {
 						// if the target hasn't changed during the fade-in, we're done
 						visibleChatSessionIdTarget = undefined;
 						// and scroll to the bottom again, in case something messed up our last scroll
-						chatLogWritten(chatLogDiv);
+						if (currentVisibleChatSessionIdTarget !== null) {
+							chatLogWritten(chatLogDiv);
+						}
 					} else {
 						// otherwise, transition to the new target
 						setTimeout(followVisibleChatSessionIdTarget, 0);
