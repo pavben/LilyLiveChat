@@ -44,7 +44,10 @@ messageIdsAndTypes = [
     (16, OperatorSendChatMessage),
     (17, OperatorEndingChatMessage),
     (18, OperatorChatEndedMessage),
-    (19, CustomerChatEndedMessage)
+    (19, CustomerChatEndedMessage),
+    (20, UnregisteredSelectSiteMessage),
+    (21, UnregisteredSiteSelectedMessage),
+    (22, UnregisteredSiteInvalidMessage)
   ]
 
 messageTypeById :: Map Word8 MessageType

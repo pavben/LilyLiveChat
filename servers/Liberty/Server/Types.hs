@@ -9,7 +9,6 @@ module Liberty.Server.Types (
   ChatSession(..),
   ChatSessionTVar,
   ChatOperatorEntry(..),
-  ChatLogEntry(..),
   ClientDataTVar,
   SiteId,
   SiteData(..),
@@ -31,7 +30,7 @@ data ClientData = ClientData {
   cdSendChan :: ClientSendChan,
   cdOtherData :: OtherClientData
 } deriving (Show)
-data OtherClientData = OCDClientUnregistered | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData
+data OtherClientData = OCDClientUnregistered (Maybe SiteDataTVar) | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData
   deriving (Show)
 data ClientCustomerData = ClientCustomerData {
   ccdName :: Text,
@@ -53,15 +52,11 @@ data ChatSession = ChatSession {
   csCustomerClientDataTVar :: ClientDataTVar,
   csOperator :: ChatOperatorEntry,
   csMessagesWaiting :: [Text],
-  csLog :: [ChatLogEntry],
   csSiteDataTVar :: SiteDataTVar,
   csLastPositionUpdate :: Maybe Integer
 } deriving (Show)
 type ChatSessionTVar = TVar ChatSession
 data ChatOperatorEntry = ChatOperatorNobody | ChatOperatorClient ClientDataTVar
-  deriving (Show)
-data ChatLogEntry = CLEJoin Text Text -- name, color
-  | CLEMessage Text Text Text -- name, color, text
   deriving (Show)
 type ClientDataTVar = TVar ClientData
 

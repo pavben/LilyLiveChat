@@ -104,9 +104,21 @@ function randomizeNameAndIcon() {
 }
 
 function handleMessage(message) {
-	log(message);
 	messageTypeId = message.shift();
+	log("Msg Type Id: " + messageTypeId);
+	log(message);
 	switch (messageTypeId) {
+		case Messages.UnregisteredSiteSelectedMessage:
+			var siteName = message[0];
+			var siteActive = message[1];
+
+			// TODO: set siteName on welcomeTab
+			changeTabTo(welcomeTab);
+			break;
+		case Messages.UnregisteredSiteInvalidMessage:
+			// TODO: change to invalid site tab
+
+			break;
 		case Messages.CustomerInLinePositionMessage:
 			if (currentTab == welcomeTab) {
 				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
@@ -126,10 +138,6 @@ function handleMessage(message) {
 			break;
 		case Messages.CustomerReceiveChatMessage:
 			var text = message[0];
-			if (they == null) {
-				alert("CustomerReceiveChatMessage when no operator is present");
-				return;
-			}
 			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog'));
 			break;
 		case Messages.SomethingWentWrongMessage:
@@ -316,22 +324,10 @@ function welcomeTabOkHandler() {
 			welcomeTabOkActive = false;
 			return;
 		}
-		ajaxJsonGetSessionId(
-			function() {
-				// site id, name, ...
-				queueAjaxCommand([Messages.CustomerJoinMessage, "virtivia", myName, myColor, myIcon]);
+		queueAjaxCommand([Messages.CustomerJoinMessage, myName, myColor, myIcon]);
 
-				// re-enable the OK button
-				welcomeTabOkActive = false;
-			},
-			function() {
-				alert("Failed to acquire Session ID");
-				nextOutSequence = 0; // reset this to 0
-
-				// re-enable the OK button
-				welcomeTabOkActive = false;
-			}
-		);
+		// re-enable the OK button
+		welcomeTabOkActive = false;
 	}
 }
 
@@ -449,7 +445,7 @@ $(document).ready(function() {
 	initializeAutoGrowingTextArea($('#chat_chatbox'), $('#chat_chatboxwrapper'));
 
 	// we start on welcometab
-	changeTabTo(welcomeTab);
+	//changeTabTo(welcomeTab);
 	// DEBUG
 	//changeTabTo(chatTab);
 	//updatePositionInLine(5);
@@ -460,5 +456,15 @@ $(document).ready(function() {
 	setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 
 	$(window).resize(onResize);
+
+	ajaxJsonGetSessionId(
+		function() {
+			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, "virtivia"]);
+		},
+		function() {
+			alert("Failed to acquire Session ID");
+			nextOutSequence = 0; // reset this to 0
+		}
+	);
 });
 

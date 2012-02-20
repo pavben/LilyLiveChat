@@ -26,6 +26,9 @@ data MessageType = CustomerJoinMessage
                  | OperatorEndingChatMessage
                  | OperatorChatEndedMessage
                  | CustomerChatEndedMessage
+                 | UnregisteredSelectSiteMessage
+                 | UnregisteredSiteSelectedMessage
+                 | UnregisteredSiteInvalidMessage
   deriving (Show, Eq, Ord)
 
 type Message = (MessageType, [Text])

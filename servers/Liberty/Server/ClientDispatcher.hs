@@ -18,7 +18,7 @@ runClientDispatcher databaseHandleTVar siteMapTVar = do
       (finally
         (do
           initializeListenerSocket listenerSocket 9801
-          acceptLoop listenerSocket databaseHandleTVar siteMapTVar
+          acceptLoop listenerSocket siteMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -42,11 +42,11 @@ initializeListenerSocket listenerSocket portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-acceptLoop listenerSocket databaseHandleTVar siteMapTVar = do
+acceptLoop :: Socket -> SiteMapTVar -> IO ()
+acceptLoop listenerSocket siteMapTVar = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ initializeClient clientSocket databaseHandleTVar siteMapTVar
+  _ <- forkIO $ initializeClient clientSocket siteMapTVar
   -- and loop around
-  acceptLoop listenerSocket databaseHandleTVar siteMapTVar
+  acceptLoop listenerSocket siteMapTVar
 

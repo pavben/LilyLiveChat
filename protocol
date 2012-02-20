@@ -1,6 +1,15 @@
+Unregistered to Server
+================================================================
+20 - UnregisteredSelectSiteMessage [siteId]
+
+Server to Unregistered
+================================================================
+21 - UnregisteredSiteSelectedMessage [site name, active (1|0)]
+22 - UnregisteredSiteInvalidMessage
+
 Customer to Server
 ================================================================
-1  - CustomerJoinMessage [siteId, name, color, icon]
+1  - CustomerJoinMessage [name, color, icon]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
 

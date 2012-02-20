@@ -9,6 +9,8 @@ import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
+--import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 --import qualified Data.Text.Lazy.IO as LTI
@@ -18,20 +20,19 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
-import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
 import Prelude hiding (catch)
 import Safe
 
-initializeClient :: Socket -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-initializeClient clientSocket databaseHandleTVar siteMapTVar = do
+initializeClient :: Socket -> SiteMapTVar -> IO ()
+initializeClient clientSocket siteMapTVar = do
   clientSendChan <- atomically $ newTChan
-  clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan OCDClientUnregistered)
+  clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan (OCDClientUnregistered Nothing))
   finally
     (do
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
-      clientSocketReadLoop clientDataTVar LBS.empty databaseHandleTVar siteMapTVar
+      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar
     )
     (do
       atomically $ writeTChan clientSendChan $ CloseSocket
@@ -64,15 +65,15 @@ clientSocketSendLoop clientSendChan clientDataTVar = do
       sClose clientSocket
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
-clientSocketReadLoop :: ClientDataTVar -> ByteString -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-clientSocketReadLoop clientDataTVar buffer databaseHandleTVar siteMapTVar = do
+clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> IO ()
+clientSocketReadLoop clientDataTVar buffer siteMapTVar = do
   case parseMessage buffer of
     Just (maybeMessage, newBuffer) ->
       case maybeMessage of
         Just message -> do
           putStrLn $ "Msg: " ++ show message
-          handleMessage message clientDataTVar databaseHandleTVar siteMapTVar
-          clientSocketReadLoop clientDataTVar newBuffer databaseHandleTVar siteMapTVar
+          handleMessage message clientDataTVar siteMapTVar
+          clientSocketReadLoop clientDataTVar newBuffer siteMapTVar
         Nothing -> do
           putStrLn "No valid message in current buffer yet"
           clientData <- atomically $ readTVar clientDataTVar
@@ -91,26 +92,34 @@ clientSocketReadLoop clientDataTVar buffer databaseHandleTVar siteMapTVar = do
           case maybeReceivedData of
             Just receivedData ->
               -- now that we've received some data, loop around and try parsing it
-              clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) databaseHandleTVar siteMapTVar
+              clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar
             Nothing ->
               putStrLn $ "Client disconnecting -- recv returned nothing"
     Nothing ->
       putStrLn "Client disconnecting due to a protocol violation"
 
-handleMessage :: Message -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVar = do
+handleMessage :: Message -> ClientDataTVar -> SiteMapTVar -> IO ()
+handleMessage (messageType, params) clientDataTVar siteMapTVar = do
   clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
-    OCDClientUnregistered ->
-      case (messageType,params) of
-        (CustomerJoinMessage,[siteId,name,color,icon]) -> handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar
-        (OperatorLoginRequestMessage,[siteId,username,password]) -> handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar
-        _ -> do
-          putStrLn "Client (Unregistered) sent an unknown command"
-          atomically $ closeClientSocket clientDataTVar
+    OCDClientUnregistered maybeSiteDataTVar ->
+      case maybeSiteDataTVar of
+        Nothing ->
+          case (messageType,params) of
+            (UnregisteredSelectSiteMessage,[siteId]) -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
+            (OperatorLoginRequestMessage,[siteId,username,password]) -> handleOperatorLoginRequest siteId username password clientDataTVar siteMapTVar
+            _ -> do
+              putStrLn "Client (Unregistered) sent an unknown command"
+              atomically $ closeClientSocket clientDataTVar
+        Just siteDataTVar ->
+          case (messageType,params) of
+            (CustomerJoinMessage,[name,color,icon]) -> handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar
+            _ -> do
+              putStrLn "Client (Unregistered, with site selected) sent an unknown command"
+              atomically $ closeClientSocket clientDataTVar
     OCDClientCustomerData clientCustomerData ->
       case (messageType,params) of
-        (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
+        (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData
         (CustomerEndingChatMessage,[]) -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData)
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
@@ -119,153 +128,99 @@ handleMessage (messageType, params) clientDataTVar databaseHandleTVar siteMapTVa
       case (messageType,params) of
         (OperatorAcceptNextChatSessionMessage,[]) -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         (OperatorSendChatMessage,[chatSessionIdT,text]) -> case parseIntegral chatSessionIdT of
-          Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text clientDataTVar (codChatSessions clientOperatorData)
+          Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text (codChatSessions clientOperatorData)
           Nothing -> atomically $ closeClientSocket clientDataTVar
         (OperatorEndingChatMessage, [chatSessionIdT]) -> case parseIntegral chatSessionIdT of
-          Just chatSessionId -> handleOperatorEndingChatMessage chatSessionId clientDataTVar (codChatSessions clientOperatorData)
+          Just chatSessionId -> handleOperatorEndingChatMessage chatSessionId (codChatSessions clientOperatorData)
           Nothing -> atomically $ closeClientSocket clientDataTVar
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
 
-handleCustomerJoin :: SiteId -> Text -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleCustomerJoin siteId name color icon clientDataTVar databaseHandleTVar siteMapTVar =
-  withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> atomically $ do
-    siteData <- readTVar siteDataTVar
-    let thisChatSessionId = sdNextSessionId siteData
-    clientData <- readTVar clientDataTVar
+handleUnregisteredSelectSiteMessage :: SiteId -> ClientDataTVar -> SiteMapTVar -> IO ()
+handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomically $ do
+  siteMap <- readTVar siteMapTVar
+  case Map.lookup siteId siteMap of
+    Just siteDataTVar -> do
+      -- update the client with the new OCDClientUnregistered entry
+      clientData <- readTVar clientDataTVar
+      writeTVar clientDataTVar clientData { cdOtherData = OCDClientUnregistered (Just siteDataTVar) }
 
-    -- create a new chat session with this client as the customer and no operator
-    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] [CLEJoin name color] siteDataTVar Nothing
-    writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
+      -- send the appropriate message depending on whether or not there are any operators online
+      siteData <- readTVar siteDataTVar
+      let isActive = if null $ sdOnlineOperators siteData then "0" else "1"
+      createAndSendMessage (UnregisteredSiteSelectedMessage,[sdName siteData, LT.pack $ isActive]) clientDataTVar
+    Nothing -> createAndSendMessage (UnregisteredSiteInvalidMessage,[]) clientDataTVar
 
-    -- add the newly-created chat session to the site data's waiting list
-    let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
-    writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
-
-    -- and notify all waiting clients and operators about the update (including sending the position to this customer)
-    onWaitingListUpdated siteDataTVar
-  )
-
-onWaitingListUpdated :: SiteDataTVar -> STM ()
-onWaitingListUpdated siteDataTVar = do
-  -- first, send the line status info to all operators
+handleCustomerJoinMessage :: Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomically $ do
+  clientData <- readTVar clientDataTVar
   siteData <- readTVar siteDataTVar
-  lineStatusInfo <- getLineStatusInfo siteDataTVar
+  let thisChatSessionId = sdNextSessionId siteData
+  -- create a new chat session with this client as the customer and no operator
+  chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
+  writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
 
-  forM_ (sdOnlineOperators siteData) $ sendLineStatusInfoToOperator lineStatusInfo
+  -- add the newly-created chat session to the site data's waiting list
+  let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
+  writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
 
-  -- update the waiting customers with their new positions
-  forM_ (zip ([1..] :: [Integer]) (sdSessionsWaiting siteData)) (\(positionInLine, chatSessionTVar) -> do
-    chatSession <- readTVar chatSessionTVar
-    case csLastPositionUpdate chatSession of
-      Just lastPositionUpdate ->
-        -- if the last update sent doesn't match the current position, send the update
-        if lastPositionUpdate /= positionInLine then
-          sendPositionUpdate chatSessionTVar chatSession positionInLine
-        else
-          return ()
-      Nothing ->
-        -- if this is the first update, send it
-        sendPositionUpdate chatSessionTVar chatSession positionInLine
-    )
-  where
-    sendPositionUpdate chatSessionTVar chatSession positionInLine = do
-      createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) (csCustomerClientDataTVar chatSession)
-      writeTVar chatSessionTVar $ chatSession { csLastPositionUpdate = Just $ positionInLine }
+  -- and notify all waiting clients and operators about the update (including sending the position to this customer)
+  onWaitingListUpdated siteDataTVar
 
-data LineStatusInfo = LineStatusInfo (Maybe (Text, Text)) Int
-
-getLineStatusInfo :: SiteDataTVar -> STM LineStatusInfo
-getLineStatusInfo siteDataTVar = do
-  siteData <- readTVar siteDataTVar
-  let sessionsWaiting = sdSessionsWaiting siteData
-  maybeNextCustomerInfo <- case headMay sessionsWaiting of
-    Just nextChatSessionTVar -> do
-      nextChatSession <- readTVar $ nextChatSessionTVar
-      nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
-      case cdOtherData nextChatSessionClientData of
-        OCDClientCustomerData clientCustomerData -> return $ Just (ccdName clientCustomerData, ccdColor clientCustomerData)
-        _ -> return Nothing
-    _ -> return Nothing
-  return $ LineStatusInfo maybeNextCustomerInfo (length sessionsWaiting)
-
-sendLineStatusInfoToOperator :: LineStatusInfo -> ClientDataTVar -> STM ()
-sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersInLine) clientDataTVar =
-  let
-    message = case maybeNextCustomerInfo of
-      Just (nextCustomerName, nextCustomerColor) -> (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ numCustomersInLine])
-      Nothing -> (OperatorLineStatusEmptyMessage, [])
-  in
-    createAndSendMessage message clientDataTVar
-
-handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> IO ()
-handleOperatorLoginRequest siteId username password clientDataTVar databaseHandleTVar siteMapTVar =
+handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> SiteMapTVar -> IO ()
+handleOperatorLoginRequest siteId username password clientDataTVar siteMapTVar =
   let
     matchSiteOperatorCredentials siteOperatorInfo = (sodUsername siteOperatorInfo == username) && (sodPassword siteOperatorInfo == password)
   in
-    withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar (\siteDataTVar -> atomically $ do
-      -- read the site data
-      siteData <- readTVar siteDataTVar
-      -- see if any operators match the given credentials
-      maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
-        [siteOperatorInfo] -> do
-          -- Successful match
-          return $ Just siteOperatorInfo
-        [] -> do
-          -- No match
-          return Nothing
-        _ -> do
-          -- Multiple match -- data integrity error
-          return Nothing
+    atomically $ do
+      siteMap <- readTVar siteMapTVar
+      case Map.lookup siteId siteMap of
+        Just siteDataTVar -> do
+          -- read the site data
+          siteData <- readTVar siteDataTVar
+          -- see if any operators match the given credentials
+          maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
+            [siteOperatorInfo] -> do
+              -- Successful match
+              return $ Just siteOperatorInfo
+            [] -> do
+              -- No match
+              return Nothing
+            _ -> do
+              -- Multiple match -- data integrity error
+              return Nothing
 
-      case maybeSiteOperatorInfo of
-        Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
-          -- Operator login successful
-          -- update the site, adding the operator to it
-          let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
-          writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
+          case maybeSiteOperatorInfo of
+            Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
+              -- Operator login successful
+              -- update the site, adding the operator to it
+              let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
+              writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
 
-          -- update the client, associating it with the site
-          clientData <- readTVar clientDataTVar
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
-          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
+              -- update the client, associating it with the site
+              clientData <- readTVar clientDataTVar
+              writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
+              createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
 
-          -- send the line status
-          lineStatusInfo <- getLineStatusInfo siteDataTVar
-          sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
+              -- send the line status
+              lineStatusInfo <- getLineStatusInfo siteDataTVar
+              sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
+            Nothing -> do
+              -- Operator login failed: Invalid credentials
+              createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+              closeClientSocket clientDataTVar
         Nothing -> do
-          -- Operator login failed: Invalid credentials
-          createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+          -- Invalid site
+          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
-    )
 
-withSiteDataTVar :: SiteId -> ClientDataTVar -> DatabaseHandleTVar -> SiteMapTVar -> (SiteDataTVar -> IO ()) -> IO ()
-withSiteDataTVar siteId clientDataTVar databaseHandleTVar siteMapTVar f = do
-  lookupResult <- lookupSite databaseHandleTVar siteMapTVar siteId
-  case lookupResult of
-    Right siteDataTVar -> f siteDataTVar
-    Left lookupFailureReason ->
-      case lookupFailureReason of
-        LookupFailureNotExist -> do
-          putStrLn "Lookup failed: Site does not exist"
-          -- TODO: respond with a more specific error
-          atomically $ do
-            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-            closeClientSocket clientDataTVar
-        LookupFailureTechnicalError -> do
-          putStrLn "Lookup failed: Technical error"
-          atomically $ do
-            createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
-            closeClientSocket clientDataTVar
-
-handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
-handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar = do
+handleCustomerSendChatMessage :: Text -> ClientCustomerData -> IO ()
+handleCustomerSendChatMessage messageText clientCustomerData = do
   atomically $ do
     let chatSessionTVar = ccdChatSessionTVar clientCustomerData
     chatSession <- readTVar $ chatSessionTVar
     writeTVar chatSessionTVar $ chatSession {
-      csLog = (CLEMessage (ccdName clientCustomerData) (ccdColor clientCustomerData) messageText) : csLog chatSession,
       csMessagesWaiting = case csOperator chatSession of
         -- if there is no operator, buffer the message
         ChatOperatorNobody -> messageText : csMessagesWaiting chatSession
@@ -326,8 +281,8 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
 
     _ -> return () -- no waiting sessions, so do nothing
 
-handleOperatorSendChatMessage :: Integer -> Text -> ClientDataTVar -> [ChatSessionTVar] -> IO ()
-handleOperatorSendChatMessage chatSessionId text clientDataTVar chatSessionTVars =
+handleOperatorSendChatMessage :: Integer -> Text -> [ChatSessionTVar] -> IO ()
+handleOperatorSendChatMessage chatSessionId text chatSessionTVars =
   atomically $ do
     matchedSessions <- filterM (\chatSessionTVar -> do
       chatSession <- readTVar chatSessionTVar
@@ -340,8 +295,8 @@ handleOperatorSendChatMessage chatSessionId text clientDataTVar chatSessionTVars
         createAndSendMessage (CustomerReceiveChatMessage, [text]) (csCustomerClientDataTVar chatSession)
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
-handleOperatorEndingChatMessage :: Integer -> ClientDataTVar -> [ChatSessionTVar] -> IO ()
-handleOperatorEndingChatMessage chatSessionId clientDataTVar chatSessionTVars = do
+handleOperatorEndingChatMessage :: Integer -> [ChatSessionTVar] -> IO ()
+handleOperatorEndingChatMessage chatSessionId chatSessionTVars = do
   atomically $ do
     matchedSessions <- filterM (\chatSessionTVar -> do
       chatSession <- readTVar chatSessionTVar
@@ -370,7 +325,59 @@ handleClientExitEvent clientDataTVar = do
         writeTVar siteDataTVar $ siteData {
           sdOnlineOperators = filter (/= clientDataTVar) $ sdOnlineOperators siteData
         }
-      OCDClientUnregistered -> return () -- nothing to cleanup
+      OCDClientUnregistered _ -> return () -- nothing to cleanup
+
+onWaitingListUpdated :: SiteDataTVar -> STM ()
+onWaitingListUpdated siteDataTVar = do
+  -- first, send the line status info to all operators
+  siteData <- readTVar siteDataTVar
+  lineStatusInfo <- getLineStatusInfo siteDataTVar
+
+  forM_ (sdOnlineOperators siteData) $ sendLineStatusInfoToOperator lineStatusInfo
+
+  -- update the waiting customers with their new positions
+  forM_ (zip ([1..] :: [Integer]) (sdSessionsWaiting siteData)) (\(positionInLine, chatSessionTVar) -> do
+    chatSession <- readTVar chatSessionTVar
+    case csLastPositionUpdate chatSession of
+      Just lastPositionUpdate ->
+        -- if the last update sent doesn't match the current position, send the update
+        if lastPositionUpdate /= positionInLine then
+          sendPositionUpdate chatSessionTVar chatSession positionInLine
+        else
+          return ()
+      Nothing ->
+        -- if this is the first update, send it
+        sendPositionUpdate chatSessionTVar chatSession positionInLine
+    )
+  where
+    sendPositionUpdate chatSessionTVar chatSession positionInLine = do
+      createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) (csCustomerClientDataTVar chatSession)
+      writeTVar chatSessionTVar $ chatSession { csLastPositionUpdate = Just $ positionInLine }
+
+data LineStatusInfo = LineStatusInfo (Maybe (Text, Text)) Int
+
+getLineStatusInfo :: SiteDataTVar -> STM LineStatusInfo
+getLineStatusInfo siteDataTVar = do
+  siteData <- readTVar siteDataTVar
+  let sessionsWaiting = sdSessionsWaiting siteData
+  maybeNextCustomerInfo <- case headMay sessionsWaiting of
+    Just nextChatSessionTVar -> do
+      nextChatSession <- readTVar $ nextChatSessionTVar
+      nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
+      case cdOtherData nextChatSessionClientData of
+        OCDClientCustomerData clientCustomerData -> return $ Just (ccdName clientCustomerData, ccdColor clientCustomerData)
+        _ -> return Nothing
+    _ -> return Nothing
+  return $ LineStatusInfo maybeNextCustomerInfo (length sessionsWaiting)
+
+sendLineStatusInfoToOperator :: LineStatusInfo -> ClientDataTVar -> STM ()
+sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersInLine) clientDataTVar =
+  let
+    message = case maybeNextCustomerInfo of
+      Just (nextCustomerName, nextCustomerColor) -> (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ numCustomersInLine])
+      Nothing -> (OperatorLineStatusEmptyMessage, [])
+  in
+    createAndSendMessage message clientDataTVar
 
 endChatSession :: ChatSessionTVar -> STM ()
 endChatSession chatSessionTVar = do

@@ -2,7 +2,6 @@
 
 module Liberty.Server.DatabaseManager (
   DatabaseHandleTVar,
-  LookupFailureReason(..),
   initializeDatabaseManager,
   runDatabaseManager,
   getSiteDataFromDb
@@ -22,8 +21,6 @@ import Liberty.Server.Types
 
 -- public data
 type DatabaseHandleTVar = TVar (Maybe DatabaseHandle)
-data LookupFailureReason = LookupFailureNotExist | LookupFailureTechnicalError
-  deriving (Show)
 
 -- private data
 data DatabaseHandle = DatabaseHandle Pipe
@@ -114,42 +111,37 @@ runQuery databaseHandleTVar action = do
           return Nothing
     Nothing -> return Nothing
 
-getSiteDataFromDb :: DatabaseHandleTVar -> SiteId -> IO (Either LookupFailureReason SiteData)
-getSiteDataFromDb databaseHandleTVar siteId =
+getSiteDataFromDb :: DatabaseHandleTVar -> IO (Maybe [SiteData])
+getSiteDataFromDb databaseHandleTVar =
   let
-    action = (find $ select ["siteId" =: (LT.unpack siteId)] "sites") >>= rest
+    action = (find $ select [] "sites") >>= rest
   in do
     res <- runQuery databaseHandleTVar action
     case res of
-      Just docs -> do
-        putStrLn $ "num docs: " ++ show (length docs)
-        case length docs of
-          0 -> return $ Left LookupFailureNotExist
-          1 ->
-            let firstDoc = head docs
-            in
-              case (,) <$>
-                (asMaybeText $ lookup "name" firstDoc) <*>
-                (lookup "operators" firstDoc :: Maybe [Document])
+      Just siteDocs -> do
+        putStrLn $ "num siteDocs: " ++ show (length siteDocs)
+        return $ mapM (\siteDoc ->
+          case (,,) <$>
+            (asMaybeText $ lookup "siteId" siteDoc) <*>
+            (asMaybeText $ lookup "name" siteDoc) <*>
+            (lookup "operators" siteDoc :: Maybe [Document])
+          of
+            Just (siteId, siteName, operatorsDocs) ->
+              case mapM (\operatorDoc ->
+                SiteOperatorInfo <$>
+                  (asMaybeText $ lookup "username" operatorDoc) <*>
+                  (asMaybeText $ lookup "password" operatorDoc) <*>
+                  (asMaybeText $ lookup "name" operatorDoc) <*>
+                  (asMaybeText $ lookup "color" operatorDoc) <*>
+                  (asMaybeText $ lookup "title" operatorDoc) <*>
+                  (asMaybeText $ lookup "icon" operatorDoc)
+                ) operatorsDocs
               of
-                Just (siteName, operatorsDocs) ->
-                  case mapM
-                    (\operatorDoc ->
-                      SiteOperatorInfo <$>
-                        (asMaybeText $ lookup "username" operatorDoc) <*>
-                        (asMaybeText $ lookup "password" operatorDoc) <*>
-                        (asMaybeText $ lookup "name" operatorDoc) <*>
-                        (asMaybeText $ lookup "color" operatorDoc) <*>
-                        (asMaybeText $ lookup "title" operatorDoc) <*>
-                        (asMaybeText $ lookup "icon" operatorDoc)
-                    )
-                    operatorsDocs
-                  of
-                    Just siteOperatorInfos -> return $ Right $ SiteData siteId siteName [] siteOperatorInfos [] 0
-                    Nothing -> return $ Left $ LookupFailureTechnicalError
-                Nothing -> return $ Left $ LookupFailureTechnicalError
-          _ -> return $ Left $ LookupFailureTechnicalError
-      Nothing -> return $ Left $ LookupFailureTechnicalError
+                Just siteOperatorInfos -> Just $ SiteData siteId siteName [] siteOperatorInfos [] 0
+                Nothing -> Nothing
+            Nothing -> Nothing
+          ) siteDocs
+      Nothing -> return Nothing
 
 asMaybeText :: Maybe String -> Maybe Text
 asMaybeText maybeString = fmap LT.pack maybeString

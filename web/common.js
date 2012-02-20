@@ -192,7 +192,10 @@ var Messages = {
 	OperatorSendChatMessage : 16,
 	OperatorEndingChatMessage : 17,
 	OperatorChatEndedMessage : 18,
-	CustomerChatEndedMessage : 19
+	CustomerChatEndedMessage : 19,
+	UnregisteredSelectSiteMessage : 20,
+	UnregisteredSiteSelectedMessage : 21,
+	UnregisteredSiteInvalidMessage : 22
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
