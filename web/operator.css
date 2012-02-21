@@ -1,7 +1,3 @@
-/* common to 'operator' screens only */
-.common_skybg {
-	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
-}
 #login_tab {
 	min-width:400px;
 }

@@ -247,3 +247,6 @@ input {
 	line-height:120%;
 	color:#7C7C7C;
 }
+.skybgdiv {
+	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
+}

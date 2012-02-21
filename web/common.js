@@ -240,9 +240,7 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 
 function changeTabTo(tab) {
 	if (currentTab) {
-		currentTab.fadeTo(300, 0, function() {
-			currentTab.hide();
-
+		currentTab.fadeOut(300, 0, function() {
 			onOldTabGone();
 		});
 	} else {
@@ -251,9 +249,10 @@ function changeTabTo(tab) {
 
 	function onOldTabGone() {
 		currentTab = tab;
-		currentTab.fadeTo(600, 1);
-
-		onResize();
+		currentTab.fadeTo(0, 0, function() {
+			onResize();
+			currentTab.fadeTo(600, 1);
+		});
 	}
 }
 

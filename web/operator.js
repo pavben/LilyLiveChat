@@ -8,7 +8,7 @@ var chatTab = null;
 // Person object representing the operator
 var me = null;
 
-$(document).ready(function() {
+$(window).bind("load", function() {
 	loginTab = $('#login_tab');
 	menuTab = $('#menu_tab');
 	chatTab = $('#chat_tab');

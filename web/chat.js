@@ -3,6 +3,7 @@ var currentTab = null;
 // these will be set onload
 var welcomeTab = null;
 var chatTab = null;
+var miscMessageTab = null;
 
 var myName = null;
 var myColor = null;
@@ -112,11 +113,15 @@ function handleMessage(message) {
 			var siteName = message[0];
 			var siteActive = message[1];
 
-			// TODO: set siteName on welcomeTab
-			changeTabTo(welcomeTab);
+			if (siteActive == "1") {
+				changeTabTo(welcomeTab);
+			} else {
+				showInactiveSiteScreen();
+			}
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
-			// TODO: change to invalid site tab
+			// display the invalid site screen
+			showInvalidSiteScreen();
 
 			break;
 		case Messages.CustomerInLinePositionMessage:
@@ -143,9 +148,14 @@ function handleMessage(message) {
 		case Messages.SomethingWentWrongMessage:
 			break;
 		case Messages.CustomerChatEndedMessage:
+			if (chatSessionEnded) {
+				writeInfoTextToChatLog('The chat session has ended.', $('#chat_chatlog'));
+			} else {
+				writeInfoTextToChatLog('The operator has ended the chat session.', $('#chat_chatlog'));
+			}
+
 			chatSessionEnded = true;
 
-			writeInfoTextToChatLog('The operator has ended the chat session.', $('#chat_chatlog'));
 			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
@@ -282,6 +292,8 @@ function onResize() {
 		onBasicVCenterResize('welcome', 641);
 	} else if (currentTab == chatTab) {
 		onChatTabResize();
+	} else if (currentTab == miscMessageTab) {
+		onBasicVCenterResize('miscmessage', 530);
 	}
 }
 
@@ -334,6 +346,9 @@ function welcomeTabOkHandler() {
 /* SoundManager2 */
 soundManager.url = 'soundmanager2';
 
+// TODO: remove this line and replace with a minimized version
+soundManager.debugMode = false;
+
 soundManager.onready(function() {
 	soundsToLoad = [
 		'youare9thinline',
@@ -369,9 +384,54 @@ function playSoundAfterDing(soundName) {
 	});
 }
 
-$(document).ready(function() {
+function showInactiveSiteScreen() {
+	showMiscMessageTab('There\'s nobody online :-(',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('Our representatives are currently unavailable. Please try again later.')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('basicbutton').css('width', '80px').text('Close').click(function() {
+					window.close();
+				})
+			)
+		)
+	);
+}
+
+function showInvalidSiteScreen() {
+	showMiscMessageTab('Invalid Site',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('The website you\'re on isn\'t registered with LilyLiveChat. The webmaster is probably not aware of this, so you\'d be doing them a favor by letting them know :-)')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('basicbutton').css('width', '80px').text('Close').click(function() {
+					window.close();
+				})
+			)
+		)
+	);
+}
+
+function showMiscMessageTab(title, content, buttons) {
+	$('#miscmessage_title').text(title);
+	$('#miscmessage_content').empty().append(
+		content
+	).append(
+		buttons
+	)
+	changeTabTo(miscMessageTab);
+}
+
+$(window).bind("load", function() {
 	welcomeTab = $('#welcome_tab');
 	chatTab = $('#chat_tab');
+	miscMessageTab = $('#miscmessage_tab');
 
 	// initially, these are invisible
 	$('#welcome_icon').fadeTo(0, 0);
@@ -435,7 +495,8 @@ $(document).ready(function() {
 	});
 
 	$('#chat_btn_endchat').click(function() {
-		// TODO: set a variable to indicate that the customer ended the chat and not the operator
+		chatSessionEnded = true;
+
 		$('#chat_btn_endchat').off('click').removeClass('personmenubuttonenabled');
 		$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
 		queueAjaxCommand([Messages.CustomerEndingChatMessage]);
@@ -452,8 +513,8 @@ $(document).ready(function() {
 	// END OF DEBUG
 	
 	// TEMP: remove this
-	$('#welcome_btn_ok').click();
-	setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
+	//$('#welcome_btn_ok').click();
+	//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 
 	$(window).resize(onResize);
 
