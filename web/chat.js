@@ -338,8 +338,7 @@ function welcomeTabOkHandler() {
 		}
 		queueAjaxCommand([Messages.CustomerJoinMessage, myName, myColor, myIcon]);
 
-		// re-enable the OK button
-		welcomeTabOkActive = false;
+		// on success, don't re-enable the OK button to avoid a double-send if the user double-clicks
 	}
 }
 
