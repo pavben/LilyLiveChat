@@ -1,4 +1,4 @@
-module Liberty.Server.Main (
+module Main (
   main
 ) where
 import Control.Concurrent

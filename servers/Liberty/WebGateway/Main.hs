@@ -1,4 +1,4 @@
-module Liberty.WebGateway.Main (
+module Main (
   main
 ) where
 import Control.Concurrent

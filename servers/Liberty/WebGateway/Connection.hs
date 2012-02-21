@@ -1,7 +1,6 @@
 module Liberty.WebGateway.Connection (
   processConnection
 ) where
-import qualified Codec.Binary.Url as Url
 import Control.Arrow (second)
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
@@ -28,6 +27,7 @@ import Liberty.Common.NetworkMessage
 import Liberty.Common.Timeouts
 import Liberty.Common.Utils
 import Liberty.WebGateway.Sessions
+import Liberty.WebGateway.UrlDecode
 
 -- TODO: DoS vulnerability: memory exhaustion by sending tons of random crap to buffer
 processConnection :: Socket -> SessionMapTVar -> PCRE.Regex -> IO ()
@@ -60,10 +60,11 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                           -- got all data
                           putStrLn "Got all data"
                           let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second (LBS.drop 1) . C8.span (/='=')) $ C8.split '&' textRemainder
-                          case mapM (convertToLBSMaybe . Url.decode . C8.unpack) urlEncodedArgs of
-                            Just rawArgs ->
+                          case mapM urlDecode urlEncodedArgs of
+                            Just rawArgs -> do
+                              putStrLn "Mapping decode"
                               case mapM decodeUtf8Maybe rawArgs of
-                                Just textArgs -> processClientRequest textArgs clientSocket sessionMapTVar
+                                Just textArgs -> putStrLn "Decode success" >> processClientRequest textArgs clientSocket sessionMapTVar
                                 Nothing -> putStrLn "Error decoding UTF-8 args"
                             Nothing -> putStrLn "Unable to URL-decode args"
                           return False -- just bail and close the connection
@@ -93,7 +94,6 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
     )
     (\(SomeException ex) -> putStrLn $ "Client disconnecting due to exception: " ++ show ex)
   where
-    convertToLBSMaybe = fmap LBS.pack
     decodeUtf8Maybe s =
       case LE.decodeUtf8' s of
         Right decodedStr -> Just decodedStr

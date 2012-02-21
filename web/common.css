@@ -228,6 +228,7 @@ input {
 	white-space: -o-pre-wrap;   /* Opera 7 */    
 	word-wrap: break-word;      /* IE */
 }
+/* TODO: Force text wrapping -- do not allow the div to grow past its width */
 .chatlog {
 	height:400px;
 	padding:1px 10px 3px 6px;
