@@ -258,7 +258,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 				)
 			)
 		).append(
-			$('<div/>').attr('id', 'chat_chatlog_' + chatSessionId).addClass('chatlog')
+			$('<div/>').attr('id', 'chat_chatlog_' + chatSessionId).addClass('chatlogfixed')
 		).append(
 			$('<div/>').attr('id', 'chat_chatboxwrapper_' + chatSessionId).addClass('chatboxwrapper').append(
 				$('<textarea/>').attr('id', 'chat_chatbox_' + chatSessionId).addClass('chatbox')
