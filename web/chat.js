@@ -152,6 +152,8 @@ function handleMessage(message) {
 				writeInfoTextToChatLog('The chat session has ended.', $('#chat_chatlog'));
 			} else {
 				writeInfoTextToChatLog('The operator has ended the chat session.', $('#chat_chatlog'));
+				// also disable the End Chat button, since it no longer has any effect
+				disableEndChatButton();
 			}
 
 			chatSessionEnded = true;
@@ -427,6 +429,11 @@ function showMiscMessageTab(title, content, buttons) {
 	changeTabTo(miscMessageTab);
 }
 
+function disableEndChatButton() {
+	$('#chat_btn_endchat').off('click').removeClass('personmenubuttonenabled');
+	$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
+}
+
 $(window).bind("load", function() {
 	welcomeTab = $('#welcome_tab');
 	chatTab = $('#chat_tab');
@@ -499,8 +506,8 @@ $(window).bind("load", function() {
 	$('#chat_btn_endchat').click(function() {
 		chatSessionEnded = true;
 
-		$('#chat_btn_endchat').off('click').removeClass('personmenubuttonenabled');
-		$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
+		disableEndChatButton();
+
 		queueAjaxCommand([Messages.CustomerEndingChatMessage]);
 	});
 	

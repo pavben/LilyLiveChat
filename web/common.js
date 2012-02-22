@@ -321,6 +321,8 @@ function replaceIconWith(iconUrl, icon) {
 	});
 }
 
+// TODO: On the menu screen, implement a tooltip on hover
+// TODO: Support clickable links
 function writeMessageToChatLog(name, color, msg, chatLogDiv) {
 	var tempDiv = $('<div/>');
 	tempDiv.append($('<span/>').addClass('chatmsgtext').css('color', color).text(name + ': '));
