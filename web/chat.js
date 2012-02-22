@@ -483,8 +483,11 @@ $(window).bind("load", function() {
 	$('#chat_chatbox').keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			if (!chatSessionEnded) {
-				queueAjaxCommand([Messages.CustomerSendChatMessage, $('#chat_chatbox').val()]);
-				writeMessageToChatLog(me.name, me.color, $('#chat_chatbox').val(), $('#chat_chatlog'));
+				var chatBox = $('#chat_chatbox');
+				if ($.trim(chatBox.val()).length > 0) {
+					queueAjaxCommand([Messages.CustomerSendChatMessage, chatBox.val()]);
+					writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog'));
+				}
 			} else {
 				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog'));
 			}

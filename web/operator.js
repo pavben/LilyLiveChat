@@ -305,8 +305,10 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	chatBox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
-				queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
-				writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
+				if ($.trim(chatBox.val()).length > 0) {
+					queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
+					writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
+				}
 			} else {
 				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog_' + chatSessionId));
 			}
