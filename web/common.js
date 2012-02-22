@@ -321,23 +321,21 @@ function replaceIconWith(iconUrl, icon) {
 	});
 }
 
-// TODO: On the menu screen, implement a tooltip on hover
 // TODO: Support clickable links
 function writeMessageToChatLog(name, color, msg, chatLogDiv) {
-	var tempDiv = $('<div/>');
-	tempDiv.append($('<span/>').addClass('chatmsgtext').css('color', color).text(name + ': '));
+	var tempDiv = $('<div/>').addClass('chatmsgtext');
+	tempDiv.append($('<span/>').css('color', color).text(name + ': '));
 	var lines = msg.split('\n');
 	if (lines.length > 1) {
 		tempDiv.append($('<br/>'));
 	}
 	for (var i in lines) {
-		// TODO: lines in a multi-line message starting with spaces lose their spaces
-		tempDiv.append($('<span/>').addClass('chatmsgtext').text(lines[i]));
+		tempDiv.append($('<span/>').text(lines[i]));
 		tempDiv.append($('<br/>'));
 	}
 
-	// append the contents of tempDiv to chatLogDiv
-	chatLogDiv.append(tempDiv.html());
+	// append tempDiv to chatLogDiv
+	chatLogDiv.append(tempDiv);
 
 	/*
 	chatLogDiv.append(tempDiv.fadeTo(1, 0.5, function() {

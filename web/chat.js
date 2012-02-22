@@ -1,3 +1,7 @@
+// CONSIDER: allow the operator to see what the customer is typing before they send it
+// CONSIDER: allow attaching a file (picture?)
+// TODO: On the menu screen, implement a tooltip on hover
+
 var currentTab = null;
 
 // these will be set onload
@@ -434,7 +438,7 @@ function disableEndChatButton() {
 	$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
 }
 
-$(window).bind("load", function() {
+$(window).bind('load', function() {
 	welcomeTab = $('#welcome_tab');
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');

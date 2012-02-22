@@ -61,10 +61,9 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                           putStrLn "Got all data"
                           let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second (LBS.drop 1) . C8.span (/='=')) $ C8.split '&' textRemainder
                           case mapM urlDecode urlEncodedArgs of
-                            Just rawArgs -> do
-                              putStrLn "Mapping decode"
+                            Just rawArgs ->
                               case mapM decodeUtf8Maybe rawArgs of
-                                Just textArgs -> putStrLn "Decode success" >> processClientRequest textArgs clientSocket sessionMapTVar
+                                Just textArgs -> processClientRequest textArgs clientSocket sessionMapTVar
                                 Nothing -> putStrLn "Error decoding UTF-8 args"
                             Nothing -> putStrLn "Unable to URL-decode args"
                           return False -- just bail and close the connection

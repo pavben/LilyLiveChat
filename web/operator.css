@@ -174,7 +174,7 @@
 	background-color:#ECECEC;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
-	color:#707070;
+	color:#656565;
 	line-height:24px;
 	text-align:center;
 }
@@ -222,6 +222,11 @@
 	transition: all 0.1s ease-in-out;
 	vertical-align:top;
 }
+.chat_sessionlistbuttonactive {
+	background-image: url('images/sessionbutton_arrow.png');
+	background-position: top left;
+	background-repeat:no-repeat;
+}
 .chat_sessionlistbutton:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
@@ -231,4 +236,3 @@
 .chat_sessionlistsep {
 	height:7px;
 }
-

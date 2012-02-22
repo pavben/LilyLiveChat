@@ -8,7 +8,7 @@ var chatTab = null;
 // Person object representing the operator
 var me = null;
 
-$(window).bind("load", function() {
+$(window).bind('load', function() {
 	loginTab = $('#login_tab');
 	menuTab = $('#menu_tab');
 	chatTab = $('#chat_tab');
@@ -142,6 +142,7 @@ function handleMessage(message) {
 			var they = getChatSessionData(chatSessionId).they;
 
 			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
+			onChatSessionActivity(chatSessionId);
 			break;
 		case Messages.OperatorChatEndedMessage:
 			var chatSessionId = message[0];
@@ -150,6 +151,7 @@ function handleMessage(message) {
 			if (chatSessionData !== null) {
 				// if the chat window still exists, it means the customer (not the operator) ended the chat session
 				writeInfoTextToChatLog('The customer has ended the chat session.', $('#chat_chatlog_' + chatSessionId));
+				onChatSessionActivity(chatSessionId);
 
 				chatSessionData.chatSessionEnded = true;
 
@@ -198,6 +200,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	);
 
 	activeSessionButton.click(function() {
+		setChatSessionActivity(chatSessionId, false);
 		setVisibleChatSessionId(chatSessionId);
 	});
 
@@ -274,6 +277,9 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	replaceIconWith(they.iconUrl, $('#chat_theiricon_' + chatSessionId));
 	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
 
+	// mark the chat session as open; this is set to false when the session is beginning its fade-out
+	getChatSessionData(chatSessionId).isOpen = true;
+
 	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId), $('#chat_chatboxwrapper_' + chatSessionId));
 
 	// close handler
@@ -281,6 +287,11 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 		// setVisibleChatSessionId to another chat session, if any
 		var openChatSessionIds = getOpenChatSessionIds().filter(function(x) { return (x !== chatSessionId); });
 		var targetSessionId = (openChatSessionIds.length > 0) ? openChatSessionIds[0] : null;
+
+		var currentChatSessionData = getChatSessionData(chatSessionId);
+		
+		// set isOpen to false to indicate that this session window is closed
+		currentChatSessionData.isOpen = false;
 
 		setVisibleChatSessionId(targetSessionId);
 
@@ -291,7 +302,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 			buttonWrapper.remove();
 
 			// if this chat session hasn't already been ended by the customer, tell the server that we're ending it
-			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
+			if (!currentChatSessionData.chatSessionEnded) {
 				queueAjaxCommand([Messages.OperatorEndingChatMessage, chatSessionId]);
 			}
 
@@ -337,6 +348,16 @@ function getChatSessionData(chatSessionId) {
 	}
 }
 
+function isChatSessionOpen(chatSessionId) {
+	var chatSessionData = getChatSessionData(chatSessionId);
+
+	if (chatSessionData != null) {
+		return (chatSessionData.isOpen === true);
+	} else {
+		return false;
+	}
+}
+
 function getOpenChatSessionIds() {
 	var objects = $('[id^=chat_maincell_]');
 
@@ -350,6 +371,31 @@ function getOpenChatSessionIds() {
 	}
 
 	return chatSessionIds;
+}
+
+function onChatSessionActivity(chatSessionId) {
+	if (visibleChatSessionId !== chatSessionId) {
+		setChatSessionActivity(chatSessionId, true);
+	}
+}
+
+function setChatSessionActivity(chatSessionId, activityFlag) {
+	if (isChatSessionOpen(chatSessionId)) {
+		var sessionButton = $('#chat_activesessionbutton_' + chatSessionId);
+		var className = 'chat_sessionlistbuttonactive';
+
+		// if the activity class is being enabled
+		if (activityFlag) {
+			// if the class is not already there
+			if (!sessionButton.hasClass(className)) {
+				// add it
+				sessionButton.addClass(className);
+			}
+		} else {
+			// otherwise, try removing (no-op if it does not exist)
+			sessionButton.removeClass(className);
+		}
+	}
 }
 
 /* Line status updating and effects */
