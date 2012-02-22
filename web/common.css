@@ -91,9 +91,7 @@ input {
 	text-overflow:ellipsis;
 }
 .personmenucellright {
-	display:table-cell;
-	width:204px;
-	height:42px;
+	margin-top:15px;
 	vertical-align:bottom;
 }
 .inputboxwrapper, .chatboxwrapper {
