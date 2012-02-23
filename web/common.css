@@ -67,20 +67,22 @@ input {
 }
 .leftcardtext {
 	display:table-cell;
-	padding-left:8px;
+	padding:0px 8px 0px 8px;
 	height:100%;
 }
+/* TODO: Remove padding from leftcardtext and rightcardtext. Implement it by having an inner div with padding. */
 .rightcardtext {
 	display:table-cell;
-	width:212px;
+	width:204px;
 	height:100%;
-	padding-right:8px;
+	padding:0px 8px 0px 8px;
 	text-align:right;
 }
 .personname {
 	height:28px;
 	font-size:24px;
 	overflow:hidden;
+	white-space:nowrap;
 	text-overflow:ellipsis;
 }
 .persontitle {
@@ -88,6 +90,7 @@ input {
 	font-size:18px;
 	color:#7C7C7C;
 	overflow:hidden;
+	white-space:nowrap;
 	text-overflow:ellipsis;
 }
 .personmenucellright {

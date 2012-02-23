@@ -183,7 +183,6 @@
 	border-bottom:1px solid #BBBBBB;
 }
 .chat_sessionlistheader {
-	display:table-cell;
 	width:200px;
 	line-height:29px;
 	background-color:#ECECEC;
@@ -202,7 +201,7 @@
 .chat_sessionlistcontent {
 	padding:7px 7px 0px 7px;
 }
-.chat_sessionlistbutton {
+.chat_sessionlistbutton_inline, .chat_sessionlistbutton_open {
 	height:25px;
 	line-height:25px;
 	font-size:18px;
@@ -210,11 +209,6 @@
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 	text-shadow:1px 1px 0px #f4f4f4;
-	text-align:center;
-	overflow:hidden;
-	text-overflow:ellipsis;
-	width:174px;
-	padding:0px 5px 0px 5px;
 	cursor:pointer;
 	-webkit-transition: all 0.1s ease-in-out;
 	-moz-transition: all 0.1s ease-in-out;
@@ -222,16 +216,38 @@
 	transition: all 0.1s ease-in-out;
 	vertical-align:top;
 }
-.chat_sessionlistbuttonactive {
-	background-image: url('images/sessionbutton_arrow.png');
-	background-position: top left;
-	background-repeat:no-repeat;
+.chat_sessionlistbutton_inline {
+	padding:0px 5px 0px 5px;
+	overflow:hidden;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+	text-align:center;
 }
-.chat_sessionlistbutton:hover {
+.chat_sessionlistbutton_inline:hover, .chat_sessionlistbutton_open:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
-.chat_sessionlistbutton:active {
+.chat_sessionlistbutton_inline:active, .chat_sessionlistbutton_open:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+.chat_sessionlistbutton_ind_base, .chat_sessionlistbutton_ind_active, .chat_sessionlistbutton_ind_ended {
+	width:21px;
+	height:25px;
+}
+.chat_sessionlistbutton_ind_base {
+	background-image: url('images/sessionbutton_gray.png');
+}
+.chat_sessionlistbutton_ind_active {
+	background-image: url('images/sessionbutton_green.png');
+}
+.chat_sessionlistbutton_ind_ended {
+	background-image: url('images/sessionbutton_red.png');
+}
+.chat_sessionlistbutton_open_text {
+	padding:0px 5px 0px 0px;
+	overflow:hidden;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+	text-align:left;
 }
 .chat_sessionlistsep {
 	height:7px;

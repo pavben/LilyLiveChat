@@ -526,7 +526,7 @@ $(window).bind('load', function() {
 	// END OF DEBUG
 	
 	// TEMP: remove this
-	//$('#welcome_btn_ok').click();
+	$('#welcome_btn_ok').click();
 	//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 
 	$(window).resize(onResize);
