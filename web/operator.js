@@ -255,7 +255,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 											$('<div/>').addClass('fixedtable').append(
 												$('<div/>').addClass('cell')
 											).append(
-												$('<div/>').addClass('personmenubuttonwrapper').css('width', '100px').append(
+												$('<div/>').addClass('cell').css('width', '100px').append(
 													$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
 												)
 											)

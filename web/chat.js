@@ -398,9 +398,11 @@ function showInactiveSiteScreen() {
 			$('<div/>').addClass('tablerow').append(
 				$('<div/>').addClass('cell')
 			).append(
-				$('<div/>').addClass('basicbutton').css('width', '80px').text('Close').click(function() {
-					window.close();
-				})
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Close').click(function() {
+						window.close();
+					})
+				)
 			)
 		)
 	);
@@ -415,14 +417,17 @@ function showInvalidSiteScreen() {
 			$('<div/>').addClass('tablerow').append(
 				$('<div/>').addClass('cell')
 			).append(
-				$('<div/>').addClass('basicbutton').css('width', '80px').text('Close').click(function() {
-					window.close();
-				})
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Close').click(function() {
+						window.close();
+					})
+				)
 			)
 		)
 	);
 }
 
+// NOTE: Do not switch from one miscmessage tab to another! Content is switched BEFORE the fade-out.
 function showMiscMessageTab(title, content, buttons) {
 	$('#miscmessage_title').text(title);
 	$('#miscmessage_content').empty().append(
