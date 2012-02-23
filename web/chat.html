@@ -22,18 +22,21 @@
 							<div class="iconcell">
 								<div id="welcome_icon" class="framedicon"></div>
 							</div>
-							<div id="welcome_cardtext" class="leftcardtext">
-								<div id="welcome_chooseanamelabel">
-									Choose a Name
-								</div>
-								<div class="inputboxwrapper">
-									<input id="welcome_myname" class="inputbox" type="text" placeholder="My name is..." maxlength="20" autocomplete="off" />
-								</div>
-								<div class="fixedtable">
-									<div class="tablerow">
-										<div id="welcome_btn_randomize" class="basicbutton" style="width:120px;">Randomize!</div>
-										<div class="cell"></div>
-										<div id="welcome_btn_ok" class="basicbutton" style="width:82px;">OK</div>
+							<div class="cardtextwrappercell">
+								<div class="leftcardtexttight">
+									<div id="welcome_chooseanamelabel">
+										Choose a Name
+									</div>
+									<div class="inputboxwrapper">
+										<input id="welcome_myname" class="inputbox" type="text" placeholder="My name is..." maxlength="20" autocomplete="off" />
+									</div>
+									<div class="fixedtable">
+										<div class="tablerow">
+											<!-- TODO: Button should not be a table-cell, because it has a border -->
+											<div id="welcome_btn_randomize" class="basicbutton" style="width:120px;">Randomize!</div>
+											<div class="cell"></div>
+											<div id="welcome_btn_ok" class="basicbutton" style="width:82px;">OK</div>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -53,9 +56,11 @@
 							<div class="iconcell">
 								<div id="chat_myicon" class="framedicon"></div>
 							</div>
-							<div class="leftcardtext">
-								<div id="chat_myname" class="personname"></div>
-								<div id="chat_mytitle" class="persontitle"></div>
+							<div class="cardtextwrappercell">
+								<div class="leftcardtext">
+									<div id="chat_myname" class="personname"></div>
+									<div id="chat_mytitle" class="persontitle"></div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -64,16 +69,17 @@
 				<div id="chat_theircardcell" class="cell">
 					<div class="fixedtable">
 						<div class="tablerow">
-							<div class="cell"></div>
-							<div id="chat_theircardtext" class="rightcardtext">
-								<div id="chat_theirname" class="personname"></div>
-								<div id="chat_theirtitle" class="persontitle"></div>
-								<div class="personmenucellright">
-									<div class="fixedtable">
-										<div class="tablerow">
-											<div class="cell"></div>
-											<div id="chat_btn_endchat_wrapper" class="personmenubuttonwrapper" style="width:100px;">
-												<div id="chat_btn_endchat" class="personmenubutton personmenubuttonenabled">End Chat</div>
+							<div class="cardtextwrappercell">
+								<div id="chat_theircardtext" class="rightcardtext">
+									<div id="chat_theirname" class="personname"></div>
+									<div id="chat_theirtitle" class="persontitle"></div>
+									<div class="personmenucellright">
+										<div class="fixedtable">
+											<div class="tablerow">
+												<div class="cell"></div>
+												<div id="chat_btn_endchat_wrapper" class="personmenubuttonwrapper" style="width:100px;">
+													<div id="chat_btn_endchat" class="personmenubutton personmenubuttonenabled">End Chat</div>
+												</div>
 											</div>
 										</div>
 									</div>

@@ -528,6 +528,8 @@ $(window).bind('load', function() {
 	// TEMP: remove this
 	$('#welcome_btn_ok').click();
 	//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
+	
+	// TODO: queueAjaxCommand should queue for when the session is established
 
 	$(window).resize(onResize);
 

@@ -50,7 +50,7 @@ $(window).bind('load', function() {
 	changeTabTo(loginTab);
 	//changeTabTo(menuTab);
 	//changeTabTo(chatTab);
-	$('#login_btn_ok').click();
+	//$('#login_btn_ok').click();
 
 	$(window).resize(onResize);
 });
@@ -229,10 +229,12 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 									$('<div/>').attr('id', 'chat_myicon_' + chatSessionId).addClass('framedicon')
 								)
 							).append(
-								$('<div/>').addClass('leftcardtext').append(
-									$('<div/>').attr('id', 'chat_myname_' + chatSessionId).addClass('personname')
-								).append(
-									$('<div/>').attr('id', 'chat_mytitle_' + chatSessionId).addClass('persontitle')
+								$('<div/>').addClass('cardtextwrappercell').append(
+									$('<div/>').addClass('leftcardtext').append(
+										$('<div/>').attr('id', 'chat_myname_' + chatSessionId).addClass('personname')
+									).append(
+										$('<div/>').attr('id', 'chat_mytitle_' + chatSessionId).addClass('persontitle')
+									)
 								)
 							)
 						)
@@ -243,19 +245,19 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 					$('<div/>').attr('id', 'chat_theircardcell_' + chatSessionId).addClass('cell').append(
 						$('<div/>').addClass('fixedtable').append(
 							$('<div/>').addClass('tablerow').append(
-								$('<div/>').addClass('cell')
-							).append(
-								$('<div/>').addClass('rightcardtext').append(
-									$('<div/>').attr('id', 'chat_theirname_' + chatSessionId).addClass('personname')
-								).append(
-									$('<div/>').attr('id', 'chat_theirtitle_' + chatSessionId).addClass('persontitle')
-								).append(
-									$('<div/>').addClass('personmenucellright').append(
-										$('<div/>').addClass('fixedtable').append(
-											$('<div/>').addClass('cell')
-										).append(
-											$('<div/>').addClass('personmenubuttonwrapper').css('width', '100px').append(
-												$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
+								$('<div/>').addClass('cardtextwrappercell').append(
+									$('<div/>').addClass('rightcardtext').append(
+										$('<div/>').attr('id', 'chat_theirname_' + chatSessionId).addClass('personname')
+									).append(
+										$('<div/>').attr('id', 'chat_theirtitle_' + chatSessionId).addClass('persontitle')
+									).append(
+										$('<div/>').addClass('personmenucellright').append(
+											$('<div/>').addClass('fixedtable').append(
+												$('<div/>').addClass('cell')
+											).append(
+												$('<div/>').addClass('personmenubuttonwrapper').css('width', '100px').append(
+													$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
+												)
 											)
 										)
 									)

@@ -65,15 +65,18 @@ input {
 	border-radius:5px;
 	vertical-align:top;
 }
-.leftcardtext {
+.cardtextwrappercell {
 	display:table-cell;
+}
+.leftcardtexttight {
+	padding:0px 0px 0px 8px;
+	height:100%;
+}
+.leftcardtext {
 	padding:0px 8px 0px 8px;
 	height:100%;
 }
-/* TODO: Remove padding from leftcardtext and rightcardtext. Implement it by having an inner div with padding. */
 .rightcardtext {
-	display:table-cell;
-	width:204px;
 	height:100%;
 	padding:0px 8px 0px 8px;
 	text-align:right;
@@ -98,7 +101,6 @@ input {
 	vertical-align:bottom;
 }
 .inputboxwrapper, .chatboxwrapper {
-	display:block;
 	background-color:#F4F4F4;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
