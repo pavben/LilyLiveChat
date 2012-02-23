@@ -251,11 +251,11 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 									).append(
 										$('<div/>').attr('id', 'chat_theirtitle_' + chatSessionId).addClass('persontitle')
 									).append(
-										$('<div/>').addClass('personmenucellright').append(
+										$('<div/>').addClass('personmenuwrapper').append(
 											$('<div/>').addClass('fixedtable').append(
 												$('<div/>').addClass('cell')
 											).append(
-												$('<div/>').addClass('cell').css('width', '100px').append(
+												$('<div/>').addClass('cell').css('width', '84px').append(
 													$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
 												)
 											)

@@ -96,9 +96,8 @@ input {
 	white-space:nowrap;
 	text-overflow:ellipsis;
 }
-.personmenucellright {
-	margin-top:15px;
-	vertical-align:bottom;
+.personmenuwrapper {
+	margin-top:18px;
 }
 .inputboxwrapper, .chatboxwrapper {
 	background-color:#F4F4F4;
@@ -150,14 +149,13 @@ input {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
 .personmenubutton {
-	padding:0px 0px 1px 0px;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 	background-color:#ECECEC;
 	text-shadow:1px 1px 0px #f4f4f4;
 	text-align:center;
-	line-height:24px;
-	font-size:18px;
+	line-height:22px;
+	font-size:15px;
 	color:#707070;
 	vertical-align:top;
 	-webkit-user-select: none;
