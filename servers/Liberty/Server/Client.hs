@@ -156,17 +156,22 @@ handleCustomerJoinMessage :: Text -> Text -> Text -> ClientDataTVar -> SiteDataT
 handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomically $ do
   clientData <- readTVar clientDataTVar
   siteData <- readTVar siteDataTVar
-  let thisChatSessionId = sdNextSessionId siteData
-  -- create a new chat session with this client as the customer and no operator
-  chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
-  writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
+  if not $ null $ sdOnlineOperators siteData then do
+    let thisChatSessionId = sdNextSessionId siteData
+    -- create a new chat session with this client as the customer and no operator
+    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
+    writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
 
-  -- add the newly-created chat session to the site data's waiting list
-  let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
-  writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
+    -- add the newly-created chat session to the site data's waiting list
+    let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
+    writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
 
-  -- and notify all waiting clients and operators about the update (including sending the position to this customer)
-  onWaitingListUpdated siteDataTVar
+    -- and notify all waiting clients and operators about the update (including sending the position to this customer)
+    waitingListUpdated siteDataTVar
+  else do
+    -- otherwise, there are no operators online, so we will not queue this customer
+    createAndSendMessage (CustomerNoOperatorsAvailableMessage,[]) clientDataTVar
+    closeClientSocket clientDataTVar
 
 handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> SiteMapTVar -> IO ()
 handleOperatorLoginRequest siteId username password clientDataTVar siteMapTVar =
@@ -265,7 +270,7 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomica
             OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData)
             _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty)
           -- update the operators with 'next in line' and waiting customers with their new position
-          onWaitingListUpdated siteDataTVar
+          waitingListUpdated siteDataTVar
         
           -- send the CustomerNowTalkingToMessage to the customer
           createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar updatedChatSession)
@@ -325,10 +330,11 @@ handleClientExitEvent clientDataTVar = do
         writeTVar siteDataTVar $ siteData {
           sdOnlineOperators = filter (/= clientDataTVar) $ sdOnlineOperators siteData
         }
+        onlineOperatorsListUpdated siteDataTVar
       OCDClientUnregistered _ -> return () -- nothing to cleanup
 
-onWaitingListUpdated :: SiteDataTVar -> STM ()
-onWaitingListUpdated siteDataTVar = do
+waitingListUpdated :: SiteDataTVar -> STM ()
+waitingListUpdated siteDataTVar = do
   -- first, send the line status info to all operators
   siteData <- readTVar siteDataTVar
   lineStatusInfo <- getLineStatusInfo siteDataTVar
@@ -353,6 +359,27 @@ onWaitingListUpdated siteDataTVar = do
     sendPositionUpdate chatSessionTVar chatSession positionInLine = do
       createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) (csCustomerClientDataTVar chatSession)
       writeTVar chatSessionTVar $ chatSession { csLastPositionUpdate = Just $ positionInLine }
+
+-- CONSIDER: When the last operator becomes unavailable, allow 2 minutes or so before kicking everyone off
+onlineOperatorsListUpdated :: SiteDataTVar -> STM ()
+onlineOperatorsListUpdated siteDataTVar = do
+  siteData <- readTVar siteDataTVar
+  if null $ sdOnlineOperators siteData then do
+    -- list everyone who is waiting in line
+    customerClientDataTVars <- mapM (\chatSessionTVar -> do
+      chatSession <- readTVar chatSessionTVar
+      return $ csCustomerClientDataTVar chatSession
+      ) (sdSessionsWaiting siteData)
+    -- send the messages
+    forM_ customerClientDataTVars $ createAndSendMessage (CustomerNoOperatorsAvailableMessage,[])
+    -- remove all clients from the line
+    writeTVar siteDataTVar $ siteData { sdSessionsWaiting = [] }
+    -- disconnect them
+    mapM_ closeClientSocket customerClientDataTVars
+    -- since we updated the waiting list
+    waitingListUpdated siteDataTVar
+  else
+    return ()
 
 data LineStatusInfo = LineStatusInfo (Maybe (Text, Text)) Int
 
@@ -393,7 +420,7 @@ endChatSession chatSessionTVar = do
       writeTVar siteDataTVar $ siteData {
         sdSessionsWaiting = filter (/= chatSessionTVar) $ sdSessionsWaiting siteData
       }
-      onWaitingListUpdated siteDataTVar
+      waitingListUpdated siteDataTVar
     ChatOperatorClient operatorClientDataTVar -> do
       -- remove the operator from the session
       writeTVar chatSessionTVar $ chatSession { csOperator = ChatOperatorNobody }

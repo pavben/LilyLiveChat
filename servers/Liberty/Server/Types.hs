@@ -24,6 +24,9 @@ import Data.Text.Lazy (Text)
 import Network.Socket (Socket)
 import Liberty.Common.Types
 
+-- CONSIDER: Get rid of OtherClientData and ClientDataTVar in favor of UnregisteredDataTVar, CustomerDataTVar, OperatorDataTVar
+-- Note: Think about how createAndSendMessage will be done in this case
+
 -- Client
 data ClientData = ClientData {
   cdSocket :: Socket,

@@ -1,6 +1,7 @@
 // CONSIDER: allow the operator to see what the customer is typing before they send it
 // CONSIDER: allow attaching a file (picture?)
 // TODO: On the menu screen, implement a tooltip on hover
+// TODO: Bridget seems to have some inSequence error
 
 var currentTab = null;
 

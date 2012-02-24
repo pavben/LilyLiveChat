@@ -29,6 +29,7 @@ data MessageType = CustomerJoinMessage
                  | UnregisteredSelectSiteMessage
                  | UnregisteredSiteSelectedMessage
                  | UnregisteredSiteInvalidMessage
+                 | CustomerNoOperatorsAvailableMessage
   deriving (Show, Eq, Ord)
 
 type Message = (MessageType, [Text])
