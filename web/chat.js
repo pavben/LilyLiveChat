@@ -1,7 +1,6 @@
 // CONSIDER: allow the operator to see what the customer is typing before they send it
 // CONSIDER: allow attaching a file (picture?)
 // TODO: On the menu screen, implement a tooltip on hover
-// TODO: Bridget seems to have some inSequence error
 
 // these will be set onload
 var welcomeTab = null;
@@ -551,17 +550,15 @@ $(window).bind('load', function() {
 	//updatePositionInLine(5);
 	// END OF DEBUG
 	
-	// TEMP: remove this
-	$('#welcome_btn_ok').click();
-	//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
-	
-	// TODO: queueAjaxCommand should queue for when the session is established
-
 	$(window).resize(onResize);
 
 	ajaxJsonGetSessionId(
 		function() {
 			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, "virtivia"]);
+
+			// TEMP: remove this
+			//$('#welcome_btn_ok').click();
+			//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 		},
 		function() {
 			alert("Failed to acquire Session ID");

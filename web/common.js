@@ -17,11 +17,6 @@ function resetSession() {
 }
 
 function queueAjaxCommand(data) {
-	if (!mySessionId) {
-		log("queueAjaxCommand failed due to !mySessionId");
-		return;
-	}
-
 	ajaxCommandQueue.push([nextOutSequence++].concat(data));
 
 	if (!ajaxCommandSendInProgress) {
@@ -31,7 +26,6 @@ function queueAjaxCommand(data) {
 
 function sendAjaxCommands() {
 	if (!mySessionId) {
-		log("sendAjaxCommands failed due to !mySessionId");
 		return;
 	}
 
@@ -70,6 +64,8 @@ function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
 				log("Got session ID: " + getSessionIdResponse.sessionId);
 				// begin long-polling
 				ajaxJsonLongPoll();
+				// send any AJAX commands that have accumulated before the session was acquired
+				sendAjaxCommands();
 				// call the callback function
 				onSuccessCallback();
 			}
