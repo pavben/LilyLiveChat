@@ -195,7 +195,8 @@ var Messages = {
 	CustomerChatEndedMessage : 19,
 	UnregisteredSelectSiteMessage : 20,
 	UnregisteredSiteSelectedMessage : 21,
-	UnregisteredSiteInvalidMessage : 22
+	UnregisteredSiteInvalidMessage : 22,
+	CustomerNoOperatorsAvailableMessage : 23
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
@@ -238,22 +239,43 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 
 // tab switcher
 
-function changeTabTo(tab) {
-	if (currentTab) {
-		currentTab.fadeOut(300, 0, function() {
-			onOldTabGone();
-		});
-	} else {
-		onOldTabGone();
-	}
+var currentTab = null;
+var currentTabTarget = undefined;
 
-	function onOldTabGone() {
-		currentTab = tab;
-		currentTab.fadeTo(0, 0, function() {
-			onResize();
-			currentTab.fadeTo(600, 1);
-		});
+function changeTabTo(tab) {
+	var alreadyBusy = (currentTabTarget !== undefined);
+
+	currentTabTarget = tab;
+
+	if (!alreadyBusy) {
+		if (currentTab) {
+			currentTab.fadeOut(300, 0, function() {
+				onOldTabGone();
+			});
+		} else {
+			onOldTabGone();
+		}
+
+		function onOldTabGone() {
+			currentTab = tab;
+			if (currentTab === currentTabTarget) {
+				currentTabTarget = undefined;
+				currentTab.fadeTo(0, 0, function() {
+					onResize();
+					currentTab.fadeTo(600, 1);
+				});
+			} else {
+				// here we reset currentTabTarget to fail the alreadyBusy check
+				var target = currentTabTarget;
+				currentTabTarget = undefined;
+				changeTabTo(target);
+			}
+		}
 	}
+}
+
+function getCurrentTabOrTarget() {
+	return (currentTabTarget !== undefined) ? currentTabTarget : currentTab;
 }
 
 function onBasicVCenterResize(tabName, minHeight) {

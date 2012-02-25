@@ -3,8 +3,6 @@
 // TODO: On the menu screen, implement a tooltip on hover
 // TODO: Bridget seems to have some inSequence error
 
-var currentTab = null;
-
 // these will be set onload
 var welcomeTab = null;
 var chatTab = null;
@@ -130,7 +128,7 @@ function handleMessage(message) {
 
 			break;
 		case Messages.CustomerInLinePositionMessage:
-			if (currentTab == welcomeTab) {
+			if (getCurrentTabOrTarget() == welcomeTab) {
 				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
 				changeTabTo(chatTab);
 			}
@@ -163,6 +161,9 @@ function handleMessage(message) {
 
 			chatSessionEnded = true;
 
+			break;
+		case Messages.CustomerNoOperatorsAvailableMessage:
+			showNoOperatorsAvailableScreen();
 			break;
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
@@ -413,6 +414,25 @@ function showInvalidSiteScreen() {
 	showMiscMessageTab('Invalid Site',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
 			$('<div/>').text('The website you\'re on isn\'t registered with LilyLiveChat. The webmaster is probably not aware of this, so you\'d be doing them a favor by letting them know :-)')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Close').click(function() {
+						window.close();
+					})
+				)
+			)
+		)
+	);
+}
+
+function showNoOperatorsAvailableScreen() {
+	showMiscMessageTab('There\'s nobody available :-(',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('The representative you were waiting for has just become unavailable. Unfortunately, there is nobody else online for us to connect you with. Please try again another time.')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(

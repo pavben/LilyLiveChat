@@ -1,5 +1,3 @@
-var currentTab = null;
-
 // these will be set onload
 var loginTab = null;
 var menuTab = null;

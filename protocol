@@ -20,7 +20,7 @@ Server to Customer
 5  - CustomerReceiveChatMessage [text]
 7  - SomethingWentWrongMessage
 19 - CustomerChatEndedMessage
-23 - CustomerNoOperatorsAvailable
+23 - CustomerNoOperatorsAvailableMessage
 
 Operator to Server
 ================================================================
