@@ -10,7 +10,7 @@ resetSession();
 
 function resetSession() {
 	mySessionId = null;
-	lastInSequence = null;
+	lastInSequence = 0;
 	nextOutSequence = 0;
 	ajaxCommandQueue = [];
 	ajaxCommandSendInProgress = false;
@@ -54,13 +54,14 @@ function sendAjaxCommands() {
 }
 
 function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
+	// start with a clean session
+	resetSession();
 	ajaxJson(
 		['NEW', nextOutSequence++],
 		function(getSessionIdResponse) {
 			if (getSessionIdResponse.sessionId) {
 				// set the session ID to use in future requests
 				mySessionId = getSessionIdResponse.sessionId;
-				lastInSequence = 0; // initialize this to 0
 				log("Got session ID: " + getSessionIdResponse.sessionId);
 				// begin long-polling
 				ajaxJsonLongPoll();
@@ -81,7 +82,7 @@ function sessionEnded() {
 	log("Session ended");
 	resetSession();
 
-	// TODO: Call a page-specific cleanup function
+	handleSessionEnded();
 }
 
 function ajaxJsonLongPoll() {

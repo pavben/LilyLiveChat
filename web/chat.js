@@ -169,6 +169,24 @@ function handleMessage(message) {
 	}
 }
 
+function handleSessionEnded() {
+	switch (getCurrentTabOrTarget()) {
+	case miscMessageTab:
+		// if we're already on the misc message tab (some error), do nothing
+		break;
+	case chatTab:
+		// if we're on the chat tab, we ignore the connection close if the chat session already ended
+		if (!chatSessionEnded) {
+			// otherwise, we show the connection problems screen
+			showConnectionProblemsScreen();
+		}
+		break;
+	default:
+		// in all other cases, just show the connection problems screen
+		showConnectionProblemsScreen();
+	}
+}
+
 var me = null;
 var they = null;
 
@@ -447,6 +465,35 @@ function showNoOperatorsAvailableScreen() {
 	);
 }
 
+function showConnectionProblemsScreen() {
+	showMiscMessageTab('Can\'t connect...',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('Someone is experiencing connection issues! It could be you or us.')
+		).append(
+			$('<div/>').text('You can try to reconnect. If the problem persists, check your Internet connection or try again later.')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '100px').append(
+					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
+						window.location.reload();
+					})
+				)
+			).append(
+				$('<div/>').addClass('cell').css('width', '7px')
+			).append(
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Close').click(function() {
+						window.close();
+					})
+				)
+			)
+		)
+	);
+}
+
 // NOTE: Do not switch from one miscmessage tab to another! Content is switched BEFORE the fade-out.
 function showMiscMessageTab(title, content, buttons) {
 	$('#miscmessage_title').text(title);
@@ -561,8 +608,9 @@ $(window).bind('load', function() {
 			//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 		},
 		function() {
-			alert("Failed to acquire Session ID");
-			nextOutSequence = 0; // reset this to 0
+			resetSession();
+
+			showConnectionProblemsScreen();
 		}
 	);
 });

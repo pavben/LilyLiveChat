@@ -43,14 +43,10 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
       recvResult <- recv clientSocket 2048
       let newBuffer = LBS.append buffer recvResult
       shouldContinue <- if not $ LBS.null recvResult then do
-        print recvResult
         executeResult <- PCRE.regexec httpRegex newBuffer
         case executeResult of
           Right matchResult -> case matchResult of
-            Just (_, textMatched, textRemainder, matches) -> do
-              putStrLn $ "Matches: " ++ show matches
-              putStrLn $ "textMatched: " ++ show textMatched
-              putStrLn $ "textRemainder: " ++ show textRemainder
+            Just (_, _, textRemainder, matches) -> do
               case matches of
                 [requestMethod, requestPath, contentLengthStr] ->
                   if requestMethod == C8.pack "POST" && requestPath == C8.pack "/c" then do
@@ -59,6 +55,7 @@ socketLoop clientSocket sessionMapTVar httpRegex buffer =
                         if LBS.length textRemainder == fromIntegral contentLength then do
                           -- got all data
                           putStrLn "Got all data"
+                          --putStrLn $ show textRemainder
                           let urlEncodedArgs = map snd $ sortBy (comparing fst) $ map (second (LBS.drop 1) . C8.span (/='=')) $ C8.split '&' textRemainder
                           case mapM urlDecode urlEncodedArgs of
                             Just rawArgs ->
@@ -295,8 +292,6 @@ sendLongPollJsonResponse clientSocket messagesAndSequences sessionActive =
 sendJsonResponse :: JSON.JSON a => Socket -> JSON.JSObject a -> IO ()
 sendJsonResponse clientSocket jsObject = do
   let encodedData = C8.pack $ JSON.encode jsObject
-  --let encodedData = C8.pack $ "{\"m\":[1,3,\"Joe\"]}"
-  print $ encodedData
   sendAllIgnoreExceptions clientSocket $ LBS.concat [C8.pack
     (
       "HTTP/1.1 200 OK\r\n" ++

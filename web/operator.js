@@ -51,6 +51,17 @@ $(window).bind('load', function() {
 	//$('#login_btn_ok').click();
 
 	$(window).resize(onResize);
+
+	ajaxJsonGetSessionId(
+		function() {
+			// TODO: Make operators use the site-select model
+		},
+		function() {
+			alert("Failed to acquire Session ID");
+
+			resetSession();
+		}
+	);
 });
 
 var loginTabOkActive = false;
@@ -73,22 +84,7 @@ function loginTabOkHandler() {
 			*/
 		}
 
-		ajaxJsonGetSessionId(
-			function() {
-				// site id, name, ...
-				queueAjaxCommand([Messages.OperatorLoginRequestMessage, "virtivia", username, password]);
-
-				// re-enable the OK button
-				loginTabOkActive = false;
-			},
-			function() {
-				alert("Failed to acquire Session ID");
-				nextOutSequence = 0; // reset this to 0
-
-				// re-enable the OK button
-				loginTabOkActive = false;
-			}
-		);
+		queueAjaxCommand([Messages.OperatorLoginRequestMessage, "virtivia", username, password]);
 	}
 }
 
@@ -168,6 +164,10 @@ function handleMessage(message) {
 	}
 }
 
+function handleSessionEnded() {
+	// TODO: Show a screen
+}
+
 var numActiveChats = 0;
 
 function increaseNumActiveChats() {
@@ -192,7 +192,6 @@ function updateActiveChatsLabel() {
 	});
 }
 
-// TODO: unrelated: make the End Chat button a bit smaller
 function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
