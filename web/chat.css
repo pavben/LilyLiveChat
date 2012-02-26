@@ -86,34 +86,3 @@
 	vertical-align:bottom;
 }
 
-/* misc message tab */
-#miscmessage_tab {
-	min-width:400px;
-}
-#miscmessage_box {
-	width:346px;
-	margin-left:auto;
-	margin-right:auto;
-	padding:9px 9px 9px 9px;
-	background-color:#E3E3E3;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-}
-#miscmessage_title {
-	text-align:center;
-	padding:5px 0px 14px 0px;
-	font-size:24px;
-	color:#525252;
-}
-.miscmessage_content_textwrapper {
-	padding:9px 9px 9px 9px;
-	background-color:#ECECEC;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-	color:#606060;
-	line-height:24px;
-}
-.miscmessage_buttontable {
-	margin-top:8px;
-}
-

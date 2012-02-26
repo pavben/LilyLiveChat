@@ -412,6 +412,17 @@ function getScrollTopTarget(theDiv) {
 	}
 }
 
+// NOTE: Do not switch from one miscmessage tab to another! Content is switched BEFORE the fade-out.
+function showMiscMessageTab(title, content, buttons) {
+	$('#miscmessage_title').text(title);
+	$('#miscmessage_content').empty().append(
+		content
+	).append(
+		buttons
+	)
+	changeTabTo(miscMessageTab);
+}
+
 // misc
 function stripPx(text) {
 	return text.replace('px', '');

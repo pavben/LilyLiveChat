@@ -37,11 +37,6 @@
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 }
-#menu_welcomelabel {
-	text-align:center;
-	padding:5px 0px 14px 0px;
-	font-size:24px;
-}
 .menu_option, .menu_optionbig {
 	display:table-cell;
 	height:130px;
@@ -88,6 +83,13 @@
 }
 .menu_logouticon {
 	background-image:url('images/menu_logout.png');
+}
+.menu_buttonlabelbox {
+	border-radius:8px;
+	margin:0px 5px 0px 5px;
+	background:#454545;
+	color:#F4F4F4;
+	text-align:center;
 }
 #chat_table {
 	display:table;
@@ -247,7 +249,7 @@
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;
-	text-align:left;
+	text-align:center;
 }
 .chat_sessionlistsep {
 	height:7px;
