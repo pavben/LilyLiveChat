@@ -33,6 +33,23 @@
 	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 }
+.chat_toprighttable {
+	display:table;
+	width:100%;
+}
+#chat_maincell {
+	display:table-cell;
+	width:641px;
+	height:400px;
+	min-width:641px;
+	padding:9px 9px 9px 9px;
+	background-color:#E3E3E3;
+}
+#chat_rightcell {
+	display:table-cell;
+	width:200px;
+	vertical-align:top;
+}
 .chat_menucell {
 	display:table-cell;
 	background-image:url('images/gtile29.png');
@@ -48,22 +65,9 @@
 	text-overflow:ellipsis;
 	text-align:center;
 }
-.chat_toprighttable {
-	display:table;
-	width:100%;
-}
-#chat_rightcell {
-	display:table-cell;
-	width:200px;
-	vertical-align:top;
-}
-#chat_maincell {
-	display:table-cell;
-	width:641px;
-	height:400px;
-	min-width:641px;
-	padding:9px 9px 9px 9px;
-	background-color:#E3E3E3;
+#chat_menuwrapper {
+	display:none;
+	border-bottom:1px solid #BBBBBB;
 }
 #chat_noopenchatsessionsdiv {
 	padding:9px 9px 9px 9px;
@@ -97,7 +101,7 @@
 .chat_sessionlistcontent {
 	padding:7px 7px 0px 7px;
 }
-.chat_sessionlistbutton_inline, .chat_sessionlistbutton_open {
+.chat_sessionlistbutton_full, .chat_sessionlistbutton_open {
 	height:25px;
 	line-height:25px;
 	font-size:18px;
@@ -112,17 +116,17 @@
 	transition: all 0.1s ease-in-out;
 	vertical-align:top;
 }
-.chat_sessionlistbutton_inline {
+.chat_sessionlistbutton_full {
 	padding:0px 5px 0px 5px;
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;
 	text-align:center;
 }
-.chat_sessionlistbutton_inline:hover, .chat_sessionlistbutton_open:hover {
+.chat_sessionlistbutton_full:hover, .chat_sessionlistbutton_open:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
-.chat_sessionlistbutton_inline:active, .chat_sessionlistbutton_open:active {
+.chat_sessionlistbutton_full:active, .chat_sessionlistbutton_open:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
 .chat_sessionlistbutton_ind_base, .chat_sessionlistbutton_ind_active, .chat_sessionlistbutton_ind_ended {

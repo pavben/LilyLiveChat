@@ -37,6 +37,45 @@ $(window).bind('load', function() {
 		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
 	});
 
+	// chat tab's menu effects
+	var menuSlideTarget = null;
+	var menuSlideBusy = false;
+
+	$('#chat_menuouterwrapper').mouseenter(function() {
+		menuSlideTarget = 1;
+		followSlideTarget();
+	});
+
+	$('#chat_menuouterwrapper').mouseleave(function() {
+		menuSlideTarget = 0;
+		followSlideTarget();
+	});
+
+	function followSlideTarget() {
+		if (!menuSlideBusy) {
+			menuSlideBusy = true;
+
+			if (menuSlideTarget === 0) {
+				$('#chat_menuwrapper').slideUp(400, function() {
+					menuSlideBusy = false;
+
+					if (menuSlideTarget !== 0) {
+						followSlideTarget();
+					}
+				});
+			} else if (menuSlideTarget === 1) {
+				$('#chat_menuwrapper').slideDown(400, function() {
+					menuSlideBusy = false;
+
+					if (menuSlideTarget !== 1) {
+						followSlideTarget();
+					}
+				});
+			}
+		}
+	}
+	// end chat tab's menu effects
+
 	$(window).resize(onResize);
 
 	ajaxJsonGetSessionId(
