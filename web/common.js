@@ -252,21 +252,21 @@ function changeTabTo(tab) {
 		} else {
 			onOldTabGone();
 		}
+	}
 
-		function onOldTabGone() {
-			currentTab = tab;
-			if (currentTab === currentTabTarget) {
-				currentTabTarget = undefined;
-				currentTab.fadeTo(0, 0, function() {
-					onResize();
-					currentTab.fadeTo(600, 1);
-				});
-			} else {
-				// here we reset currentTabTarget to fail the alreadyBusy check
-				var target = currentTabTarget;
-				currentTabTarget = undefined;
-				changeTabTo(target);
-			}
+	function onOldTabGone() {
+		currentTab = tab;
+		if (currentTab === currentTabTarget) {
+			currentTabTarget = undefined;
+			currentTab.fadeTo(0, 0, function() {
+				onResize();
+				currentTab.fadeTo(600, 1);
+			});
+		} else {
+			// here we reset currentTabTarget to fail the alreadyBusy check
+			var target = currentTabTarget;
+			currentTabTarget = undefined;
+			changeTabTo(target);
 		}
 	}
 }

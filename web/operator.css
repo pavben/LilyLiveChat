@@ -25,72 +25,6 @@
 #login_cardtext .inputboxwrapper {
 	margin-bottom:7px;
 }
-#menu_tab {
-	min-width:400px;
-}
-#menu_box {
-	width:346px;
-	margin-left:auto;
-	margin-right:auto;
-	padding:9px 9px 9px 9px;
-	background-color:#E3E3E3;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-}
-.menu_option, .menu_optionbig {
-	display:table-cell;
-	height:130px;
-	vertical-align:bottom;
-}
-.menu_option {
-	width:100px;
-}
-.menu_optionbig {
-	width:130px;
-}
-.menu_icon, .menu_iconbig {
-	width:98px;
-	height:98px;
-	background-color:#ECECEC;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-	vertical-align:top;
-	cursor:pointer;
-	-webkit-transition: all 0.1s ease-in-out;
-	-moz-transition: all 0.1s ease-in-out;
-	-o-transition: all 0.1s ease-in-out;
-	transition: all 0.1s ease-in-out;
-}
-.menu_icon {
-	width:98px;
-	height:98px;
-}
-.menu_iconbig {
-	width:128px;
-	height:128px;
-}
-.menu_icon:hover, .menu_iconbig:hover {
-	box-shadow: 0px 0px 1px 1px #84d3e6;
-}
-.menu_icon:active, .menu_iconbig:active {
-	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
-}
-.menu_settingsicon {
-	background-image:url('images/menu_settings.png');
-}
-.menu_chaticon {
-	background-image:url('images/menu_chat.png');
-}
-.menu_logouticon {
-	background-image:url('images/menu_logout.png');
-}
-.menu_buttonlabelbox {
-	border-radius:8px;
-	margin:0px 5px 0px 5px;
-	background:#454545;
-	color:#F4F4F4;
-	text-align:center;
-}
 #chat_table {
 	display:table;
 	margin-left:auto;
@@ -99,69 +33,29 @@
 	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 }
-.chat_topleftcell {
-	display:table-cell;
-	width:641px;
-	height:29px;
-}
-.chat_topbutton {
+.chat_menucell {
 	display:table-cell;
 	background-image:url('images/gtile29.png');
-	background-repeat:repeat-x;
-	text-shadow:1px 1px 0px #f4f4f4;
-	text-align:center;
-	cursor:pointer;
-	-webkit-transition: all 0.1s ease-in-out;
-	-moz-transition: all 0.1s ease-in-out;
-	-o-transition: all 0.1s ease-in-out;
-	transition: all 0.1s ease-in-out;
-	vertical-align:top;
-}
-.chat_topbutton:hover {
-	box-shadow: 0px 0px 6px 2px #DEDEDE inset;
-}
-.chat_topbutton:active {
-	box-shadow: 0px 0px 6px 2px #BDBDBD inset;
-}
-.chat_topbuttonbackicon {
-	height:29px;
-	width:50px;
-	background-image:url('images/back.png');
-	background-repeat:no-repeat;
-	background-position:center;
-}
-.chat_topbuttonavailableiconcell, .chat_topbuttonunavailableiconcell {
-	display:table-cell;
-	height:29px;
-	width:29px;
-	background-repeat:no-repeat;
-	background-position:center;
-}
-.chat_topbuttonavailableiconcell {
-	background-image:url('images/oper_available.png');
-}
-.chat_topbuttonunavailableiconcell {
-	background-image:url('images/oper_unavailable.png');
-}
-.chat_operstatuscell {
-	display:table-cell;
-	width:150px;
 	vertical-align:middle;
 }
-.chat_operstatus {
-	width:140px;
+.chat_menulabelwidthlimiter {
+	width:180px;
+}
+#chat_menulabel {
 	padding: 0px 5px 0px 5px;
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;
+	text-align:center;
 }
 .chat_toprighttable {
 	display:table;
 	width:100%;
 }
-.chat_toprightcell {
+#chat_rightcell {
 	display:table-cell;
 	width:200px;
+	vertical-align:top;
 }
 #chat_maincell {
 	display:table-cell;
@@ -245,7 +139,7 @@
 	background-image: url('images/sessionbutton_red.png');
 }
 .chat_sessionlistbutton_open_text {
-	padding:0px 5px 0px 0px;
+	padding:0px 21px 0px 0px;
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;

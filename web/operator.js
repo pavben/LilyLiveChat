@@ -1,6 +1,5 @@
 // these will be set onload
 var loginTab = null;
-var menuTab = null;
 var chatTab = null;
 var miscMessageTab = null;
 
@@ -9,7 +8,6 @@ var me = null;
 
 $(window).bind('load', function() {
 	loginTab = $('#login_tab');
-	menuTab = $('#menu_tab');
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
@@ -34,21 +32,9 @@ $(window).bind('load', function() {
 		}
 	});
 
-	// menu tab handlers
-	$('#menu_btn_chat').click(function() {
-		changeTabTo(chatTab);
-	});
-
-	createMenuTooltip($('#menu_btn_settings'), 'Settings');
-	createMenuTooltip($('#menu_btn_chat'), 'Chat');
-	createMenuTooltip($('#menu_btn_logout'), 'Logout');
-
 	// chat tab handlers
 	$('#chat_nextinlinebutton').click(function() {
 		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
-	});
-	$('#chat_btn_back').click(function() {
-		changeTabTo(menuTab);
 	});
 
 	$(window).resize(onResize);
@@ -67,27 +53,6 @@ $(window).bind('load', function() {
 	// TODO: remove
 	$('#login_btn_ok').click();
 });
-
-function createMenuTooltip(button, label) {
-	var buttonLabelBox;
-	button.append(
-		$('<div/>').height(button.height() * 0.35)
-	).append(
-		buttonLabelBox = $('<div/>').addClass('menu_buttonlabelbox')
-			.css('height', Math.floor(button.height() * 0.3) + 'px')
-			.css('font-size', Math.floor(button.height() * 0.2) + 'px')
-			.css('line-height', Math.floor(button.height() * 0.3) + 'px').text(label)
-	);
-
-	buttonLabelBox.fadeTo(0, 0);
-
-	button.mouseenter(function() {
-		buttonLabelBox.stop(true, false).fadeTo(250, 0.7);
-	});
-	button.mouseleave(function() {
-		buttonLabelBox.stop(true, true).fadeTo(1000, 0);
-	});
-}
 
 var loginTabOkActive = false;
 
@@ -127,10 +92,11 @@ function handleMessage(message) {
 				var title = message[2];
 				var iconUrl = message[3];
 				me = new Person(name, color, title, iconUrl);
-				//changeTabTo(menuTab); // TODO: for now, we jump directly to the chat tab
 				changeTabTo(chatTab);
 			}
 			log("Login successful");
+			$('#chat_menulabel').text(name);
+			$('#chat_menulabel').css('color', color);
 			break;
 		case Messages.OperatorLoginFailedMessage:
 			alert("Login failed: Invalid credentials");
@@ -760,8 +726,6 @@ function showCantConnectScreen() {
 function onResize() {
 	if (currentTab == loginTab) {
 		onBasicVCenterResize('login', 600);
-	} else if (currentTab == menuTab) {
-		onBasicVCenterResize('menu', 600);
 	} else if (currentTab == chatTab) {
 		onChatTabResize();
 	} else if (currentTab == miscMessageTab) {

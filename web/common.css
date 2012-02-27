@@ -47,8 +47,7 @@ input {
 	width:1px;
 	background-color:#BBBBBB;
 }
-.hlinecell {
-	display:table-cell;
+.hlinediv {
 	height:1px;
 	background-color:#BBBBBB;
 }
