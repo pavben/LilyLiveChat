@@ -239,7 +239,7 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 var currentTab = null;
 var currentTabTarget = undefined;
 
-function changeTabTo(tab) {
+function changeTabTo(tab, onTabLoadCallback) {
 	var alreadyBusy = (currentTabTarget !== undefined);
 
 	currentTabTarget = tab;
@@ -260,6 +260,9 @@ function changeTabTo(tab) {
 			currentTabTarget = undefined;
 			currentTab.fadeTo(0, 0, function() {
 				onResize();
+				if (onTabLoadCallback) {
+					onTabLoadCallback();
+				}
 				currentTab.fadeTo(600, 1);
 			});
 		} else {

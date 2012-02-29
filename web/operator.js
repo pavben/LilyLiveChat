@@ -124,9 +124,13 @@ function handleMessage(message) {
 			var siteName = message[0];
 			var siteActive = message[1]; // we don't care if it's active or not for operators
 
+			// set the proper login box title
 			$('#login_operloginlabel').text(siteName + ' Operator Login');
 
-			changeTabTo(loginTab);
+			changeTabTo(loginTab, function () {
+				// focus the username box
+				$('#login_username').focus();
+			});
 
 			// Auto-login
 			//$('#login_btn_ok').click();
@@ -152,7 +156,7 @@ function handleMessage(message) {
 			$('#chat_menulabel').css('color', color);
 			break;
 		case Messages.OperatorLoginFailedMessage:
-			alert("Login failed: Invalid credentials");
+			showLoginFailedScreen();
 			break;
 		case Messages.OperatorLineStatusDetailsMessage:
 			var name = message[0];
@@ -720,6 +724,33 @@ function chatSessionIdToObject(prefix, chatSessionId) {
 	}
 
 	return $(divId);
+}
+
+function showLoginFailedScreen() {
+	showMiscMessageTab('No match...',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('Can\'t remember? Contact your administrator.')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '100px').append(
+					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
+						window.location.reload();
+					})
+				)
+			).append(
+				$('<div/>').addClass('cell').css('width', '7px')
+			).append(
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Close').click(function() {
+						window.close();
+					})
+				)
+			)
+		)
+	);
 }
 
 function showInvalidSiteScreen() {
