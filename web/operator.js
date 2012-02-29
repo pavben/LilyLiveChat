@@ -80,8 +80,7 @@ $(window).bind('load', function() {
 
 	ajaxJsonGetSessionId(
 		function() {
-			// TODO: Make operators use the site-select model
-			changeTabTo(loginTab);
+			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, 'virtivia']);
 		},
 		function() {
 			resetSession();
@@ -89,8 +88,6 @@ $(window).bind('load', function() {
 			showCantConnectScreen();
 		}
 	);
-	// TODO: remove
-	$('#login_btn_ok').click();
 });
 
 var loginTabOkActive = false;
@@ -102,6 +99,7 @@ function loginTabOkHandler() {
 		var username = $.trim($('#login_username').val());
 		var password = $.trim($('#login_password').val());
 
+		// TODO: replace this check with the appropriate enabling/disabling of the login button
 		if (username.length == 0 || password.length == 0) {
 			// TODO: REMOVE THIS DEV CODE
 			username = "mike";
@@ -113,7 +111,7 @@ function loginTabOkHandler() {
 			*/
 		}
 
-		queueAjaxCommand([Messages.OperatorLoginRequestMessage, "virtivia", username, password]);
+		queueAjaxCommand([Messages.OperatorLoginRequestMessage, username, password]);
 	}
 }
 
@@ -122,6 +120,22 @@ function handleMessage(message) {
 	log("Msg Type Id: " + messageTypeId);
 	log(message);
 	switch (messageTypeId) {
+		case Messages.UnregisteredSiteSelectedMessage:
+			var siteName = message[0];
+			var siteActive = message[1]; // we don't care if it's active or not for operators
+
+			$('#login_operloginlabel').text(siteName + ' Operator Login');
+
+			changeTabTo(loginTab);
+
+			// Auto-login
+			//$('#login_btn_ok').click();
+			break;
+		case Messages.UnregisteredSiteInvalidMessage:
+			// display the invalid site screen
+			showInvalidSiteScreen();
+
+			break;
 		case Messages.SomethingWentWrongMessage:
 			break;
 		case Messages.OperatorLoginSuccessMessage:
@@ -706,6 +720,25 @@ function chatSessionIdToObject(prefix, chatSessionId) {
 	}
 
 	return $(divId);
+}
+
+function showInvalidSiteScreen() {
+	showMiscMessageTab('Invalid Site',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('The site you\'ve specified isn\'t registered with LilyLiveChat.')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Close').click(function() {
+						window.close();
+					})
+				)
+			)
+		)
+	);
 }
 
 function showDisconnectedScreen() {

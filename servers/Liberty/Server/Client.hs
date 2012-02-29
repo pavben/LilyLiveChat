@@ -107,13 +107,13 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar = do
         Nothing ->
           case (messageType,params) of
             (UnregisteredSelectSiteMessage,[siteId]) -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
-            (OperatorLoginRequestMessage,[siteId,username,password]) -> handleOperatorLoginRequest siteId username password clientDataTVar siteMapTVar
             _ -> do
               putStrLn "Client (Unregistered) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
           case (messageType,params) of
             (CustomerJoinMessage,[name,color,icon]) -> handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar
+            (OperatorLoginRequestMessage,[username,password]) -> handleOperatorLoginRequest username password clientDataTVar siteDataTVar
             _ -> do
               putStrLn "Client (Unregistered, with site selected) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
@@ -173,51 +173,44 @@ handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomical
     createAndSendMessage (CustomerNoOperatorsAvailableMessage,[]) clientDataTVar
     closeClientSocket clientDataTVar
 
-handleOperatorLoginRequest :: SiteId -> Text -> Text -> ClientDataTVar -> SiteMapTVar -> IO ()
-handleOperatorLoginRequest siteId username password clientDataTVar siteMapTVar =
+handleOperatorLoginRequest :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
   let
     matchSiteOperatorCredentials siteOperatorInfo = (sodUsername siteOperatorInfo == username) && (sodPassword siteOperatorInfo == password)
   in
     atomically $ do
-      siteMap <- readTVar siteMapTVar
-      case Map.lookup siteId siteMap of
-        Just siteDataTVar -> do
-          -- read the site data
-          siteData <- readTVar siteDataTVar
-          -- see if any operators match the given credentials
-          maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
-            [siteOperatorInfo] -> do
-              -- Successful match
-              return $ Just siteOperatorInfo
-            [] -> do
-              -- No match
-              return Nothing
-            _ -> do
-              -- Multiple match -- data integrity error
-              return Nothing
+      -- read the site data
+      siteData <- readTVar siteDataTVar
+      -- see if any operators match the given credentials
+      maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
+        [siteOperatorInfo] -> do
+          -- Successful match
+          return $ Just siteOperatorInfo
+        [] -> do
+          -- No match
+          return Nothing
+        _ -> do
+          -- Multiple match -- data integrity error
+          return Nothing
 
-          case maybeSiteOperatorInfo of
-            Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
-              -- Operator login successful
-              -- update the site, adding the operator to it
-              let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
-              writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
+      case maybeSiteOperatorInfo of
+        Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
+          -- Operator login successful
+          -- update the site, adding the operator to it
+          let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
+          writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
 
-              -- update the client, associating it with the site
-              clientData <- readTVar clientDataTVar
-              writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
-              createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
+          -- update the client, associating it with the site
+          clientData <- readTVar clientDataTVar
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
+          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
 
-              -- send the line status
-              lineStatusInfo <- getLineStatusInfo siteDataTVar
-              sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
-            Nothing -> do
-              -- Operator login failed: Invalid credentials
-              createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
-              closeClientSocket clientDataTVar
+          -- send the line status
+          lineStatusInfo <- getLineStatusInfo siteDataTVar
+          sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
         Nothing -> do
-          -- Invalid site
-          createAndSendMessage (SomethingWentWrongMessage, []) clientDataTVar
+          -- Operator login failed: Invalid credentials
+          createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
 
 handleCustomerSendChatMessage :: Text -> ClientCustomerData -> IO ()
