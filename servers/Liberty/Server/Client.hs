@@ -182,7 +182,7 @@ handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
       -- read the site data
       siteData <- readTVar siteDataTVar
       -- see if any operators match the given credentials
-      maybeSiteOperatorInfo <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
+      maybeSiteOperatorData <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
         [siteOperatorInfo] -> do
           -- Successful match
           return $ Just siteOperatorInfo
@@ -193,8 +193,8 @@ handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
           -- Multiple match -- data integrity error
           return Nothing
 
-      case maybeSiteOperatorInfo of
-        Just (SiteOperatorInfo _ _ name color title iconUrl) -> do
+      case maybeSiteOperatorData of
+        Just (SiteOperatorData _ _ _ name color title iconUrl) -> do
           -- Operator login successful
           -- update the site, adding the operator to it
           let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData

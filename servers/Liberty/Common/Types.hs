@@ -30,6 +30,36 @@ data MessageType = CustomerJoinMessage
                  | UnregisteredSiteSelectedMessage
                  | UnregisteredSiteInvalidMessage
                  | CustomerNoOperatorsAvailableMessage
+                 | AdminLoginRequestMessage
+                 | AdminOperatorCreateMessage
+                 | AdminOperatorReplaceMessage
+                 | AdminOperatorDeleteMessage
+                 | AdminLoginSuccessMessage
+                 | AdminLoginFailedMessage
+                 | AdminSiteInfoMessage
+                 | AdminOperatorDetailsStartMessage
+                 | AdminOperatorDetailsMessage
+                 | AdminOperatorDetailsEndMessage
+                 | AdminOperatorCreateSuccessMessage
+                 | AdminOperatorCreateFailedMessage
+                 | AdminOperatorReplaceSuccessMessage
+                 | AdminOperatorReplaceFailedMessage
+                 | AdminAdminDetailsStartMessage
+                 | AdminAdminDetailsMessage
+                 | AdminAdminDetailsEndMessage
+                 | SALoginRequestMessage
+                 | SASiteCreateMessage
+                 | SASiteDeleteMessage
+                 | SAGetSiteInfoMessage
+                 | SASetExpiryTimestampMessage
+                 | SALoginSuccessMessage
+                 | SALoginFailedMessage
+                 | SASiteCreateSuccessMessage
+                 | SASiteCreateFailedMessage
+                 | SASiteDeleteSuccessMessage
+                 | SASiteDeleteFailedMessage
+                 | SASiteInfoMessage
+                 | SASetExpiryTimestampSuccessMessage
   deriving (Show, Eq, Ord)
 
 type Message = (MessageType, [Text])

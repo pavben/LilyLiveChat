@@ -24,7 +24,7 @@ Server to Customer
 
 Operator to Server
 ================================================================
-8  - OperatorLoginRequestMessage [siteId, username, password]
+8  - OperatorLoginRequestMessage [username, password]
 13 - OperatorAcceptNextChatSessionMessage
 16 - OperatorSendChatMessage [session id, text]
 17 - OperatorEndingChatMessage [session id]
@@ -38,4 +38,47 @@ Server to Operator
 14 - OperatorNowTalkingToMessage [session id, name, color, iconUrl]
 15 - OperatorReceiveChatMessage [session id, text]
 18 - OperatorChatEndedMessage [session id]
+
+Admin to Server
+================================================================
+24 - AdminLoginRequestMessage [username, password]
+25 - AdminOperatorCreateMessage [username, password, name, color, title, icon]
+26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, icon]
+27 - AdminOperatorDeleteMessage [operatorId]
+
+Server to Admin
+================================================================
+28 - AdminLoginSuccessMessage
+29 - AdminLoginFailedMessage
+30 - AdminSiteInfoMessage [name] -- more fields?
+31 - AdminOperatorDetailsStartMessage
+32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, icon]
+33 - AdminOperatorDetailsEndMessage
+34 - AdminOperatorCreateSuccessMessage
+35 - AdminOperatorCreateFailedMessage
+36 - AdminOperatorReplaceSuccessMessage
+37 - AdminOperatorReplaceFailedMessage
+38 - AdminAdminDetailsStartMessage
+39 - AdminAdminDetailsMessage [adminId, username]
+40 - AdminAdminDetailsEndMessage
+
+SA to Server
+================================================================
+41 - SALoginRequestMessage
+42 - SASiteCreateMessage [siteId, name, expiryTimestamp, adminUsername, adminPassword]
+43 - SASiteDeleteMessage [siteId]
+44 - SAGetSiteInfoMessage [siteId]
+45 - SASetExpiryTimestampMessage [siteId, expiryTimestamp]
+
+Server to SA
+================================================================
+46 - SALoginSuccessMessage
+47 - SALoginFailedMessage
+48 - SASiteCreateSuccessMessage
+49 - SASiteCreateFailedMessage
+50 - SASiteDeleteSuccessMessage
+51 - SASiteDeleteFailedMessage
+52 - SASiteInfoMessage [siteId, name, expiryTimestamp]
+53 - SASetExpiryTimestampSuccessMessage
+
 

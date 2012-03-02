@@ -11,8 +11,8 @@ main :: IO ()
 main = do
   putStrLn "Server starting..."
   -- database
-  databaseHandleTVar <- initializeDatabaseManager
-  _ <- forkIO $ runDatabaseManager databaseHandleTVar
+  (databaseHandleTVar, databaseOperationQueueChan) <- initializeDatabaseManager
+  _ <- forkIO $ runDatabaseManager databaseHandleTVar databaseOperationQueueChan
   -- site map
   siteMap <- doUntilSuccess (initializeSiteMap databaseHandleTVar) (1000 * 1000)
   putStrLn "SiteMap loaded"

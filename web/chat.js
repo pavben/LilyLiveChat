@@ -620,8 +620,8 @@ $(window).bind('load', function() {
 			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, "virtivia"]);
 
 			// TEMP: remove this
-			$('#welcome_btn_ok').click();
-			setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
+			//$('#welcome_btn_ok').click();
+			//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 		},
 		function() {
 			resetSession();

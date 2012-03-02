@@ -12,10 +12,13 @@ module Liberty.Server.Types (
   ClientDataTVar,
   SiteId,
   SiteData(..),
-  SiteOperatorInfo(..),
+  SiteOperatorData(..),
+  SiteAdminData(..),
   SiteDataTVar,
   ClientSendChanMessage(..),
   ClientSendChan,
+  DatabaseOperationQueueChanMessage(..),
+  DatabaseOperationQueueChan,
   module Liberty.Common.Types
 ) where
 import Control.Concurrent.STM.TChan
@@ -68,12 +71,17 @@ type SiteId = Text
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text,
+  sdExpiryTimestamp :: Integer,
+  sdNextOperatorId :: Integer,
+  sdOperators :: [SiteOperatorData],
+  sdNextAdminId :: Integer,
+  sdAdmins :: [SiteAdminData],
   sdSessionsWaiting :: [ChatSessionTVar],
-  sdOperators :: [SiteOperatorInfo],
   sdOnlineOperators :: [ClientDataTVar],
   sdNextSessionId :: Integer
 } deriving (Show)
-data SiteOperatorInfo = SiteOperatorInfo {
+data SiteOperatorData = SiteOperatorData {
+  sodOperatorId :: Integer,
   sodUsername :: Text,
   sodPassword :: Text,
   sodName :: Text,
@@ -81,12 +89,21 @@ data SiteOperatorInfo = SiteOperatorInfo {
   sodTitle :: Text,
   sodIconUrl :: Text
 } deriving (Show)
+data SiteAdminData = SiteAdminData {
+  sadAdminId :: Integer,
+  sadUsername :: Text,
+  sadPassword :: Text
+} deriving (Show)
 
 type SiteDataTVar = TVar SiteData
 
 -- ClientSendChan
 data ClientSendChanMessage = SendMessage EncodedMessage | CloseSocket
 type ClientSendChan = TChan ClientSendChanMessage
+
+-- DatabaseOperationQueue
+data DatabaseOperationQueueChanMessage = SaveSite SiteData
+type DatabaseOperationQueueChan = TChan DatabaseOperationQueueChanMessage
 
 -- Show instances
 instance Show (TVar a) where
