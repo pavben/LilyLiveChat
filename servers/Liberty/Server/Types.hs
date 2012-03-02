@@ -6,6 +6,7 @@ module Liberty.Server.Types (
   OtherClientData(..),
   ClientCustomerData(..),
   ClientOperatorData(..),
+  ClientAdminData(..),
   ChatSession(..),
   ChatSessionTVar,
   ChatOperatorEntry(..),
@@ -36,7 +37,7 @@ data ClientData = ClientData {
   cdSendChan :: ClientSendChan,
   cdOtherData :: OtherClientData
 } deriving (Show)
-data OtherClientData = OCDClientUnregistered (Maybe SiteDataTVar) | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData
+data OtherClientData = OCDClientUnregistered (Maybe SiteDataTVar) | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData | OCDClientAdminData ClientAdminData
   deriving (Show)
 data ClientCustomerData = ClientCustomerData {
   ccdName :: Text,
@@ -52,6 +53,9 @@ data ClientOperatorData = ClientOperatorData {
   codIconUrl :: Text,
   codSiteDataTVar :: SiteDataTVar,
   codChatSessions :: [ChatSessionTVar]
+} deriving (Show)
+data ClientAdminData = ClientAdminData {
+  cadSiteDataTVar :: SiteDataTVar
 } deriving (Show)
 data ChatSession = ChatSession {
   csId :: Integer,
@@ -78,6 +82,7 @@ data SiteData = SiteData {
   sdAdmins :: [SiteAdminData],
   sdSessionsWaiting :: [ChatSessionTVar],
   sdOnlineOperators :: [ClientDataTVar],
+  sdOnlineAdmins :: [ClientDataTVar],
   sdNextSessionId :: Integer
 } deriving (Show)
 data SiteOperatorData = SiteOperatorData {

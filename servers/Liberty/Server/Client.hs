@@ -114,6 +114,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar = do
           case (messageType,params) of
             (CustomerJoinMessage,[name,color,icon]) -> handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar
             (OperatorLoginRequestMessage,[username,password]) -> handleOperatorLoginRequest username password clientDataTVar siteDataTVar
+            (AdminLoginRequestMessage,[username,password]) -> handleAdminLoginRequest username password clientDataTVar siteDataTVar
             _ -> do
               putStrLn "Client (Unregistered, with site selected) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
@@ -135,6 +136,11 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar = do
           Nothing -> atomically $ closeClientSocket clientDataTVar
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
+          atomically $ closeClientSocket clientDataTVar
+    OCDClientAdminData clientAdminData ->
+      case (messageType,params) of
+        _ -> do
+          putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
 
 handleUnregisteredSelectSiteMessage :: SiteId -> ClientDataTVar -> SiteMapTVar -> IO ()
@@ -176,16 +182,16 @@ handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomical
 handleOperatorLoginRequest :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
   let
-    matchSiteOperatorCredentials siteOperatorInfo = (sodUsername siteOperatorInfo == username) && (sodPassword siteOperatorInfo == password)
+    matchSiteOperatorCredentials siteOperatorData = (sodUsername siteOperatorData == username) && (sodPassword siteOperatorData == password)
   in
     atomically $ do
       -- read the site data
       siteData <- readTVar siteDataTVar
       -- see if any operators match the given credentials
       maybeSiteOperatorData <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
-        [siteOperatorInfo] -> do
+        [siteOperatorData] -> do
           -- Successful match
-          return $ Just siteOperatorInfo
+          return $ Just siteOperatorData
         [] -> do
           -- No match
           return Nothing
@@ -211,6 +217,42 @@ handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
         Nothing -> do
           -- Operator login failed: Invalid credentials
           createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+          closeClientSocket clientDataTVar
+
+handleAdminLoginRequest :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleAdminLoginRequest username password clientDataTVar siteDataTVar =
+  let
+    matchSiteAdminCredentials siteAdminData = (sadUsername siteAdminData == username) && (sadPassword siteAdminData == password)
+  in
+    atomically $ do
+      -- read the site data
+      siteData <- readTVar siteDataTVar
+      -- see if any admins match the given credentials
+      maybeSiteAdminData <- case filter matchSiteAdminCredentials $ sdAdmins siteData of
+        [siteAdminData] -> do
+          -- Successful match
+          return $ Just siteAdminData
+        [] -> do
+          -- No match
+          return Nothing
+        _ -> do
+          -- Multiple match -- data integrity error
+          return Nothing
+
+      case maybeSiteAdminData of
+        Just (SiteAdminData _ _ _) -> do
+          -- Admin login successful
+          -- update the site, adding the admin to it
+          let newOnlineAdmins = clientDataTVar : sdOnlineAdmins siteData
+          writeTVar siteDataTVar $ siteData { sdOnlineAdmins = newOnlineAdmins }
+
+          -- update the client, associating it with the site
+          clientData <- readTVar clientDataTVar
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientAdminData $ ClientAdminData siteDataTVar }
+          createAndSendMessage (AdminLoginSuccessMessage, []) clientDataTVar
+        Nothing -> do
+          -- Admin login failed: Invalid credentials
+          createAndSendMessage (AdminLoginFailedMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
 
 handleCustomerSendChatMessage :: Text -> ClientCustomerData -> IO ()
@@ -324,6 +366,7 @@ handleClientExitEvent clientDataTVar = do
           sdOnlineOperators = filter (/= clientDataTVar) $ sdOnlineOperators siteData
         }
         onlineOperatorsListUpdated siteDataTVar
+      OCDClientAdminData _ -> return () -- currently nothing to do for admins
       OCDClientUnregistered _ -> return () -- nothing to cleanup
 
 waitingListUpdated :: SiteDataTVar -> STM ()

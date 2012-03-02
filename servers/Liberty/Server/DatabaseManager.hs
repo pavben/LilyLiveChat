@@ -175,7 +175,7 @@ getSiteDataFromDb databaseHandleTVar = do
                 ) admins
             in
               case (,) <$> maybeOperatorDatas <*> maybeAdminDatas of
-                Just (siteOperatorDatas, siteAdminDatas) -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas nextAdminId siteAdminDatas [] [] 0
+                Just (siteOperatorDatas, siteAdminDatas) -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas nextAdminId siteAdminDatas [] [] [] 0
                 Nothing -> Nothing
           Nothing -> Nothing
         ) siteDocs
@@ -189,7 +189,6 @@ queueSaveSiteData siteData databaseOperationQueueChan = writeTChan databaseOpera
 
 saveSiteData :: SiteData -> DatabaseHandleTVar -> IO Bool
 saveSiteData siteData databaseHandleTVar = do
-  putStrLn $ "Saving: " ++ show siteData
   actionResult <- runAction databaseHandleTVar (
     repsert (
       select
@@ -223,7 +222,9 @@ saveSiteData siteData databaseHandleTVar = do
     )
 
   case actionResult of
-    Just _ -> return True
+    Just _ -> do
+      putStrLn $ "Site data saved: " ++ show siteData
+      return True
     Nothing -> do
       putStrLn $ "Error saving site data: " ++ show siteData
       return False
