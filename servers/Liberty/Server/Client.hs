@@ -20,19 +20,20 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Utils
+import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
 import Prelude hiding (catch)
 import Safe
 
-initializeClient :: Socket -> SiteMapTVar -> IO ()
-initializeClient clientSocket siteMapTVar = do
+initializeClient :: Socket -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
+initializeClient clientSocket siteMapTVar databaseOperationQueueChan = do
   clientSendChan <- atomically $ newTChan
   clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan (OCDClientUnregistered Nothing))
   finally
     (do
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
-      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar
+      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar databaseOperationQueueChan
     )
     (do
       atomically $ writeTChan clientSendChan $ CloseSocket
@@ -65,15 +66,15 @@ clientSocketSendLoop clientSendChan clientDataTVar = do
       sClose clientSocket
 
 -- TODO: DoS vulnerability: Filling the buffer until out of memory
-clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> IO ()
-clientSocketReadLoop clientDataTVar buffer siteMapTVar = do
+clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
+clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueChan = do
   case parseMessage buffer of
     Just (maybeMessage, newBuffer) ->
       case maybeMessage of
         Just message -> do
           putStrLn $ "Msg: " ++ show message
-          handleMessage message clientDataTVar siteMapTVar
-          clientSocketReadLoop clientDataTVar newBuffer siteMapTVar
+          handleMessage message clientDataTVar siteMapTVar databaseOperationQueueChan
+          clientSocketReadLoop clientDataTVar newBuffer siteMapTVar databaseOperationQueueChan
         Nothing -> do
           putStrLn "No valid message in current buffer yet"
           clientData <- atomically $ readTVar clientDataTVar
@@ -92,14 +93,14 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar = do
           case maybeReceivedData of
             Just receivedData ->
               -- now that we've received some data, loop around and try parsing it
-              clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar
+              clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar databaseOperationQueueChan
             Nothing ->
               putStrLn $ "Client disconnecting -- recv returned nothing"
     Nothing ->
       putStrLn "Client disconnecting due to a protocol violation"
 
-handleMessage :: Message -> ClientDataTVar -> SiteMapTVar -> IO ()
-handleMessage (messageType, params) clientDataTVar siteMapTVar = do
+handleMessage :: Message -> ClientDataTVar -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
+handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperationQueueChan = do
   clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
     OCDClientUnregistered maybeSiteDataTVar ->
@@ -113,8 +114,8 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar = do
         Just siteDataTVar ->
           case (messageType,params) of
             (CustomerJoinMessage,[name,color,icon]) -> handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar
-            (OperatorLoginRequestMessage,[username,password]) -> handleOperatorLoginRequest username password clientDataTVar siteDataTVar
-            (AdminLoginRequestMessage,[username,password]) -> handleAdminLoginRequest username password clientDataTVar siteDataTVar
+            (OperatorLoginRequestMessage,[username,password]) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
+            (AdminLoginRequestMessage,[username,password]) -> handleAdminLoginRequestMessage username password clientDataTVar siteDataTVar
             _ -> do
               putStrLn "Client (Unregistered, with site selected) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
@@ -139,6 +140,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar = do
           atomically $ closeClientSocket clientDataTVar
     OCDClientAdminData clientAdminData ->
       case (messageType,params) of
+        (AdminOperatorCreateMessage,[username,password,name,color,title,icon]) -> handleAdminOperatorCreateMessage username password name color title icon clientDataTVar databaseOperationQueueChan
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -179,8 +181,8 @@ handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomical
     createAndSendMessage (CustomerNoOperatorsAvailableMessage,[]) clientDataTVar
     closeClientSocket clientDataTVar
 
-handleOperatorLoginRequest :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
+handleOperatorLoginRequestMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar =
   let
     matchSiteOperatorCredentials siteOperatorData = (sodUsername siteOperatorData == username) && (sodPassword siteOperatorData == password)
   in
@@ -219,8 +221,8 @@ handleOperatorLoginRequest username password clientDataTVar siteDataTVar =
           createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
           closeClientSocket clientDataTVar
 
-handleAdminLoginRequest :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleAdminLoginRequest username password clientDataTVar siteDataTVar =
+handleAdminLoginRequestMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleAdminLoginRequestMessage username password clientDataTVar siteDataTVar =
   let
     matchSiteAdminCredentials siteAdminData = (sadUsername siteAdminData == username) && (sadPassword siteAdminData == password)
   in
@@ -346,6 +348,10 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars = do
     case matchedSessions of
       [chatSessionTVar] -> endChatSession chatSessionTVar
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
+
+handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
+handleAdminOperatorCreateMessage username password name color title icon clientDataTVar databaseOperationQueueChan = do
+  putStrLn "TODO"
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do

@@ -405,10 +405,10 @@ function getChatSessionData(chatSessionId) {
 	var mainCell = $('#chat_maincell_' + chatSessionId);
 	
 	if (mainCell.length !== 0) {
-		if (mainCell[0].libertyData === undefined) {
-			mainCell[0].libertyData = {}; // create a new object
+		if (mainCell[0].lilyData === undefined) {
+			mainCell[0].lilyData = {}; // create a new object
 		}
-		return mainCell[0].libertyData;
+		return mainCell[0].lilyData;
 	} else {
 		return null; // invalid chat session
 	}

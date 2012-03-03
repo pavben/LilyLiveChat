@@ -1,0 +1,25 @@
+#login_tab {
+	min-width:400px;
+}
+#login_box {
+	width:320px;
+	margin-left:auto;
+	margin-right:auto;
+	padding:9px 9px 9px 9px;
+	background-color:#E3E3E3;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#login_adminloginlabel {
+	padding:2px 0px 7px 0px;
+	font-size:18px;
+	color:#454545;
+	word-wrap:break-word;
+	text-align:center;
+}
+#login_logintable {
+	margin-top:6px;
+}
+#login_cardtext .inputboxwrapper {
+	margin-bottom:7px;
+}

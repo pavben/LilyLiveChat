@@ -1,4 +1,4 @@
-function liberty_launchChat() {
+function lilyLiveChat_launch() {
 	var sid = 98323;
 	var wW = 659;
 	var wH = 659;

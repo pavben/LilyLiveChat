@@ -6,11 +6,11 @@ import Control.Exception
 import Network.Socket
 import Prelude hiding (catch)
 import Liberty.Server.Client
-import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
+import Liberty.Server.Types
 
-runClientDispatcher :: DatabaseHandleTVar -> SiteMapTVar -> IO ()
-runClientDispatcher databaseHandleTVar siteMapTVar = do
+runClientDispatcher :: DatabaseOperationQueueChan -> SiteMapTVar -> IO ()
+runClientDispatcher databaseOperationQueueChan siteMapTVar = do
   eitherListenerSocket <- try $ socket AF_INET Stream 0 -- create the socket
   case eitherListenerSocket of
     Right listenerSocket ->
@@ -18,7 +18,7 @@ runClientDispatcher databaseHandleTVar siteMapTVar = do
       (finally
         (do
           initializeListenerSocket listenerSocket 9801
-          acceptLoop listenerSocket siteMapTVar
+          acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -31,7 +31,7 @@ runClientDispatcher databaseHandleTVar siteMapTVar = do
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
-      runClientDispatcher databaseHandleTVar siteMapTVar
+      runClientDispatcher databaseOperationQueueChan siteMapTVar
 
 -- Exceptions handled by caller
 initializeListenerSocket :: Socket -> PortNumber -> IO ()
@@ -42,11 +42,11 @@ initializeListenerSocket listenerSocket portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> SiteMapTVar -> IO ()
-acceptLoop listenerSocket siteMapTVar = do
+acceptLoop :: Socket -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
+acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ initializeClient clientSocket siteMapTVar
+  _ <- forkIO $ initializeClient clientSocket siteMapTVar databaseOperationQueueChan
   -- and loop around
-  acceptLoop listenerSocket siteMapTVar
+  acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan
 

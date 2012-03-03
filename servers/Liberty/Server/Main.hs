@@ -18,7 +18,7 @@ main = do
   putStrLn "SiteMap loaded"
   -- TODO: unrelated: use transactions when exiting and saving siteMap to the database... delete all and write all
   -- client dispatcher
-  _ <- forkIO $ runClientDispatcher databaseHandleTVar siteMap
+  _ <- forkIO $ runClientDispatcher databaseOperationQueueChan siteMap
   -- TODO: go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
   forever $ threadDelay (10000 * 1000)
 

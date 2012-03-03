@@ -59,7 +59,19 @@ data MessageType = CustomerJoinMessage
                  | SASiteDeleteSuccessMessage
                  | SASiteDeleteFailedMessage
                  | SASiteInfoMessage
+                 | SASiteInfoFailedMessage
                  | SASetExpiryTimestampSuccessMessage
+                 | AdminAdminCreateMessage
+                 | AdminAdminReplaceMessage
+                 | AdminAdminDeleteMessage
+                 | AdminAdminCreateSuccessMessage
+                 | AdminAdminCreateFailedMessage
+                 | AdminAdminReplaceSuccessMessage
+                 | AdminAdminReplaceFailedMessage
+                 | AdminOperatorDeleteSuccessMessage
+                 | AdminOperatorDeleteFailedMessage
+                 | AdminAdminDeleteSuccessMessage
+                 | AdminAdminDeleteFailedMessage
   deriving (Show, Eq, Ord)
 
 type Message = (MessageType, [Text])
