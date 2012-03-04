@@ -145,6 +145,9 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
         (AdminOperatorReplaceMessage,[operatorIdT,username,password,name,color,title,iconUrl]) -> case parseIntegral operatorIdT of
           Just operatorId -> handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan
           Nothing -> atomically $ closeClientSocket clientDataTVar
+        (AdminOperatorDeleteMessage,[operatorIdT]) -> case parseIntegral operatorIdT of
+          Just operatorId -> handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan
+          Nothing -> atomically $ closeClientSocket clientDataTVar
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -206,7 +209,7 @@ handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar 
           return Nothing
 
       case maybeSiteOperatorData of
-        Just (SiteOperatorData _ _ _ name color title iconUrl) -> do
+        Just (SiteOperatorData operatorId _ _ name color title iconUrl) -> do
           -- Operator login successful
           -- update the site, adding the operator to it
           let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
@@ -214,7 +217,7 @@ handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar 
 
           -- update the client, associating it with the site
           clientData <- readTVar clientDataTVar
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData name color title iconUrl siteDataTVar [] }
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData operatorId name color title iconUrl siteDataTVar [] }
           createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
 
           -- send the line status
@@ -409,6 +412,45 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
           -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
           createAndSendMessage (AdminOperatorReplaceFailedMessage,[]) clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
+
+handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
+handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan =
+  atomically $ do
+    clientData <- readTVar clientDataTVar
+    case cdOtherData clientData of
+      OCDClientAdminData clientAdminData -> do
+        let siteDataTVar = cadSiteDataTVar clientAdminData
+        siteData <- readTVar siteDataTVar
+        let (operatorsRemoved, remainingOperators) = partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData)
+        if length operatorsRemoved == 1 then do
+          -- exactly 1 operator matched the search
+          -- see if the deleted operator is currently online and kick them out if so
+          forM_ (sdOnlineOperators siteData) (\operatorClientDataTVar -> do
+            currentOperatorClientData <- readTVar operatorClientDataTVar
+            case cdOtherData currentOperatorClientData of
+              OCDClientOperatorData clientOperatorData ->
+                if codOperatorId clientOperatorData == operatorId then
+                  -- disconnect the matching operator
+                  closeClientSocket operatorClientDataTVar
+                else
+                  -- do nothing
+                  return ()
+              _ -> return $ trace "ASSERT: Expecting OCDClientOperatorData in handleAdminOperatorDeleteMessage" ()
+            )
+          -- save siteDataTVar with remainingOperators
+          writeTVar siteDataTVar $ siteData {
+            sdOperators = remainingOperators
+          }
+          -- save to the database
+          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+          -- respond to the admin who issued the delete command
+          createAndSendMessage (AdminOperatorDeleteSuccessMessage,[]) clientDataTVar
+          -- notify the admins with the new list
+          sendOperatorsListToAdmins siteDataTVar
+        else
+          -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
+          createAndSendMessage (AdminOperatorDeleteFailedMessage,[]) clientDataTVar
+      _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorDeleteMessage" ()
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do

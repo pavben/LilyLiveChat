@@ -47,6 +47,7 @@ data ClientCustomerData = ClientCustomerData {
   ccdChatSessionTVar :: ChatSessionTVar
 } deriving (Show)
 data ClientOperatorData = ClientOperatorData {
+  codOperatorId :: Integer,
   codName :: Text,
   codColor :: Text,
   codTitle :: Text,
