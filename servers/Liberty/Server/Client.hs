@@ -138,7 +138,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
-    OCDClientAdminData clientAdminData ->
+    OCDClientAdminData _ ->
       case (messageType,params) of
         (AdminOperatorCreateMessage,[username,password,name,color,title,icon]) -> handleAdminOperatorCreateMessage username password name color title icon clientDataTVar databaseOperationQueueChan
         _ -> do
@@ -350,8 +350,52 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars = do
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
 handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
-handleAdminOperatorCreateMessage username password name color title icon clientDataTVar databaseOperationQueueChan = do
-  putStrLn "TODO"
+handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
+  atomically $ do
+    clientData <- readTVar clientDataTVar
+    case cdOtherData clientData of
+      OCDClientAdminData clientAdminData -> do
+        let siteDataTVar = cadSiteDataTVar clientAdminData
+        siteData <- readTVar siteDataTVar
+        if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
+          let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username password name color title iconUrl
+          -- save siteDataTVar with the new operator and sdNextOperatorId
+          writeTVar siteDataTVar $ siteData {
+            sdOperators = newSiteOperatorData : sdOperators siteData,
+            sdNextOperatorId = sdNextOperatorId siteData + 1
+          }
+          -- save to the database
+          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+          -- respond to the admin who issued the create command
+          createAndSendMessage (AdminOperatorCreateSuccessMessage,[]) clientDataTVar
+          -- notify the admins with the new list
+          sendOperatorsListToAdmins siteDataTVar
+        else
+          createAndSendMessage (AdminOperatorCreateFailedMessage,[]) clientDataTVar
+      _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
+
+sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
+sendOperatorsListToAdmins siteDataTVar = do
+  -- read the site data
+  siteData <- readTVar siteDataTVar
+  -- send the operator details start message to all admins
+  forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsStartMessage,[])
+
+  forM_ (sdOperators siteData) $ (\siteOperatorData ->
+    forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsMessage,
+      [
+        LT.pack $ show $ sodOperatorId siteOperatorData,
+        sodUsername siteOperatorData,
+        sodName siteOperatorData,
+        sodColor siteOperatorData,
+        sodTitle siteOperatorData,
+        sodIconUrl siteOperatorData
+      ]
+      )
+    )
+
+  -- send the operator details end message to all admins
+  forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsEndMessage,[])
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
@@ -372,7 +416,13 @@ handleClientExitEvent clientDataTVar = do
           sdOnlineOperators = filter (/= clientDataTVar) $ sdOnlineOperators siteData
         }
         onlineOperatorsListUpdated siteDataTVar
-      OCDClientAdminData _ -> return () -- currently nothing to do for admins
+      OCDClientAdminData clientAdminData -> do
+        -- remove the admin from sdOnlineAdmins
+        let siteDataTVar = cadSiteDataTVar clientAdminData
+        siteData <- readTVar siteDataTVar
+        writeTVar siteDataTVar $ siteData {
+          sdOnlineAdmins = filter (/= clientDataTVar) $ sdOnlineAdmins siteData
+        }
       OCDClientUnregistered _ -> return () -- nothing to cleanup
 
 waitingListUpdated :: SiteDataTVar -> STM ()

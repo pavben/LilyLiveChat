@@ -1,6 +1,6 @@
 // these will be set onload
 var loginTab = null;
-var chatTab = null;
+var mainTab = null;
 var miscMessageTab = null;
 
 // Person object representing the operator
@@ -8,7 +8,7 @@ var me = null;
 
 $(window).bind('load', function() {
 	loginTab = $('#login_tab');
-	chatTab = $('#chat_tab');
+	mainTab = $('#main_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
@@ -97,14 +97,10 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminLoginSuccessMessage:
 			if (currentTab == loginTab) {
-				var name = message[0];
-				var color = message[1];
-				var title = message[2];
-				var iconUrl = message[3];
-				me = new Person(name, color, title, iconUrl);
-				changeTabTo(chatTab);
+				changeTabTo(mainTab);
 			}
 			log("Login successful");
+			queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
@@ -238,8 +234,8 @@ function showCantConnectScreen() {
 function onResize() {
 	if (currentTab == loginTab) {
 		onBasicVCenterResize('login', 600);
-	} else if (currentTab == chatTab) {
-		onBasicVCenterResize('chat', 530);
+	} else if (currentTab == mainTab) {
+		onBasicVCenterResize('main', 530);
 	} else if (currentTab == miscMessageTab) {
 		onBasicVCenterResize('miscmessage', 530);
 	}

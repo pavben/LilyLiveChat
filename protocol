@@ -9,14 +9,14 @@ Server to Unregistered
 
 Customer to Server
 ================================================================
-1  - CustomerJoinMessage [name, color, icon]
+1  - CustomerJoinMessage [name, color, iconUrl]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
 
 Server to Customer
 ================================================================
 2  - CustomerInLinePositionMessage [position]
-3  - CustomerNowTalkingToMessage [name, color, icon]
+3  - CustomerNowTalkingToMessage [name, color, iconUrl]
 5  - CustomerReceiveChatMessage [text]
 7  - SomethingWentWrongMessage
 19 - CustomerChatEndedMessage
@@ -31,7 +31,7 @@ Operator to Server
 
 Server to Operator
 ================================================================
-9  - OperatorLoginSuccessMessage [name, color, title, icon]
+9  - OperatorLoginSuccessMessage [name, color, title, iconUrl]
 10 - OperatorLoginFailedMessage
 11 - OperatorLineStatusDetailsMessage [next customer name, their color, number of waiters]
 12 - OperatorLineStatusEmptyMessage
@@ -42,8 +42,8 @@ Server to Operator
 Admin to Server
 ================================================================
 24 - AdminLoginRequestMessage [username, password]
-25 - AdminOperatorCreateMessage [username, password, name, color, title, icon]
-26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, icon]
+25 - AdminOperatorCreateMessage [username, password, name, color, title, iconUrl]
+26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [operatorId]
 55 - AdminAdminCreateMessage [username, password]
 56 - AdminAdminReplaceMessage [adminId, username, password]
@@ -55,7 +55,7 @@ Server to Admin
 29 - AdminLoginFailedMessage
 30 - AdminSiteInfoMessage [name, expiryTimestamp]
 31 - AdminOperatorDetailsStartMessage
-32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, icon]
+32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, iconUrl]
 33 - AdminOperatorDetailsEndMessage
 34 - AdminOperatorCreateSuccessMessage
 35 - AdminOperatorCreateFailedMessage

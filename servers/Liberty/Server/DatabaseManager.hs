@@ -184,8 +184,11 @@ getSiteDataFromDb databaseHandleTVar = do
 asMaybeText :: Maybe String -> Maybe Text
 asMaybeText maybeString = fmap LT.pack maybeString
 
-queueSaveSiteData :: SiteData -> DatabaseOperationQueueChan -> STM ()
-queueSaveSiteData siteData databaseOperationQueueChan = writeTChan databaseOperationQueueChan $ SaveSite siteData
+-- TODO: rewrite this to use Set for eliminating duplicates and pass siteDataTVar to the saver instead of siteData
+queueSaveSiteData :: SiteDataTVar -> DatabaseOperationQueueChan -> STM ()
+queueSaveSiteData siteDataTVar databaseOperationQueueChan = do
+  siteData <- readTVar siteDataTVar
+  writeTChan databaseOperationQueueChan $ SaveSite siteData
 
 saveSiteData :: SiteData -> DatabaseHandleTVar -> IO Bool
 saveSiteData siteData databaseHandleTVar = do
