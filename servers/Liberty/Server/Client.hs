@@ -10,6 +10,7 @@ import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 --import Data.Map (Map)
+import Data.List
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -140,7 +141,10 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
           atomically $ closeClientSocket clientDataTVar
     OCDClientAdminData _ ->
       case (messageType,params) of
-        (AdminOperatorCreateMessage,[username,password,name,color,title,icon]) -> handleAdminOperatorCreateMessage username password name color title icon clientDataTVar databaseOperationQueueChan
+        (AdminOperatorCreateMessage,[username,password,name,color,title,iconUrl]) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan
+        (AdminOperatorReplaceMessage,[operatorIdT,username,password,name,color,title,iconUrl]) -> case parseIntegral operatorIdT of
+          Just operatorId -> handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan
+          Nothing -> atomically $ closeClientSocket clientDataTVar
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -373,6 +377,38 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
         else
           createAndSendMessage (AdminOperatorCreateFailedMessage,[]) clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
+
+handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
+handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
+  atomically $ do
+    clientData <- readTVar clientDataTVar
+    case cdOtherData clientData of
+      OCDClientAdminData clientAdminData -> do
+        let siteDataTVar = cadSiteDataTVar clientAdminData
+        siteData <- readTVar siteDataTVar
+        let (operatorsRemoved, remainingOperators) = partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData)
+        if length operatorsRemoved == 1 then
+          -- exactly 1 operator matched the search
+          if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
+            -- the new username does not collide with any other operators
+            let newSiteOperatorData = SiteOperatorData operatorId username password name color title iconUrl
+            -- save siteDataTVar with the new operator
+            writeTVar siteDataTVar $ siteData {
+              sdOperators = newSiteOperatorData : remainingOperators
+            }
+            -- save to the database
+            queueSaveSiteData siteDataTVar databaseOperationQueueChan
+            -- respond to the admin who issued the replace command
+            createAndSendMessage (AdminOperatorReplaceSuccessMessage,[]) clientDataTVar
+            -- notify the admins with the new list
+            sendOperatorsListToAdmins siteDataTVar
+          else
+            -- an operator with that username already exists
+            createAndSendMessage (AdminOperatorReplaceFailedMessage,[]) clientDataTVar
+        else
+          -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
+          createAndSendMessage (AdminOperatorReplaceFailedMessage,[]) clientDataTVar
+      _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
