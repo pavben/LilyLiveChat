@@ -11,15 +11,12 @@
 	border-radius:5px;
 }
 #login_adminloginlabel {
-	padding:2px 0px 7px 0px;
+	padding:2px 0px 10px 0px;
 	font-size:18px;
 	color:#454545;
 	word-wrap:break-word;
 	text-align:center;
 }
-#login_logintable {
-	margin-top:6px;
-}
-#login_cardtext .inputboxwrapper {
-	margin-bottom:7px;
+#login_password {
+	text-align:center;
 }

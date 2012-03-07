@@ -100,7 +100,7 @@ function handleMessage(message) {
 			log("Login successful");
 			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
-			queueAjaxCommand([Messages.AdminOperatorDeleteMessage, 2]);
+			//queueAjaxCommand([Messages.AdminOperatorDeleteMessage, 2]);
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
@@ -134,7 +134,7 @@ function decreaseNumActiveChats() {
 function showLoginFailedScreen() {
 	showMiscMessageTab('No match...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('Can\'t remember? Contact your administrator.')
+			$('<div/>').text('Can\'t remember? You can reset it from the payment system (TODO).')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(
