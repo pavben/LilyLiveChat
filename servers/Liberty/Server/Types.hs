@@ -14,7 +14,6 @@ module Liberty.Server.Types (
   SiteId,
   SiteData(..),
   SiteOperatorData(..),
-  SiteAdminData(..),
   SiteDataTVar,
   ClientSendChanMessage(..),
   ClientSendChan,
@@ -79,10 +78,9 @@ data SiteData = SiteData {
   sdExpiryTimestamp :: Integer,
   sdNextOperatorId :: Integer,
   sdOperators :: [SiteOperatorData],
-  sdNextAdminId :: Integer,
-  sdAdmins :: [SiteAdminData],
   sdSessionsWaiting :: [ChatSessionTVar],
   sdOnlineOperators :: [ClientDataTVar],
+  sdAdminPassword :: Text,
   sdOnlineAdmins :: [ClientDataTVar],
   sdNextSessionId :: Integer
 } deriving (Show)
@@ -94,11 +92,6 @@ data SiteOperatorData = SiteOperatorData {
   sodColor :: Text,
   sodTitle :: Text,
   sodIconUrl :: Text
-} deriving (Show)
-data SiteAdminData = SiteAdminData {
-  sadAdminId :: Integer,
-  sadUsername :: Text,
-  sadPassword :: Text
 } deriving (Show)
 
 type SiteDataTVar = TVar SiteData

@@ -41,13 +41,13 @@ Server to Operator
 
 Admin to Server
 ================================================================
-24 - AdminLoginRequestMessage [username, password]
+24 - AdminLoginRequestMessage [password]
 25 - AdminOperatorCreateMessage [username, password, name, color, title, iconUrl]
 26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [operatorId]
-55 - AdminAdminCreateMessage [username, password]
-56 - AdminAdminReplaceMessage [adminId, username, password]
-57 - AdminAdminDeleteMessage [adminId]
+-55 - AdminAdminCreateMessage [password]
+-56 - AdminAdminReplaceMessage [adminId, password]
+-57 - AdminAdminDeleteMessage [adminId]
 
 Server to Admin
 ================================================================
@@ -63,15 +63,15 @@ Server to Admin
 37 - AdminOperatorReplaceFailedMessage
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
-38 - AdminAdminDetailsStartMessage
-39 - AdminAdminDetailsMessage [adminId, username]
-40 - AdminAdminDetailsEndMessage
-58 - AdminAdminCreateSuccessMessage
-59 - AdminAdminCreateFailedMessage
-60 - AdminAdminReplaceSuccessMessage
-61 - AdminAdminReplaceFailedMessage
-64 - AdminAdminDeleteSuccessMessage
-65 - AdminAdminDeleteFailedMessage
+-38 - AdminAdminDetailsStartMessage
+-39 - AdminAdminDetailsMessage [adminId, username]
+-40 - AdminAdminDetailsEndMessage
+-58 - AdminAdminCreateSuccessMessage
+-59 - AdminAdminCreateFailedMessage
+-60 - AdminAdminReplaceSuccessMessage
+-61 - AdminAdminReplaceFailedMessage
+-64 - AdminAdminDeleteSuccessMessage
+-65 - AdminAdminDeleteFailedMessage
 
 SA to Server
 ================================================================

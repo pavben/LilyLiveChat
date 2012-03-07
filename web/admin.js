@@ -49,13 +49,11 @@ function loginTabOkHandler() {
 	if (!loginTabOkActive) {
 		loginTabOkActive = true;
 
-		var username = $.trim($('#login_username').val());
 		var password = $.trim($('#login_password').val());
 
 		// TODO: replace this check with the appropriate enabling/disabling of the login button
-		if (username.length == 0 || password.length == 0) {
+		if (password.length == 0) {
 			// TODO: REMOVE THIS DEV CODE
-			username = "mike";
 			password = "mike";
 			/*
 			alert("Please enter both the username and password.");
@@ -64,7 +62,7 @@ function loginTabOkHandler() {
 			*/
 		}
 
-		queueAjaxCommand([Messages.AdminLoginRequestMessage, username, password]);
+		queueAjaxCommand([Messages.AdminLoginRequestMessage, password]);
 	}
 }
 
@@ -82,7 +80,7 @@ function handleMessage(message) {
 
 			changeTabTo(loginTab, function () {
 				// focus the username box
-				$('#login_username').focus();
+				$('#login_password').focus();
 			});
 
 			// Auto-login

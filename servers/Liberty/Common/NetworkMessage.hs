@@ -63,9 +63,6 @@ messageIdsAndTypes = [
     (35, AdminOperatorCreateFailedMessage),
     (36, AdminOperatorReplaceSuccessMessage),
     (37, AdminOperatorReplaceFailedMessage),
-    (38, AdminAdminDetailsStartMessage),
-    (39, AdminAdminDetailsMessage),
-    (40, AdminAdminDetailsEndMessage),
     (41, SALoginRequestMessage),
     (42, SASiteCreateMessage),
     (43, SASiteDeleteMessage),
@@ -80,17 +77,8 @@ messageIdsAndTypes = [
     (52, SASiteInfoMessage),
     (53, SASiteInfoFailedMessage),
     (54, SASetExpiryTimestampSuccessMessage),
-    (55, AdminAdminCreateMessage),
-    (56, AdminAdminReplaceMessage),
-    (57, AdminAdminDeleteMessage),
-    (58, AdminAdminCreateSuccessMessage),
-    (59, AdminAdminCreateFailedMessage),
-    (60, AdminAdminReplaceSuccessMessage),
-    (61, AdminAdminReplaceFailedMessage),
     (62, AdminOperatorDeleteSuccessMessage),
-    (63, AdminOperatorDeleteFailedMessage),
-    (64, AdminAdminDeleteSuccessMessage),
-    (65, AdminAdminDeleteFailedMessage)
+    (63, AdminOperatorDeleteFailedMessage)
   ]
 
 messageTypeById :: Map Word8 MessageType

@@ -208,9 +208,6 @@ var Messages = {
 	AdminOperatorCreateFailedMessage : 35,
 	AdminOperatorReplaceSuccessMessage : 36,
 	AdminOperatorReplaceFailedMessage : 37,
-	AdminAdminDetailsStartMessage : 38,
-	AdminAdminDetailsMessage : 39,
-	AdminAdminDetailsEndMessage : 40,
 	SALoginRequestMessage : 41,
 	SASiteCreateMessage : 42,
 	SASiteDeleteMessage : 43,
@@ -225,17 +222,8 @@ var Messages = {
 	SASiteInfoMessage : 52,
 	SASiteInfoFailedMessage : 53,
 	SASetExpiryTimestampSuccessMessage : 54,
-    AdminAdminCreateMessage : 55,
-    AdminAdminReplaceMessage : 56,
-    AdminAdminDeleteMessage : 57,
-    AdminAdminCreateSuccessMessage : 58,
-    AdminAdminCreateFailedMessage : 59,
-    AdminAdminReplaceSuccessMessage : 60,
-    AdminAdminReplaceFailedMessage : 61,
     AdminOperatorDeleteSuccessMessage : 62,
-    AdminOperatorDeleteFailedMessage : 63,
-    AdminAdminDeleteSuccessMessage : 64,
-    AdminAdminDeleteFailedMessage : 65
+    AdminOperatorDeleteFailedMessage : 63
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {

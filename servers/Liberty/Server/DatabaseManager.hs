@@ -146,16 +146,15 @@ getSiteDataFromDb databaseHandleTVar = do
   case res of
     Just siteDocs ->
       return $ mapM (\siteDoc ->
-        case (,,,,,,) <$>
+        case (,,,,,) <$>
           (asMaybeText $ lookup "siteId" siteDoc) <*>
           (asMaybeText $ lookup "name" siteDoc) <*>
           (lookup "expiryTimestamp" siteDoc :: Maybe Integer) <*>
           (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
           (lookup "operators" siteDoc :: Maybe [Document]) <*>
-          (lookup "nextAdminId" siteDoc :: Maybe Integer) <*>
-          (lookup "admins" siteDoc :: Maybe [Document])
+          (asMaybeText $ lookup "adminPassword" siteDoc)
         of
-          Just (siteId, name, expiryTimestamp, nextOperatorId, operators, nextAdminId, admins) ->
+          Just (siteId, name, expiryTimestamp, nextOperatorId, operators, adminPassword) ->
             let
               maybeOperatorDatas = mapM (\operatorDoc ->
                 SiteOperatorData <$>
@@ -167,15 +166,9 @@ getSiteDataFromDb databaseHandleTVar = do
                   (asMaybeText $ lookup "title" operatorDoc) <*>
                   (asMaybeText $ lookup "icon" operatorDoc)
                 ) operators
-              maybeAdminDatas = mapM (\adminDoc ->
-                SiteAdminData <$>
-                  (lookup "adminId" adminDoc :: Maybe Integer) <*>
-                  (asMaybeText $ lookup "username" adminDoc) <*>
-                  (asMaybeText $ lookup "password" adminDoc)
-                ) admins
             in
-              case (,) <$> maybeOperatorDatas <*> maybeAdminDatas of
-                Just (siteOperatorDatas, siteAdminDatas) -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas nextAdminId siteAdminDatas [] [] [] 0
+              case maybeOperatorDatas of
+                Just siteOperatorDatas -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas [] [] adminPassword [] 0
                 Nothing -> Nothing
           Nothing -> Nothing
         ) siteDocs
@@ -213,14 +206,7 @@ saveSiteData siteData databaseHandleTVar = do
             "icon" := (asStringValue $ sodIconUrl siteOperatorData)
             ]
           ) (sdOperators siteData)),
-        "nextAdminId" := Int32 (fromInteger $ sdNextAdminId siteData),
-        "admins" := Array (map (\siteAdminData ->
-          Doc [
-            "adminId" := Int32 (fromInteger $ sadAdminId siteAdminData),
-            "username" := (asStringValue $ sadUsername siteAdminData),
-            "password" := (asStringValue $ sadPassword siteAdminData)
-            ]
-          ) (sdAdmins siteData))
+        "adminPassword" := (asStringValue $ sdAdminPassword siteData)
         ]
     )
 
