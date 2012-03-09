@@ -38,6 +38,7 @@ $(window).bind('load', function() {
 	});
 
 	// chat tab's menu effects
+	// TODO: simplify this to be click-based as the hover is annoying
 	var menuSlideTarget = null;
 	var menuSlideBusy = false;
 
@@ -729,7 +730,7 @@ function chatSessionIdToObject(prefix, chatSessionId) {
 function showLoginFailedScreen() {
 	showMiscMessageTab('No match...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('Can\'t remember? Contact your administrator.')
+			$('<div/>').text('Can\'t remember your password? Contact your administrator.')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(

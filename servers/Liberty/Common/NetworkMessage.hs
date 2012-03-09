@@ -63,6 +63,8 @@ messageIdsAndTypes = [
     (35, AdminOperatorCreateFailedMessage),
     (36, AdminOperatorReplaceSuccessMessage),
     (37, AdminOperatorReplaceFailedMessage),
+    (38, AdminSetSiteNameMessage),
+    (39, AdminSetSiteNameSuccessMessage),
     (41, SALoginRequestMessage),
     (42, SASiteCreateMessage),
     (43, SASiteDeleteMessage),

@@ -45,6 +45,7 @@ Admin to Server
 25 - AdminOperatorCreateMessage [username, password, name, color, title, iconUrl]
 26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [operatorId]
+38 - AdminSetSiteNameMessage [name]
 -55 - AdminAdminCreateMessage [password]
 -56 - AdminAdminReplaceMessage [adminId, password]
 -57 - AdminAdminDeleteMessage [adminId]
@@ -53,7 +54,8 @@ Server to Admin
 ================================================================
 28 - AdminLoginSuccessMessage
 29 - AdminLoginFailedMessage
-30 - AdminSiteInfoMessage [name, expiryTimestamp]
+30 - AdminSiteInfoMessage [siteId, name, expiryTimestamp]
+39 - AdminSetSiteNameSuccessMessage
 31 - AdminOperatorDetailsStartMessage
 32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, iconUrl]
 33 - AdminOperatorDetailsEndMessage
@@ -63,8 +65,6 @@ Server to Admin
 37 - AdminOperatorReplaceFailedMessage
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
--38 - AdminAdminDetailsStartMessage
--39 - AdminAdminDetailsMessage [adminId, username]
 -40 - AdminAdminDetailsEndMessage
 -58 - AdminAdminCreateSuccessMessage
 -59 - AdminAdminCreateFailedMessage

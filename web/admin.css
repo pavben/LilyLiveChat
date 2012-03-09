@@ -20,3 +20,16 @@
 #login_password {
 	text-align:center;
 }
+#main_tab {
+	min-width:600px;
+}
+#main_box {
+	width:580px;
+	height:400px;
+	margin-left:auto;
+	margin-right:auto;
+	padding:9px 9px 9px 9px;
+	background-color:#E3E3E3;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}

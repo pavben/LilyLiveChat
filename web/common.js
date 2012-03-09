@@ -208,6 +208,8 @@ var Messages = {
 	AdminOperatorCreateFailedMessage : 35,
 	AdminOperatorReplaceSuccessMessage : 36,
 	AdminOperatorReplaceFailedMessage : 37,
+    AdminSetSiteNameMessage : 38,
+    AdminSetSiteNameSuccessMessage : 39,
 	SALoginRequestMessage : 41,
 	SASiteCreateMessage : 42,
 	SASiteDeleteMessage : 43,

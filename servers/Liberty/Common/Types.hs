@@ -44,6 +44,8 @@ data MessageType = CustomerJoinMessage
                  | AdminOperatorCreateFailedMessage
                  | AdminOperatorReplaceSuccessMessage
                  | AdminOperatorReplaceFailedMessage
+                 | AdminSetSiteNameMessage
+                 | AdminSetSiteNameSuccessMessage
                  | SALoginRequestMessage
                  | SASiteCreateMessage
                  | SASiteDeleteMessage

@@ -148,6 +148,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
         (AdminOperatorDeleteMessage,[operatorIdT]) -> case parseIntegral operatorIdT of
           Just operatorId -> handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan
           Nothing -> atomically $ closeClientSocket clientDataTVar
+        (AdminSetSiteNameMessage,[name]) -> handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -436,6 +437,34 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueu
           createAndSendMessage (AdminOperatorDeleteFailedMessage,[]) clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorDeleteMessage" ()
 
+handleAdminSetSiteNameMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
+handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
+  atomically $ do
+    if LT.length name <= 20 then do
+      clientData <- readTVar clientDataTVar
+      case cdOtherData clientData of
+        OCDClientAdminData clientAdminData -> do
+          let siteDataTVar = cadSiteDataTVar clientAdminData
+          siteData <- readTVar siteDataTVar
+
+          -- save siteDataTVar with the new name
+          writeTVar siteDataTVar $ siteData {
+            sdName = name
+          }
+
+          -- save to the database
+          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+
+          -- respond to the admin who issued the delete command
+          createAndSendMessage (AdminSetSiteNameSuccessMessage,[]) clientDataTVar
+
+          -- notify the admins of the new site name
+          sendSiteInfoToAdmins siteDataTVar
+        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetSiteNameMessage" ()
+    else
+      -- if the JS allowed them to set an extra long site name, something is wrong
+      createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
+
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
   -- read the site data
@@ -458,6 +487,13 @@ sendOperatorsListToAdmins siteDataTVar = do
 
   -- send the operator details end message to all admins
   forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsEndMessage,[])
+
+sendSiteInfoToAdmins :: SiteDataTVar -> STM ()
+sendSiteInfoToAdmins siteDataTVar = do
+  -- read the site data
+  siteData <- readTVar siteDataTVar
+  -- send the operator details start message to all admins
+  forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminSiteInfoMessage,[sdSiteId siteData, sdName siteData, LT.pack $ show $ sdExpiryTimestamp siteData])
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
