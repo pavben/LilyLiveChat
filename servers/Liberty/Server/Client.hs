@@ -244,6 +244,12 @@ handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
       clientData <- readTVar clientDataTVar
       writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientAdminData $ ClientAdminData siteDataTVar }
       createAndSendMessage (AdminLoginSuccessMessage, []) clientDataTVar
+
+      -- send the site info (siteId, name, expiryTimestamp)
+      sendSiteInfoToAdmin siteData clientDataTVar
+
+      -- send the operators list
+      sendOperatorsListToAdmin siteData clientDataTVar
     else do
       -- Admin login failed: Invalid credentials
       createAndSendMessage (AdminLoginFailedMessage, []) clientDataTVar
@@ -469,11 +475,18 @@ sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
   -- read the site data
   siteData <- readTVar siteDataTVar
-  -- send the operator details start message to all admins
-  forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsStartMessage,[])
 
+  -- call sendOperatorsListToAdmin on all admins
+  forM_ (sdOnlineAdmins siteData) $ sendOperatorsListToAdmin siteData
+
+sendOperatorsListToAdmin :: SiteData -> ClientDataTVar -> STM ()
+sendOperatorsListToAdmin siteData adminClientDataTVar = do
+  -- send the operator details start message
+  createAndSendMessage (AdminOperatorDetailsStartMessage,[]) adminClientDataTVar
+
+  -- send the operator details, one message per operator
   forM_ (sdOperators siteData) $ (\siteOperatorData ->
-    forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsMessage,
+    createAndSendMessage (AdminOperatorDetailsMessage,
       [
         LT.pack $ show $ sodOperatorId siteOperatorData,
         sodUsername siteOperatorData,
@@ -482,18 +495,21 @@ sendOperatorsListToAdmins siteDataTVar = do
         sodTitle siteOperatorData,
         sodIconUrl siteOperatorData
       ]
-      )
+      ) adminClientDataTVar
     )
 
-  -- send the operator details end message to all admins
-  forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminOperatorDetailsEndMessage,[])
+  -- send the operator details end message
+  createAndSendMessage (AdminOperatorDetailsEndMessage,[]) adminClientDataTVar
 
 sendSiteInfoToAdmins :: SiteDataTVar -> STM ()
 sendSiteInfoToAdmins siteDataTVar = do
   -- read the site data
   siteData <- readTVar siteDataTVar
   -- send the operator details start message to all admins
-  forM_ (sdOnlineAdmins siteData) $ createAndSendMessage (AdminSiteInfoMessage,[sdSiteId siteData, sdName siteData, LT.pack $ show $ sdExpiryTimestamp siteData])
+  forM_ (sdOnlineAdmins siteData) $ sendSiteInfoToAdmin siteData
+
+sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
+sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage (AdminSiteInfoMessage,[sdSiteId siteData, sdName siteData, LT.pack $ show $ sdExpiryTimestamp siteData]) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do

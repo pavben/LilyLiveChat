@@ -100,7 +100,7 @@ function handleMessage(message) {
 			log("Login successful");
 			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
-			queueAjaxCommand([Messages.AdminSetSiteNameMessage, "Virtivia"]);
+			//queueAjaxCommand([Messages.AdminSetSiteNameMessage, "Virtivia"]);
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
