@@ -83,8 +83,9 @@ function handleMessage(message) {
 				$('#login_password').focus();
 			});
 
+			//changeTabTo(mainTab);
 			// Auto-login
-			//$('#login_btn_ok').click();
+			$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen
@@ -104,6 +105,13 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
+			break;
+		case Messages.AdminSiteInfoMessage:
+			var siteId = message[0];
+			var siteName = message[1];
+			var siteExpiryTS = message[2];
+
+			$('#main_general_sitename').val(siteName);
 			break;
 	}
 }

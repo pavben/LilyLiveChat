@@ -28,6 +28,9 @@ input {
 	table-layout:fixed;
 	width:100%;
 }
+.fullheight {
+	height:100%;
+}
 .tablerow {
 	display:table-row;
 }
@@ -98,13 +101,17 @@ input {
 .personmenuwrapper {
 	margin-top:18px;
 }
-.inputboxwrapper, .chatboxwrapper {
+.inputboxwrapper, .inputboxwrapperlight, .chatboxwrapper {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 	padding:3px 3px 3px 3px;
 }
 .inputboxwrapper {
 	background-color:#EDEDED;
+	height:21px;
+}
+.inputboxwrapperlight {
+	background-color:#F4F4F4;
 	height:21px;
 }
 .chatboxwrapper {

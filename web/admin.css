@@ -21,7 +21,7 @@
 	text-align:center;
 }
 #main_tab {
-	min-width:600px;
+	min-width:620px;
 }
 #main_box {
 	width:580px;
@@ -32,4 +32,78 @@
 	background-color:#E3E3E3;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
+}
+#main_leftcell {
+	display:table-cell;
+	width:100px;
+}
+.main_leftcell_vspacer {
+	height:9px;
+}
+#main_rightcell {
+	display:table-cell;
+	padding-left:9px;
+	vertical-align:top;
+}
+.main_rightcell_vspacer {
+	height:8px;
+}
+.main_hspacercell {
+	display:table-cell;
+	width:9px;
+}
+.main_title {
+	padding:4px 0px 8px 0px;
+	font-size:140%;
+	text-align:center;
+}
+.main_centertext{
+	padding:4px 0px 12px 0px;
+}
+.main_centertext {
+	color:#454545;
+	text-align:center;
+}
+.main_contentbox {
+	padding:9px 9px 9px 9px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	color:#656565;
+	text-align:center;
+}
+.main_settings_label {
+	display:table-cell;
+	text-align:center;
+	font-size:120%;
+	line-height:29px;
+}
+#main_general_sitename {
+	text-align:center;
+}
+.savebutton {
+	padding-top:1px;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	background-image:url('images/buttontile.png');
+	background-repeat:repeat-x;
+	text-shadow:1px 1px 0px #f4f4f4;
+	text-align:center;
+	line-height:21px;
+	font-size:15px;
+	color:#454545;
+	cursor:pointer;
+	vertical-align:top;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+}
+.savebutton:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.savebutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
