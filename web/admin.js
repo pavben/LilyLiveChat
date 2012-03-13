@@ -28,6 +28,10 @@ $(window).bind('load', function() {
 			loginTabOkHandler();
 		}
 	});
+	
+	// main tab handlers
+	onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
+	$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
 
 	$(window).resize(onResize);
 
@@ -42,6 +46,44 @@ $(window).bind('load', function() {
 		}
 	);
 });
+
+// functions for instant tracking of changes to textboxes
+function setFieldValue(field, value) {
+	field.val(value)[0].lastKnownValue = value;
+}
+
+function onChangeToFieldValue(field, callback) {
+	var checkForChange = function() {
+		if (field.val() != field[0].lastKnownValue) {
+			callback(field);
+		}
+	}
+
+	field.keyup(checkForChange);
+	field.change(checkForChange);
+}
+
+function onSiteNameChange(field) {
+	if (!field[0].unsaved) {
+		field[0].unsaved = true;
+
+		$('#main_general_sitename_savedlabel').fadeTo(0, 0);
+		$('#main_general_sitename_savediv').animate({height:'32px'}, 350);
+	}
+}
+
+function siteNameSaveHandler() {
+	var siteName = $('#main_general_sitename');
+
+	// only send if currently not saved (this also prevents double-clicking the Save button)
+	if (siteName[0].unsaved) {
+		siteName[0].unsaved = false;
+		queueAjaxCommand([Messages.AdminSetSiteNameMessage, $.trim(siteName.val())]);
+
+		$('#main_general_sitename_savedlabel').fadeTo(500, 1);
+		$('#main_general_sitename_savediv').delay(1800).animate({height:'0px'}, 400);
+	}
+}
 
 var loginTabOkActive = false;
 
@@ -111,7 +153,10 @@ function handleMessage(message) {
 			var siteName = message[1];
 			var siteExpiryTS = message[2];
 
-			$('#main_general_sitename').val(siteName);
+			setFieldValue($('#main_general_sitename'), siteName);
+			break;
+		case Messages.AdminSetSiteNameSuccessMessage:
+			// site name set successfully
 			break;
 	}
 }

@@ -81,6 +81,16 @@
 #main_general_sitename {
 	text-align:center;
 }
+.main_savediv {
+	height:0px;
+	overflow:hidden;
+}
+.main_savedlabel {
+	text-align:center;
+	font-size:110%;
+	line-height:24px;
+	color:#009900;
+}
 .savebutton {
 	padding-top:1px;
 	border:1px solid #BBBBBB;
