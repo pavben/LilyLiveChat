@@ -25,7 +25,7 @@
 }
 #main_box {
 	width:580px;
-	height:400px;
+	height:410px;
 	margin-left:auto;
 	margin-right:auto;
 	padding:9px 9px 9px 9px;
@@ -113,6 +113,18 @@
 .main_operators_listbox_item:hover, .main_operators_listbox_item:active {
 	background:#D4D4D4;
 	cursor:pointer;
+}
+.main_operators_listbox_centertext {
+	padding:14px 0px 5px 0px;
+	text-align:center;
+}
+.main_editoperator_preview_wrapper {
+	width:320px;
+	padding:7px 7px 7px 7px;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	margin-left:auto;
+	margin-right:auto;
 }
 .smallbutton {
 	padding-top:1px;

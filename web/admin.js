@@ -3,6 +3,10 @@ var loginTab = null;
 var mainTab = null;
 var miscMessageTab = null;
 
+var generalSubtab = null;
+var operatorsSubtab = null;
+var editOperatorSubtab = null;
+
 // Person object representing the operator
 var me = null;
 
@@ -10,6 +14,10 @@ $(window).bind('load', function() {
 	loginTab = $('#login_tab');
 	mainTab = $('#main_tab');
 	miscMessageTab = $('#miscmessage_tab');
+
+	generalSubtab = $('#main_rightcell_general');
+	operatorsSubtab = $('#main_rightcell_operators');
+	editOperatorSubtab = $('#main_rightcell_editoperator');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
 
@@ -85,6 +93,50 @@ function siteNameSaveHandler() {
 	}
 }
 
+// main tab's subtabs
+
+var currentSubtab = null;
+var currentSubtabTarget = undefined;
+
+function changeSubtabTo(subtab, onSubtabLoadCallback) {
+	var alreadyBusy = (currentSubtabTarget !== undefined);
+
+	currentSubtabTarget = subtab;
+
+	if (!alreadyBusy) {
+		if (currentSubtab) {
+			currentSubtab.fadeOut(300, 0, function() {
+				onOldSubtabGone();
+			});
+		} else {
+			onOldSubtabGone();
+		}
+	}
+
+	function onOldSubtabGone() {
+		currentSubtab = subtab;
+		if (currentSubtab === currentSubtabTarget) {
+			currentSubtabTarget = undefined;
+			currentSubtab.fadeTo(0, 0, function() {
+				onResize();
+				if (onSubtabLoadCallback) {
+					onSubtabLoadCallback();
+				}
+				currentSubtab.fadeTo(600, 1);
+			});
+		} else {
+			// here we reset currentSubtabTarget to fail the alreadyBusy check
+			var target = currentSubtabTarget;
+			currentSubtabTarget = undefined;
+			changeSubtabTo(target);
+		}
+	}
+}
+
+function getCurrentSubtabOrTarget() {
+	return (currentSubtabTarget !== undefined) ? currentSubtabTarget : currentSubtab;
+}
+
 var loginTabOkActive = false;
 
 function loginTabOkHandler() {
@@ -125,7 +177,6 @@ function handleMessage(message) {
 				$('#login_password').focus();
 			});
 
-			//changeTabTo(mainTab);
 			// Auto-login
 			$('#login_btn_ok').click();
 			break;
@@ -137,9 +188,8 @@ function handleMessage(message) {
 		case Messages.SomethingWentWrongMessage:
 			break;
 		case Messages.AdminLoginSuccessMessage:
-			if (currentTab == loginTab) {
-				changeTabTo(mainTab);
-			}
+			changeTabTo(mainTab);
+			changeSubtabTo(editOperatorSubtab);
 			log("Login successful");
 			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
@@ -203,6 +253,17 @@ function handleMessage(message) {
 			replaceIconWith(iconUrl, $('#main_operators_' + operatorId + '_icon'));
 
 			break;
+		case Messages.AdminOperatorDetailsEndMessage:
+			var listbox = $('#main_operators_listbox');
+
+			if (listbox.is(':empty')) {
+				listbox.append(
+					$('<div/>').text('This is where you manage your list of operators. People added here will be able to login at <TODO> and accept chats from your customers.')
+				).append(
+					$('<div/>').addClass('main_operators_listbox_centertext').text('Currently, there are no operators for your site.')
+				);
+			}
+			break;
 	}
 }
 
@@ -215,18 +276,6 @@ function handleSessionEnded() {
 		// in all other cases, just show the connection problems screen
 		showDisconnectedScreen();
 	}
-}
-
-var numActiveChats = 0;
-
-function increaseNumActiveChats() {
-	numActiveChats++;
-	updateActiveChatsLabel();
-}
-
-function decreaseNumActiveChats() {
-	numActiveChats--;
-	updateActiveChatsLabel();
 }
 
 function showLoginFailedScreen() {
