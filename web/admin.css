@@ -48,6 +48,10 @@
 .main_rightcell_vspacer {
 	height:8px;
 }
+.main_rightcell_hline {
+	height:1px;
+	background:#BBBBBB;
+}
 .main_hspacercell {
 	display:table-cell;
 	width:9px;
@@ -57,7 +61,7 @@
 	font-size:140%;
 	text-align:center;
 }
-.main_centertext{
+.main_centertext {
 	padding:4px 0px 12px 0px;
 }
 .main_centertext {
@@ -91,7 +95,26 @@
 	line-height:24px;
 	color:#009900;
 }
-.savebutton {
+.main_operators_listbox, .main_operators_listbox_large {
+	border-top:1px solid #BBBBBB;
+	border-bottom:1px solid #BBBBBB;
+}
+.main_operators_listbox {
+	padding:9px 0px 9px 0px;
+}
+.main_operators_listbox_large {
+	padding:9px 9px 9px 0px;
+	overflow:scroll-y;
+	height:300px;
+}
+.main_operators_listbox_item {
+	border-radius:5px;
+}
+.main_operators_listbox_item:hover, .main_operators_listbox_item:active {
+	background:#D4D4D4;
+	cursor:pointer;
+}
+.smallbutton {
 	padding-top:1px;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
@@ -111,9 +134,9 @@
 	-o-user-select: none;
 	user-select: none;
 }
-.savebutton:hover {
+.smallbutton:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
-.savebutton:active {
+.smallbutton:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }

@@ -158,6 +158,51 @@ function handleMessage(message) {
 		case Messages.AdminSetSiteNameSuccessMessage:
 			// site name set successfully
 			break;
+		case Messages.AdminOperatorDetailsStartMessage:
+			$('#main_operators_listbox').empty();
+			break;
+		case Messages.AdminOperatorDetailsMessage:
+			var operatorId = message[0];
+			var username = message[1];
+			var name = message[2];
+			var color = message[3];
+			var title = message[4];
+			var iconUrl = message[5];
+
+			var listbox = $('#main_operators_listbox');
+
+			if (!listbox.is(':empty')) {
+				listbox.append(
+					$('<div/>').addClass('main_rightcell_vspacer')
+				).append(
+					$('<div/>').addClass('main_rightcell_hline')
+				).append(
+					$('<div/>').addClass('main_rightcell_vspacer')
+				);
+			}
+			$('#main_operators_listbox').append(
+				$('<div/>').addClass('main_operators_listbox_item').append(
+					$('<div/>').addClass('fixedtable').append(
+						$('<div/>').addClass('tablerow').append(
+							$('<div/>').addClass('iconcell').append(
+								$('<div/>').attr('id', 'main_operators_' + operatorId + '_icon').addClass('framedicon')
+							)
+						).append(
+							$('<div/>').addClass('cardtextwrappercell').append(
+								$('<div/>').addClass('leftcardtext').append(
+									$('<div/>').addClass('personname').css('color', color).text(name)
+								).append(
+									$('<div/>').addClass('persontitle').text(title)
+								)
+							)
+						)
+					)
+				)
+			);
+
+			replaceIconWith(iconUrl, $('#main_operators_' + operatorId + '_icon'));
+
+			break;
 	}
 }
 
