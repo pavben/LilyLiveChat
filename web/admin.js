@@ -10,6 +10,10 @@ var editOperatorSubtab = null;
 // Person object representing the operator
 var me = null;
 
+// current icon visible on the edit operator subtab
+var editOperatorCurrentIcon = null;
+var editOperatorCurrentColor = null;
+
 $(window).bind('load', function() {
 	loginTab = $('#login_tab');
 	mainTab = $('#main_tab');
@@ -41,6 +45,44 @@ $(window).bind('load', function() {
 	onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
 	$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
 
+	// edit operator subtab
+	$('#main_editoperator_btn_changecolor').click(function() {
+		editOperatorSetCurrentColor(generatePersonColor());
+	});
+
+	$('#main_editoperator_btn_nexticon').click(function() {
+		var nextIcon = iconsAndSuffixes[0][0]; // default to the first
+		var foundCurrentIcon = false;
+
+		for (var i = 0; i < iconsAndSuffixes.length; i++) {
+			var thisIcon = iconsAndSuffixes[i][0];
+
+			if (foundCurrentIcon) {
+				nextIcon = thisIcon;
+				break;
+			}
+			else if (thisIcon === editOperatorCurrentIcon) {
+				foundCurrentIcon = true;
+			}
+		}
+
+		editOperatorCurrentIcon = nextIcon;
+
+		replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
+	});
+
+	onChangeToFieldValue($('#main_editoperator_name'), function() {
+		onNameOrTitleEdited('name');
+	});
+
+	onChangeToFieldValue($('#main_editoperator_title'), function() {
+		onNameOrTitleEdited('title');
+	});
+
+	$('#main_operators_addnew').click(function() {
+		addOrEditOperatorHandler(null);
+	});
+
 	$(window).resize(onResize);
 
 	ajaxJsonGetSessionId(
@@ -54,6 +96,112 @@ $(window).bind('load', function() {
 		}
 	);
 });
+
+function editOperatorSetCurrentColor(color) {
+	editOperatorCurrentColor = color;
+	$('#main_editoperator_name_preview').css('color', editOperatorCurrentColor);
+	$('#main_editoperator_name').css('color', editOperatorCurrentColor);
+}
+
+function addOrEditOperatorHandler(operatorId, username, name, color, title, iconUrl) {
+	var edit = (operatorId !== null);
+
+	$('#main_editoperator_name').val(edit ? name : 'Name');
+	onNameOrTitleEdited('name');
+
+	$('#main_editoperator_title').val(edit ? title : 'Representative');
+	onNameOrTitleEdited('title');
+
+	editOperatorSetCurrentColor(edit ? color : generatePersonColor());
+
+	if (edit) {
+		editOperatorCurrentIcon = iconUrl;
+	} else {
+		// start off with a random icon
+		editOperatorCurrentIcon = iconsAndSuffixes[Math.floor(Math.random() * iconsAndSuffixes.length)][0];
+	}
+
+	replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
+
+	$('#main_editoperator_buttonsdiv').empty().append(
+		$('<div/>').addClass('fixedtable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '90px').append(
+					$('<div/>').addClass('smallbutton').text('Cancel').click(function() {
+						changeSubtabTo(operatorsSubtab);
+					})
+				)
+			).append(
+				$('<div/>').addClass('cell').css('width', '8px')
+			).append(
+				$('<div/>').addClass('cell').css('width', '100px').append(
+					$('<div/>').addClass('smallbutton').text(edit ? 'Save' : 'Create').click(function() {
+						var newName = $.trim($('#main_editoperator_name').val());
+						if (newName === '') {
+							$('#main_editoperator_name').val('Name');
+							$('#main_editoperator_name').focus();
+							onNameOrTitleEdited('name');
+							return;
+						}
+						var newTitle = $.trim($('#main_editoperator_title').val());
+						if (newTitle === '') {
+							$('#main_editoperator_title').val('Title');
+							$('#main_editoperator_title').focus();
+							onNameOrTitleEdited('title');
+							return;
+						}
+						var newUsername = $.trim($('#main_editoperator_username').val());
+						if (newUsername === '') {
+							$('#main_editoperator_username').val('Username');
+							$('#main_editoperator_username').focus();
+							return;
+						}
+						var newPassword = $.trim($('#main_editoperator_password').val());
+						if (edit && newPassword === '') {
+							$('#main_editoperator_password').focus();
+							return;
+						}
+
+						if (edit) {
+							queueAjaxCommand([
+								Messages.AdminOperatorReplaceMessage,
+								operatorId,
+								newUsername,
+								newPassword,
+								newName,
+								editOperatorCurrentColor,
+								newTitle,
+								editOperatorCurrentIcon
+							]);
+						} else {
+							queueAjaxCommand([
+								Messages.AdminOperatorCreateMessage,
+								newUsername,
+								newPassword,
+								newName,
+								editOperatorCurrentColor,
+								newTitle,
+								editOperatorCurrentIcon
+							]);
+						}
+
+						changeSubtabTo(operatorsSubtab);
+					})
+				)
+			)
+		)
+	);
+
+	if (edit) {
+		$('#main_editoperator_passwordnote').text('If empty, it will remain unchanged.');
+	} else {
+		$('#main_editoperator_passwordnote').text('Pick one that\'s hard to guess!');
+	}
+
+	changeSubtabTo(editOperatorSubtab);
+}
 
 // functions for instant tracking of changes to textboxes
 function setFieldValue(field, value) {
@@ -93,6 +241,10 @@ function siteNameSaveHandler() {
 	}
 }
 
+function onNameOrTitleEdited(nameOrTitleStr) {
+	$('#main_editoperator_' + nameOrTitleStr + '_preview').text($('#main_editoperator_' + nameOrTitleStr).val());
+}
+
 // main tab's subtabs
 
 var currentSubtab = null;
@@ -105,7 +257,7 @@ function changeSubtabTo(subtab, onSubtabLoadCallback) {
 
 	if (!alreadyBusy) {
 		if (currentSubtab) {
-			currentSubtab.fadeOut(300, 0, function() {
+			currentSubtab.fadeOut(150, 0, function() {
 				onOldSubtabGone();
 			});
 		} else {
@@ -122,7 +274,7 @@ function changeSubtabTo(subtab, onSubtabLoadCallback) {
 				if (onSubtabLoadCallback) {
 					onSubtabLoadCallback();
 				}
-				currentSubtab.fadeTo(600, 1);
+				currentSubtab.fadeTo(300, 1);
 			});
 		} else {
 			// here we reset currentSubtabTarget to fail the alreadyBusy check
@@ -189,11 +341,11 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminLoginSuccessMessage:
 			changeTabTo(mainTab);
-			changeSubtabTo(editOperatorSubtab);
 			log("Login successful");
 			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminSetSiteNameMessage, "Virtivia"]);
+			changeSubtabTo(operatorsSubtab);
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
@@ -247,7 +399,9 @@ function handleMessage(message) {
 							)
 						)
 					)
-				)
+				).click(function() {
+					addOrEditOperatorHandler(operatorId, username, name, color, title, iconUrl);
+				})
 			);
 
 			replaceIconWith(iconUrl, $('#main_operators_' + operatorId + '_icon'));

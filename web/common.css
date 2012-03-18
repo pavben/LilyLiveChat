@@ -128,14 +128,15 @@ input {
 	font-size:18px;
 }
 .basicbutton {
+	padding:0px 0px 1px 0px;
+	border:1px solid #BBBBBB;
 	background-image:url('images/buttontile.png');
 	background-repeat:repeat-x;
-	border:1px solid #BBBBBB;
 	border-radius:5px;
 	text-shadow:1px 1px 0px #f4f4f4;
 	text-align:center;
 	cursor:pointer;
-	padding:0px 0px 1px 0px;
+	color:#454545;
 	-webkit-transition: all 0.1s ease-in-out;
 	-moz-transition: all 0.1s ease-in-out;
 	-o-transition: all 0.1s ease-in-out;

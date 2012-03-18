@@ -25,7 +25,7 @@
 }
 #main_box {
 	width:580px;
-	height:410px;
+	height:431px;
 	margin-left:auto;
 	margin-right:auto;
 	padding:9px 9px 9px 9px;
@@ -57,7 +57,7 @@
 	width:9px;
 }
 .main_title {
-	padding:4px 0px 8px 0px;
+	padding:4px 0px 10px 0px;
 	font-size:140%;
 	text-align:center;
 }
@@ -126,6 +126,14 @@
 	margin-left:auto;
 	margin-right:auto;
 }
+.main_editoperator_title {
+	color:#7C7C7C;
+}
+#main_editoperator_passwordnote {
+	display:table-cell;
+	text-align:center;
+	font-size:80%;
+}
 .smallbutton {
 	padding-top:1px;
 	border:1px solid #BBBBBB;
@@ -151,4 +159,7 @@
 }
 .smallbutton:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+.vmiddle {
+	vertical-align:middle;
 }

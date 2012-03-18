@@ -14,17 +14,6 @@ var myIcon = null;
 var chatSessionEnded = false;
 
 function randomizeNameAndIcon() {
-	var iconsAndSuffix = [
-		['images/cc/batty.png', 'Bat'],
-		['images/cc/bird.png', 'Bird'],
-		['images/cc/dog.png', 'Dog'],
-		['images/cc/froggy.png', 'Frog'],
-		['images/cc/kitty.png', 'Cat'],
-		['images/cc/lion.png', 'Lion'],
-		['images/cc/panda.png', 'Panda'],
-		['images/cc/penguin.png', 'Penguin']
-	];
-
 	var descriptives = [
 		"Mystical",
 		"Scholarly",
@@ -100,7 +89,7 @@ function randomizeNameAndIcon() {
 		"Benevolent"
 	];
 
-	var iconAndSuffix = iconsAndSuffix[Math.floor(Math.random() * iconsAndSuffix.length)];
+	var iconAndSuffix = iconsAndSuffixes[Math.floor(Math.random() * iconsAndSuffixes.length)];
 	var descriptive = descriptives[Math.floor(Math.random() * descriptives.length)];
 
 	return [descriptive + ' ' + iconAndSuffix[1], iconAndSuffix[0]];
@@ -294,21 +283,6 @@ function updatePositionInLine(position) {
 		}
 	} else {
 		firstPositionUpdateProcessed = true;
-	}
-}
-
-function generatePersonColor() {
-	var lowOffset = 50;
-	var highOffset = 100;
-
-	return ('#' + getRandomComponent() + getRandomComponent() + getRandomComponent());
-
-	function getRandomComponent() {
-		return (0x100 +
-			(
-				Math.floor(lowOffset + Math.random() * (256 - lowOffset - highOffset)) / 256 * 0xff
-			)
-		).toString(16).substr(1,2);
 	}
 }
 

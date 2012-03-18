@@ -458,6 +458,34 @@ function showMiscMessageTab(title, content, buttons) {
 	changeTabTo(miscMessageTab);
 }
 
+// icons and suffixes table
+
+var iconsAndSuffixes = [
+	['images/cc/batty.png', 'Bat'],
+	['images/cc/bird.png', 'Bird'],
+	['images/cc/dog.png', 'Dog'],
+	['images/cc/froggy.png', 'Frog'],
+	['images/cc/kitty.png', 'Cat'],
+	['images/cc/lion.png', 'Lion'],
+	['images/cc/panda.png', 'Panda'],
+	['images/cc/penguin.png', 'Penguin']
+];
+
+function generatePersonColor() {
+	var lowOffset = 50;
+	var highOffset = 100;
+
+	return ('#' + getRandomComponent() + getRandomComponent() + getRandomComponent());
+
+	function getRandomComponent() {
+		return (0x100 +
+			(
+				Math.floor(lowOffset + Math.random() * (256 - lowOffset - highOffset)) / 256 * 0xff
+			)
+		).toString(16).substr(1,2);
+	}
+}
+
 // misc
 function stripPx(text) {
 	return text.replace('px', '');
