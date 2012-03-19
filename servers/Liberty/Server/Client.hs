@@ -369,11 +369,12 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
           -- notify the admins with the new list
           sendOperatorsListToAdmins siteDataTVar
         else
-          createAndSendMessage (AdminOperatorCreateFailedMessage,[]) clientDataTVar
+          createAndSendMessage (AdminOperatorCreateDuplicateUsernameMessage,[]) clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
+  -- TODO: Empty password means reuse the one from before (needs password hashing to be done first)
   atomically $ do
     clientData <- readTVar clientDataTVar
     case cdOtherData clientData of
@@ -398,10 +399,10 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
             sendOperatorsListToAdmins siteDataTVar
           else
             -- an operator with that username already exists
-            createAndSendMessage (AdminOperatorReplaceFailedMessage,[]) clientDataTVar
+            createAndSendMessage (AdminOperatorReplaceDuplicateUsernameMessage,[]) clientDataTVar
         else
           -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
-          createAndSendMessage (AdminOperatorReplaceFailedMessage,[]) clientDataTVar
+          createAndSendMessage (AdminOperatorReplaceInvalidIdMessage,[]) clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
 
 handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()

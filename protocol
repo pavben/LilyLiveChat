@@ -60,12 +60,12 @@ Server to Admin
 32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, iconUrl]
 33 - AdminOperatorDetailsEndMessage
 34 - AdminOperatorCreateSuccessMessage
-35 - AdminOperatorCreateFailedMessage
+35 - AdminOperatorCreateDuplicateUsernameMessage
 36 - AdminOperatorReplaceSuccessMessage
-37 - AdminOperatorReplaceFailedMessage
+37 - AdminOperatorReplaceDuplicateUsernameMessage
+40 - AdminOperatorReplaceInvalidIdMessage
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
--40 - AdminAdminDetailsEndMessage
 -58 - AdminAdminCreateSuccessMessage
 -59 - AdminAdminCreateFailedMessage
 -60 - AdminAdminReplaceSuccessMessage

@@ -41,9 +41,10 @@ data MessageType = CustomerJoinMessage
                  | AdminOperatorDetailsMessage
                  | AdminOperatorDetailsEndMessage
                  | AdminOperatorCreateSuccessMessage
-                 | AdminOperatorCreateFailedMessage
+                 | AdminOperatorCreateDuplicateUsernameMessage
                  | AdminOperatorReplaceSuccessMessage
-                 | AdminOperatorReplaceFailedMessage
+                 | AdminOperatorReplaceDuplicateUsernameMessage
+                 | AdminOperatorReplaceInvalidIdMessage
                  | AdminSetSiteNameMessage
                  | AdminSetSiteNameSuccessMessage
                  | SALoginRequestMessage

@@ -103,9 +103,9 @@
 	padding:9px 0px 9px 0px;
 }
 .main_operators_listbox_large {
-	padding:9px 9px 9px 0px;
-	overflow:scroll-y;
 	height:300px;
+	padding:9px 9px 9px 0px;
+	overflow-y:scroll;
 }
 .main_operators_listbox_item {
 	border-radius:5px;

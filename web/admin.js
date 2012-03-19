@@ -123,75 +123,94 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 
 	replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
 
-	$('#main_editoperator_buttonsdiv').empty().append(
-		$('<div/>').addClass('fixedtable').append(
-			$('<div/>').addClass('tablerow').append(
-				$('<div/>').addClass('cell')
-			).append(
-				$('<div/>').addClass('cell').css('width', '90px').append(
-					$('<div/>').addClass('smallbutton').text('Cancel').click(function() {
-						changeSubtabTo(operatorsSubtab);
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '8px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '100px').append(
-					$('<div/>').addClass('smallbutton').text(edit ? 'Save' : 'Create').click(function() {
-						var newName = $.trim($('#main_editoperator_name').val());
-						if (newName === '') {
-							$('#main_editoperator_name').val('Name');
-							$('#main_editoperator_name').focus();
-							onNameOrTitleEdited('name');
-							return;
-						}
-						var newTitle = $.trim($('#main_editoperator_title').val());
-						if (newTitle === '') {
-							$('#main_editoperator_title').val('Title');
-							$('#main_editoperator_title').focus();
-							onNameOrTitleEdited('title');
-							return;
-						}
-						var newUsername = $.trim($('#main_editoperator_username').val());
-						if (newUsername === '') {
-							$('#main_editoperator_username').val('Username');
-							$('#main_editoperator_username').focus();
-							return;
-						}
-						var newPassword = $.trim($('#main_editoperator_password').val());
-						if (edit && newPassword === '') {
-							$('#main_editoperator_password').focus();
-							return;
-						}
+	if (edit) {
+		$('#main_editoperator_username').val(username);
+	}
 
-						if (edit) {
-							queueAjaxCommand([
-								Messages.AdminOperatorReplaceMessage,
-								operatorId,
-								newUsername,
-								newPassword,
-								newName,
-								editOperatorCurrentColor,
-								newTitle,
-								editOperatorCurrentIcon
-							]);
-						} else {
-							queueAjaxCommand([
-								Messages.AdminOperatorCreateMessage,
-								newUsername,
-								newPassword,
-								newName,
-								editOperatorCurrentColor,
-								newTitle,
-								editOperatorCurrentIcon
-							]);
-						}
+	$('#main_editoperator_password').val('');
 
-						changeSubtabTo(operatorsSubtab);
-					})
-				)
+	var buttonsTableRow = $('<div/>').addClass('tablerow');
+
+	if (edit) {
+		buttonsTableRow.append(
+			$('<div/>').addClass('cell').css('width', '70px').append(
+				$('<div/>').addClass('smallbutton').text('Delete').click(function() {
+					queueAjaxCommand([
+						Messages.AdminOperatorDeleteMessage,
+						operatorId
+					]);
+				})
 			)
+		);
+	}
+
+	buttonsTableRow.append(
+		$('<div/>').addClass('cell')
+	).append(
+		$('<div/>').addClass('cell').css('width', '90px').append(
+			$('<div/>').addClass('smallbutton').text('Cancel').click(function() {
+				changeSubtabTo(operatorsSubtab);
+			})
 		)
+	).append(
+		$('<div/>').addClass('cell').css('width', '8px')
+	).append(
+		$('<div/>').addClass('cell').css('width', '100px').append(
+			$('<div/>').addClass('smallbutton').text(edit ? 'Save' : 'Create').click(function() {
+				var newName = $.trim($('#main_editoperator_name').val());
+				if (newName === '') {
+					$('#main_editoperator_name').val('Name');
+					$('#main_editoperator_name').focus();
+					onNameOrTitleEdited('name');
+					return;
+				}
+				var newTitle = $.trim($('#main_editoperator_title').val());
+				if (newTitle === '') {
+					$('#main_editoperator_title').val('Title');
+					$('#main_editoperator_title').focus();
+					onNameOrTitleEdited('title');
+					return;
+				}
+				var newUsername = $.trim($('#main_editoperator_username').val());
+				if (newUsername === '') {
+					$('#main_editoperator_username').val('Username');
+					$('#main_editoperator_username').focus();
+					return;
+				}
+				var newPassword = $.trim($('#main_editoperator_password').val());
+				if (!edit && newPassword === '') {
+					$('#main_editoperator_password').focus();
+					return;
+				}
+
+				if (edit) {
+					queueAjaxCommand([
+						Messages.AdminOperatorReplaceMessage,
+						operatorId,
+						newUsername,
+						newPassword,
+						newName,
+						editOperatorCurrentColor,
+						newTitle,
+						editOperatorCurrentIcon
+					]);
+				} else {
+					queueAjaxCommand([
+						Messages.AdminOperatorCreateMessage,
+						newUsername,
+						newPassword,
+						newName,
+						editOperatorCurrentColor,
+						newTitle,
+						editOperatorCurrentIcon
+					]);
+				}
+			})
+		)
+	);
+
+	$('#main_editoperator_buttonsdiv').empty().append(
+		$('<div/>').addClass('fixedtable').append(buttonsTableRow)
 	);
 
 	if (edit) {
@@ -312,6 +331,8 @@ function loginTabOkHandler() {
 	}
 }
 
+var operatorsCount = null;
+
 function handleMessage(message) {
 	messageTypeId = message.shift();
 	log("Msg Type Id: " + messageTypeId);
@@ -362,6 +383,7 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminOperatorDetailsStartMessage:
 			$('#main_operators_listbox').empty();
+			operatorsCount = 0;
 			break;
 		case Messages.AdminOperatorDetailsMessage:
 			var operatorId = message[0];
@@ -406,17 +428,43 @@ function handleMessage(message) {
 
 			replaceIconWith(iconUrl, $('#main_operators_' + operatorId + '_icon'));
 
+			operatorsCount++;
+
 			break;
 		case Messages.AdminOperatorDetailsEndMessage:
 			var listbox = $('#main_operators_listbox');
 
-			if (listbox.is(':empty')) {
+			if (operatorsCount === 0) {
 				listbox.append(
 					$('<div/>').text('This is where you manage your list of operators. People added here will be able to login at <TODO> and accept chats from your customers.')
 				).append(
 					$('<div/>').addClass('main_operators_listbox_centertext').text('Currently, there are no operators for your site.')
 				);
 			}
+
+			// remove all classes from the listbox
+			listbox.removeClass('main_operators_listbox');
+			listbox.removeClass('main_operators_listbox_large');
+
+			// set either the listbox or listbox_large class depending on the number of operators we're listing
+			listbox.addClass(operatorsCount <= 3 ? 'main_operators_listbox' : 'main_operators_listbox_large');
+
+			break;
+		case Messages.AdminOperatorCreateSuccessMessage:
+			changeSubtabTo(operatorsSubtab);
+			break;
+		case Messages.AdminOperatorReplaceSuccessMessage:
+		case Messages.AdminOperatorDeleteSuccessMessage:
+			changeSubtabTo(operatorsSubtab);
+			break;
+		case Messages.AdminOperatorCreateDuplicateUsernameMessage:
+		case Messages.AdminOperatorReplaceDuplicateUsernameMessage:
+			showEditOperatorDuplicateUsernameScreen();
+			break;
+		case Messages.AdminOperatorReplaceInvalidIdMessage:
+		case Messages.AdminOperatorDeleteFailedMessage:
+			// these are cases when something very unexpected happens which can likely be fixed with a refresh
+			window.location.reload();
 			break;
 	}
 }
@@ -525,6 +573,25 @@ function showCantConnectScreen() {
 				$('<div/>').addClass('cell').css('width', '80px').append(
 					$('<div/>').addClass('basicbutton').text('Close').click(function() {
 						window.close();
+					})
+				)
+			)
+		)
+	);
+}
+
+function showEditOperatorDuplicateUsernameScreen() {
+	showMiscMessageTab('Duplicate username',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('You\'ve already used that username for another operator.')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Back').click(function() {
+						changeTabTo(mainTab);
 					})
 				)
 			)
