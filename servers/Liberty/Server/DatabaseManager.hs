@@ -152,15 +152,15 @@ getSiteDataFromDb databaseHandleTVar = do
           (lookup "expiryTimestamp" siteDoc :: Maybe Integer) <*>
           (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
           (lookup "operators" siteDoc :: Maybe [Document]) <*>
-          (asMaybeText $ lookup "adminPassword" siteDoc)
+          (asMaybeText $ lookup "adminPasswordHash" siteDoc)
         of
-          Just (siteId, name, expiryTimestamp, nextOperatorId, operators, adminPassword) ->
+          Just (siteId, name, expiryTimestamp, nextOperatorId, operators, adminPasswordHash) ->
             let
               maybeOperatorDatas = mapM (\operatorDoc ->
                 SiteOperatorData <$>
                   (lookup "operatorId" operatorDoc :: Maybe Integer) <*>
                   (asMaybeText $ lookup "username" operatorDoc) <*>
-                  (asMaybeText $ lookup "password" operatorDoc) <*>
+                  (asMaybeText $ lookup "passwordHash" operatorDoc) <*>
                   (asMaybeText $ lookup "name" operatorDoc) <*>
                   (asMaybeText $ lookup "color" operatorDoc) <*>
                   (asMaybeText $ lookup "title" operatorDoc) <*>
@@ -168,7 +168,7 @@ getSiteDataFromDb databaseHandleTVar = do
                 ) operators
             in
               case maybeOperatorDatas of
-                Just siteOperatorDatas -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas [] [] adminPassword [] 0
+                Just siteOperatorDatas -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas [] [] adminPasswordHash [] 0
                 Nothing -> Nothing
           Nothing -> Nothing
         ) siteDocs
@@ -199,14 +199,14 @@ saveSiteData siteData databaseHandleTVar = do
           Doc [
             "operatorId" := Int32 (fromInteger $ sodOperatorId siteOperatorData),
             "username" := (asStringValue $ sodUsername siteOperatorData),
-            "password" := (asStringValue $ sodPassword siteOperatorData),
+            "passwordHash" := (asStringValue $ sodPasswordHash siteOperatorData),
             "name" := (asStringValue $ sodName siteOperatorData),
             "color" := (asStringValue $ sodColor siteOperatorData),
             "title" := (asStringValue $ sodTitle siteOperatorData),
             "icon" := (asStringValue $ sodIconUrl siteOperatorData)
             ]
           ) (sdOperators siteData)),
-        "adminPassword" := (asStringValue $ sdAdminPassword siteData)
+        "adminPasswordHash" := (asStringValue $ sdAdminPasswordHash siteData)
         ]
     )
 

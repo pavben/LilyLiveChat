@@ -80,6 +80,8 @@ messageIdsAndTypes = [
     (52, SASiteInfoMessage),
     (53, SASiteInfoFailedMessage),
     (54, SASetExpiryTimestampSuccessMessage),
+    (55, AdminSetAdminPasswordMessage),
+    (56, AdminSetAdminPasswordSuccessMessage),
     (62, AdminOperatorDeleteSuccessMessage),
     (63, AdminOperatorDeleteFailedMessage)
   ]

@@ -46,7 +46,7 @@ Admin to Server
 26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [operatorId]
 38 - AdminSetSiteNameMessage [name]
--55 - AdminAdminCreateMessage [password]
+55 - AdminSetAdminPasswordMessage [password]
 -56 - AdminAdminReplaceMessage [adminId, password]
 -57 - AdminAdminDeleteMessage [adminId]
 
@@ -66,6 +66,7 @@ Server to Admin
 40 - AdminOperatorReplaceInvalidIdMessage
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
+56 - AdminSetAdminPasswordSuccessMessage
 -58 - AdminAdminCreateSuccessMessage
 -59 - AdminAdminCreateFailedMessage
 -60 - AdminAdminReplaceSuccessMessage

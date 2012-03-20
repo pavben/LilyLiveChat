@@ -225,8 +225,10 @@ var Messages = {
 	SASiteInfoMessage : 52,
 	SASiteInfoFailedMessage : 53,
 	SASetExpiryTimestampSuccessMessage : 54,
-    AdminOperatorDeleteSuccessMessage : 62,
-    AdminOperatorDeleteFailedMessage : 63
+	AdminSetAdminPasswordMessage : 55,
+	AdminSetAdminPasswordSuccessMessage : 56,
+	AdminOperatorDeleteSuccessMessage : 62,
+	AdminOperatorDeleteFailedMessage : 63
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {

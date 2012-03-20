@@ -24,6 +24,7 @@ import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types
+import Liberty.Server.Utils
 import Prelude hiding (catch)
 import Safe
 
@@ -149,6 +150,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
           Just operatorId -> handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan
           Nothing -> atomically $ closeClientSocket clientDataTVar
         (AdminSetSiteNameMessage,[name]) -> handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan
+        (AdminSetAdminPasswordMessage,[password]) -> handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -192,7 +194,7 @@ handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomical
 handleOperatorLoginRequestMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar =
   let
-    matchSiteOperatorCredentials siteOperatorData = (sodUsername siteOperatorData == username) && (sodPassword siteOperatorData == password)
+    matchSiteOperatorCredentials siteOperatorData = (sodUsername siteOperatorData == username) && (sodPasswordHash siteOperatorData == hashTextWithSalt password)
   in
     atomically $ do
       -- read the site data
@@ -234,7 +236,7 @@ handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
   atomically $ do
     -- read the site data
     siteData <- readTVar siteDataTVar
-    if password == sdAdminPassword siteData then do
+    if hashTextWithSalt password == sdAdminPasswordHash siteData then do
       -- Admin login successful
       -- update the site, adding the admin to it
       let newOnlineAdmins = clientDataTVar : sdOnlineAdmins siteData
@@ -356,7 +358,7 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
         let siteDataTVar = cadSiteDataTVar clientAdminData
         siteData <- readTVar siteDataTVar
         if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
-          let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username password name color title iconUrl
+          let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username (hashTextWithSalt password) name color title iconUrl
           -- save siteDataTVar with the new operator and sdNextOperatorId
           writeTVar siteDataTVar $ siteData {
             sdOperators = newSiteOperatorData : sdOperators siteData,
@@ -386,7 +388,7 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
           -- exactly 1 operator matched the search
           if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
             -- the new username does not collide with any other operators
-            let newSiteOperatorData = SiteOperatorData operatorId username password name color title iconUrl
+            let newSiteOperatorData = SiteOperatorData operatorId username (hashTextWithSalt password) name color title iconUrl
             -- save siteDataTVar with the new operator
             writeTVar siteDataTVar $ siteData {
               sdOperators = newSiteOperatorData : remainingOperators
@@ -469,7 +471,34 @@ handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
           sendSiteInfoToAdmins siteDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetSiteNameMessage" ()
     else
-      -- if the JS allowed them to set an extra long site name, something is wrong
+      -- if the browser allowed them to set an extra long site name, something is wrong
+      createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
+
+handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
+handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan =
+  atomically $ do
+    if LT.length password <= 100 then do
+      clientData <- readTVar clientDataTVar
+      case cdOtherData clientData of
+        OCDClientAdminData clientAdminData -> do
+          let siteDataTVar = cadSiteDataTVar clientAdminData
+          siteData <- readTVar siteDataTVar
+
+          -- save siteDataTVar with the new name
+          writeTVar siteDataTVar $ siteData {
+            sdAdminPasswordHash = hashTextWithSalt password
+          }
+
+          -- save to the database
+          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+
+          -- respond to the admin who issued the set password command
+          createAndSendMessage (AdminSetAdminPasswordSuccessMessage,[]) clientDataTVar
+
+          -- TODO: disconnect all other admins
+        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
+    else
+      -- if the browser allowed them to set an extra long password, something is wrong
       createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()

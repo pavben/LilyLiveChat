@@ -80,14 +80,14 @@ data SiteData = SiteData {
   sdOperators :: [SiteOperatorData],
   sdSessionsWaiting :: [ChatSessionTVar],
   sdOnlineOperators :: [ClientDataTVar],
-  sdAdminPassword :: Text,
+  sdAdminPasswordHash :: Text,
   sdOnlineAdmins :: [ClientDataTVar],
   sdNextSessionId :: Integer
 } deriving (Show)
 data SiteOperatorData = SiteOperatorData {
   sodOperatorId :: Integer,
   sodUsername :: Text,
-  sodPassword :: Text,
+  sodPasswordHash :: Text,
   sodName :: Text,
   sodColor :: Text,
   sodTitle :: Text,

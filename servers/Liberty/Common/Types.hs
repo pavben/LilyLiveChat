@@ -61,6 +61,8 @@ data MessageType = CustomerJoinMessage
                  | SASiteInfoMessage
                  | SASiteInfoFailedMessage
                  | SASetExpiryTimestampSuccessMessage
+                 | AdminSetAdminPasswordMessage
+                 | AdminSetAdminPasswordSuccessMessage
                  | AdminOperatorDeleteSuccessMessage
                  | AdminOperatorDeleteFailedMessage
   deriving (Show, Eq, Ord)
