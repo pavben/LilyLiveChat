@@ -376,6 +376,7 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
+  -- TODO: validate the length of all inputs
   atomically $ do
     clientData <- readTVar clientDataTVar
     case cdOtherData clientData of

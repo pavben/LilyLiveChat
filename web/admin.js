@@ -123,9 +123,7 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 
 	replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
 
-	if (edit) {
-		$('#main_editoperator_username').val(username);
-	}
+	$('#main_editoperator_username').val(edit ? username : '');
 
 	$('#main_editoperator_password').val('');
 
