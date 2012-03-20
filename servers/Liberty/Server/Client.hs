@@ -376,35 +376,36 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
-  -- TODO: Empty password means reuse the one from before (needs password hashing to be done first)
   atomically $ do
     clientData <- readTVar clientDataTVar
     case cdOtherData clientData of
       OCDClientAdminData clientAdminData -> do
         let siteDataTVar = cadSiteDataTVar clientAdminData
         siteData <- readTVar siteDataTVar
-        let (operatorsRemoved, remainingOperators) = partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData)
-        if length operatorsRemoved == 1 then
-          -- exactly 1 operator matched the search
-          if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
-            -- the new username does not collide with any other operators
-            let newSiteOperatorData = SiteOperatorData operatorId username (hashTextWithSalt password) name color title iconUrl
-            -- save siteDataTVar with the new operator
-            writeTVar siteDataTVar $ siteData {
-              sdOperators = newSiteOperatorData : remainingOperators
-            }
-            -- save to the database
-            queueSaveSiteData siteDataTVar databaseOperationQueueChan
-            -- respond to the admin who issued the replace command
-            createAndSendMessage (AdminOperatorReplaceSuccessMessage,[]) clientDataTVar
-            -- notify the admins with the new list
-            sendOperatorsListToAdmins siteDataTVar
-          else
-            -- an operator with that username already exists
-            createAndSendMessage (AdminOperatorReplaceDuplicateUsernameMessage,[]) clientDataTVar
-        else
-          -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
-          createAndSendMessage (AdminOperatorReplaceInvalidIdMessage,[]) clientDataTVar
+        case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
+          ([oldSiteOperatorData], remainingOperators) ->
+            -- exactly 1 operator matched the search
+            if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
+              -- the new password hash is either the same as the old (if no new password given) or a hash of the new password
+              let newPasswordHash = if LT.null password then sodPasswordHash oldSiteOperatorData else hashTextWithSalt password
+              -- the new username does not collide with any other operators
+              let newSiteOperatorData = SiteOperatorData operatorId username newPasswordHash name color title iconUrl
+              -- save siteDataTVar with the new operator
+              writeTVar siteDataTVar $ siteData {
+                sdOperators = newSiteOperatorData : remainingOperators
+              }
+              -- save to the database
+              queueSaveSiteData siteDataTVar databaseOperationQueueChan
+              -- respond to the admin who issued the replace command
+              createAndSendMessage (AdminOperatorReplaceSuccessMessage,[]) clientDataTVar
+              -- notify the admins with the new list
+              sendOperatorsListToAdmins siteDataTVar
+            else
+              -- an operator with that username already exists
+              createAndSendMessage (AdminOperatorReplaceDuplicateUsernameMessage,[]) clientDataTVar
+          _ ->
+            -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
+            createAndSendMessage (AdminOperatorReplaceInvalidIdMessage,[]) clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
 
 handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
