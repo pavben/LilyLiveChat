@@ -6,6 +6,7 @@ var miscMessageTab = null;
 var generalSubtab = null;
 var operatorsSubtab = null;
 var editOperatorSubtab = null;
+var adminPasswordSubtab = null;
 
 // Person object representing the operator
 var me = null;
@@ -22,6 +23,7 @@ $(window).bind('load', function() {
 	generalSubtab = $('#main_rightcell_general');
 	operatorsSubtab = $('#main_rightcell_operators');
 	editOperatorSubtab = $('#main_rightcell_editoperator');
+	adminPasswordSubtab = $('#main_rightcell_adminpassword');
 
 	replaceIconWith('images/lock.png', $('#login_icon'));
 
@@ -53,9 +55,43 @@ $(window).bind('load', function() {
 	});
 
 	replaceIconWith('images/lock.png', $('#main_btn_adminpassword'));
+	$('#main_btn_adminpassword').click(function() {
+		changeSubtabTo(adminPasswordSubtab);
+	});
 
-	onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
-	$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
+	// general subtab
+	// site name
+	{
+		onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
+		$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
+
+		function onSiteNameChange(field) {
+			if (!field[0].unsaved) {
+				field[0].unsaved = true;
+
+				$('#main_general_sitename_savedlabel').fadeTo(0, 0);
+				$('#main_general_sitename_savediv').animate({height:'32px'}, 350);
+			}
+		}
+
+		function siteNameSaveHandler() {
+			var siteName = $('#main_general_sitename');
+
+			// only send if currently not saved (this also prevents double-clicking the Save button)
+			if (siteName[0].unsaved) {
+				siteName[0].unsaved = false;
+				queueAjaxCommand([Messages.AdminSetSiteNameMessage, $.trim(siteName.val())]);
+
+				$('#main_general_sitename_savedlabel').fadeTo(500, 1);
+				$('#main_general_sitename_savediv').delay(1800).animate({height:'0px'}, 400);
+			}
+		}
+	}
+
+	// operators subtab
+	$('#main_operators_addnew').click(function() {
+		addOrEditOperatorHandler(null);
+	});
 
 	// edit operator subtab
 	$('#main_editoperator_btn_changecolor').click(function() {
@@ -91,9 +127,35 @@ $(window).bind('load', function() {
 		onNameOrTitleEdited('title');
 	});
 
-	$('#main_operators_addnew').click(function() {
-		addOrEditOperatorHandler(null);
-	});
+	// admin password subtab
+	// admin password field
+	{
+		onChangeToFieldValue($('#main_adminpassword_password'), onAdminPasswordChange);
+		$('#main_adminpassword_btn_save').click(adminPasswordSaveHandler);
+
+		function onAdminPasswordChange(field) {
+			if (!field[0].unsaved) {
+				field[0].unsaved = true;
+
+				$('#main_adminpassword_savedlabel').fadeTo(0, 0);
+				$('#main_adminpassword_savediv').animate({height:'32px'}, 350);
+			}
+		}
+
+		function adminPasswordSaveHandler() {
+			var inputBox = $('#main_adminpassword_password');
+
+			// only send if currently not saved (this also prevents double-clicking the Save button)
+			if (inputBox[0].unsaved) {
+				inputBox[0].unsaved = false;
+				//queueAjaxCommand([Messages.AdminSetSiteNameMessage, $.trim(inputBox.val())]);
+				log("TODO: new admin password: " + inputBox.val());
+
+				$('#main_adminpassword_savedlabel').fadeTo(500, 1);
+				$('#main_adminpassword_savediv').delay(1800).animate({height:'0px'}, 400);
+			}
+		}
+	}
 
 	$(window).resize(onResize);
 
@@ -248,28 +310,6 @@ function onChangeToFieldValue(field, callback) {
 	field.change(checkForChange);
 }
 
-function onSiteNameChange(field) {
-	if (!field[0].unsaved) {
-		field[0].unsaved = true;
-
-		$('#main_general_sitename_savedlabel').fadeTo(0, 0);
-		$('#main_general_sitename_savediv').animate({height:'32px'}, 350);
-	}
-}
-
-function siteNameSaveHandler() {
-	var siteName = $('#main_general_sitename');
-
-	// only send if currently not saved (this also prevents double-clicking the Save button)
-	if (siteName[0].unsaved) {
-		siteName[0].unsaved = false;
-		queueAjaxCommand([Messages.AdminSetSiteNameMessage, $.trim(siteName.val())]);
-
-		$('#main_general_sitename_savedlabel').fadeTo(500, 1);
-		$('#main_general_sitename_savediv').delay(1800).animate({height:'0px'}, 400);
-	}
-}
-
 function onNameOrTitleEdited(nameOrTitleStr) {
 	$('#main_editoperator_' + nameOrTitleStr + '_preview').text($('#main_editoperator_' + nameOrTitleStr).val());
 }
@@ -376,7 +416,7 @@ function handleMessage(message) {
 			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminSetSiteNameMessage, "Virtivia"]);
-			changeSubtabTo(operatorsSubtab);
+			changeSubtabTo(adminPasswordSubtab);
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();

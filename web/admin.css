@@ -70,6 +70,13 @@
 	height:1px;
 	background:#BBBBBB;
 }
+#main_rightcell_adminpassword ul {
+	margin:0px 10px 7px 0px;
+}
+#main_rightcell_adminpassword li {
+	line-height:20px;
+	padding-bottom:5px;
+}
 .main_hspacercell {
 	display:table-cell;
 	width:9px;
