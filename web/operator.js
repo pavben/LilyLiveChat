@@ -42,13 +42,9 @@ $(window).bind('load', function() {
 	var menuSlideTarget = null;
 	var menuSlideBusy = false;
 
-	$('#chat_menuouterwrapper').mouseenter(function() {
-		menuSlideTarget = 1;
-		followSlideTarget();
-	});
-
-	$('#chat_menuouterwrapper').mouseleave(function() {
-		menuSlideTarget = 0;
+	$('#chat_menuouterwrapper').click(function() {
+		// toggle
+		menuSlideTarget = menuSlideTarget == 0 ? 1 : 0;
 		followSlideTarget();
 	});
 

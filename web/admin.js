@@ -390,7 +390,7 @@ function handleMessage(message) {
 	switch (messageTypeId) {
 		case Messages.UnregisteredSiteSelectedMessage:
 			var siteName = message[0];
-			var siteActive = message[1]; // we don't care if it's active or not for operators
+			var siteActive = message[1]; // we don't care if it's active or not for admins
 
 			// set the proper login box title
 			$('#login_adminloginlabel').text(siteName + ' Admin Login');
@@ -416,7 +416,7 @@ function handleMessage(message) {
 			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
 			//queueAjaxCommand([Messages.AdminSetSiteNameMessage, "Virtivia"]);
-			changeSubtabTo(adminPasswordSubtab);
+			changeSubtabTo(generalSubtab);
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
@@ -427,6 +427,9 @@ function handleMessage(message) {
 			var siteExpiryTS = message[2];
 
 			setFieldValue($('#main_general_sitename'), siteName);
+
+			var siteExpiryDate = new Date(siteExpiryTS * 1000);
+			$('#main_general_siteexpiry').text(siteExpiryDate.toDateString());
 			break;
 		case Messages.AdminSetSiteNameSuccessMessage:
 			// site name set successfully

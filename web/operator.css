@@ -52,6 +52,7 @@
 	display:table-cell;
 	background-image:url('images/gtile29.png');
 	vertical-align:middle;
+	cursor:pointer;
 }
 .chat_menulabelwidthlimiter {
 	width:180px;
