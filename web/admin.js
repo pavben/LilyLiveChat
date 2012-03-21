@@ -42,6 +42,18 @@ $(window).bind('load', function() {
 	});
 	
 	// main tab handlers
+	replaceIconWith('images/hotairballoon.png', $('#main_btn_general'));
+	$('#main_btn_general').click(function() {
+		changeSubtabTo(generalSubtab);
+	});
+
+	replaceIconWith('images/globes.png', $('#main_btn_operators'));
+	$('#main_btn_operators').click(function() {
+		changeSubtabTo(operatorsSubtab);
+	});
+
+	replaceIconWith('images/lock.png', $('#main_btn_adminpassword'));
+
 	onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
 	$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
 

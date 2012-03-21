@@ -11,7 +11,7 @@ $(window).bind('load', function() {
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
-	replaceIconWith('images/lock.png', $('#login_icon'));
+	replaceIconWith('images/globes.png', $('#login_icon'));
 	// default these labels
 	$('#chat_nextinlineheadertext').text('No customers waiting');
 	$('#chat_activechatsheader').text('No active chats');
