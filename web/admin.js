@@ -31,12 +31,7 @@ $(window).bind('load', function() {
 
 	// clicking the OK button
 	$('#login_btn_ok').click(loginTabOkHandler);
-	// or pressing Enter inside the name box
-	$('#login_username').keypress(function(e) {
-		if (e.which == 13) { // enter
-			loginTabOkHandler();
-		}
-	});
+	// or pressing Enter inside the password box
 	$('#login_password').keypress(function(e) {
 		if (e.which == 13) { // enter
 			loginTabOkHandler();
@@ -64,6 +59,11 @@ $(window).bind('load', function() {
 	{
 		onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
 		$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
+		$('#main_general_sitename').keypress(function(e) {
+			if (e.which == 13) { // enter
+				siteNameSaveHandler();
+			}
+		});
 
 		function onSiteNameChange(field) {
 			if (!field[0].unsaved) {
@@ -131,7 +131,14 @@ $(window).bind('load', function() {
 	// admin password field
 	{
 		onChangeToFieldValue($('#main_adminpassword_password'), onAdminPasswordChange);
-		$('#main_adminpassword_btn_save').click(adminPasswordSaveHandler);
+		setFieldValue($('#main_adminpassword_password'), ''); // empty
+
+		$('#main_adminpassword_btn_save').click(adminPasswordSaveHandler)
+		$('#main_adminpassword_password').keypress(function(e) {
+			if (e.which == 13) { // enter
+				adminPasswordSaveHandler();
+			}
+		});
 
 		function onAdminPasswordChange(field) {
 			if (!field[0].unsaved) {
@@ -139,6 +146,13 @@ $(window).bind('load', function() {
 
 				$('#main_adminpassword_savedlabel').fadeTo(0, 0);
 				$('#main_adminpassword_savediv').animate({height:'32px'}, 350);
+			} else {
+				// if unsaved, check if it was returned to empty
+				if (field.val().length == 0) {
+					field[0].unsaved = false;
+
+					$('#main_adminpassword_savediv').animate({height:'0px'}, 400);
+				}
 			}
 		}
 
@@ -148,11 +162,16 @@ $(window).bind('load', function() {
 			// only send if currently not saved (this also prevents double-clicking the Save button)
 			if (inputBox[0].unsaved) {
 				inputBox[0].unsaved = false;
-				//queueAjaxCommand([Messages.AdminSetSiteNameMessage, $.trim(inputBox.val())]);
-				log("TODO: new admin password: " + inputBox.val());
 
-				$('#main_adminpassword_savedlabel').fadeTo(500, 1);
-				$('#main_adminpassword_savediv').delay(1800).animate({height:'0px'}, 400);
+				if (inputBox.val().length > 0) {
+					// send the update to the server
+					queueAjaxCommand([Messages.AdminSetAdminPasswordMessage, inputBox.val()]);
+					// clear the value
+					setFieldValue(inputBox, '');
+
+					$('#main_adminpassword_savedlabel').fadeTo(500, 1);
+					$('#main_adminpassword_savediv').delay(1800).animate({height:'0px'}, 400);
+				}
 			}
 		}
 	}
@@ -302,6 +321,9 @@ function setFieldValue(field, value) {
 function onChangeToFieldValue(field, callback) {
 	var checkForChange = function() {
 		if (field.val() != field[0].lastKnownValue) {
+			// update the last known value
+			field[0].lastKnownValue = field.val();
+
 			callback(field);
 		}
 	}
@@ -514,10 +536,16 @@ function handleMessage(message) {
 		case Messages.AdminOperatorReplaceDuplicateUsernameMessage:
 			showEditOperatorDuplicateUsernameScreen();
 			break;
-		case Messages.AdminOperatorReplaceInvalidIdMessage:
-		case Messages.AdminOperatorDeleteFailedMessage:
+		case Messages.AdminSetAdminPasswordSuccessMessage:
+			// these are success messages for which success was already assumed, so nothing needs to be done
+			break;
+		case Messages.AdminOperatorReplaceInvalidIdMessage: // the operator being replaced was deleted
+		case Messages.AdminOperatorDeleteFailedMessage: // the operator being deleted is already deleted
 			// these are cases when something very unexpected happens which can likely be fixed with a refresh
 			window.location.reload();
+			break;
+		default:
+			log("Received an unknown message!");
 			break;
 	}
 }
