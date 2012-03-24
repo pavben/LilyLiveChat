@@ -515,6 +515,7 @@ function initializeAudio() {
 
 function playSoundAfterDing(soundName) {
 	if (myJplayerReady) {
+		myJplayerPlaylist.loop = false;
 		myJplayerPlaylist.setPlaylist(
 			[
 				{
@@ -535,7 +536,6 @@ function playSoundAfterDing(soundName) {
 
 function playSoundUntilStopped(soundName) {
 	if (myJplayerReady) {
-		// TODO: this loop set has a confusing side effect. move it to initializeAudio
 		myJplayerPlaylist.loop = true;
 		myJplayerPlaylist.setPlaylist(
 			[
