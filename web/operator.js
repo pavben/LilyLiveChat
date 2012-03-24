@@ -39,7 +39,7 @@ $(window).bind('load', function() {
 
 	// chat tab's menu effects
 	// TODO: simplify this to be click-based as the hover is annoying
-	var menuSlideTarget = null;
+	var menuSlideTarget = 0;
 	var menuSlideBusy = false;
 
 	$('#chat_menuouterwrapper').click(function() {
@@ -72,6 +72,11 @@ $(window).bind('load', function() {
 		}
 	}
 	// end chat tab's menu effects
+	
+	initializeAudio();
+
+	// begin running this loop
+	checkRingtoneStateLoop();
 
 	$(window).resize(onResize);
 
@@ -112,6 +117,27 @@ function loginTabOkHandler() {
 	}
 }
 
+// ringtone code
+var ringtoneActive = false;
+
+function checkRingtoneStateLoop() {
+	if (numActiveChats === 0 && numCustomersInLine > 0 && currentTab == chatTab) {
+		if (ringtoneActive === false) {
+			ringtoneActive = true;
+
+			playSoundUntilStopped('hding-lding');
+		}
+	} else {
+		// either we have active chats or there isn't anyone in line
+		clearSoundPlaylist();
+
+		ringtoneActive = false;
+	}
+
+	// check again in 1 second
+	setTimeout(checkRingtoneStateLoop, 1000);
+}
+
 function handleMessage(message) {
 	messageTypeId = message.shift();
 	log("Msg Type Id: " + messageTypeId);
@@ -130,7 +156,7 @@ function handleMessage(message) {
 			});
 
 			// Auto-login
-			//$('#login_btn_ok').click();
+			$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen
@@ -519,8 +545,10 @@ var latestLineStatus = null; // name, color, line length; instantly updated when
 var lineStatusBusy = false; // true if effects are running
 var currentDisplayedLineLength = 0; // the value reflecting what is displayed to the user as the line length
 var currentDisplayedNextInLine = null; // name and color; reflecting what is displayed to the user
+var numCustomersInLine = 0; // used for ringtone playback control
 
 function setLineStatus(name, color, lineLength) {
+	numCustomersInLine = lineLength;
 	latestLineStatus = [name, color, lineLength];
 	checkLineStatus();
 }

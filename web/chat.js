@@ -341,47 +341,6 @@ function welcomeTabOkHandler() {
 	}
 }
 
-/* SoundManager2 */
-soundManager.url = 'soundmanager2';
-
-// TODO: remove this line and replace with a minimized version
-soundManager.debugMode = false;
-
-soundManager.onready(function() {
-	soundsToLoad = [
-		'youare9thinline',
-		'youarenow8thinline',
-		'7thinline',
-		'youarenow6thinline',
-		'youarenow5thinline',
-		'youre4thinline',
-		'youarenow3rd',
-		'youre2ndinline',
-		'getreadyyourenextinline',
-		'nowspeakingwithrep',
-		'hding-lding'
-	];
-
-	for (var i in soundsToLoad) {
-		var soundName = soundsToLoad[i];
-
-		soundManager.createSound({
-			id: soundName,
-			volume: (soundName != 'hding-lding') ? 80 : 100,
-			autoLoad: true,
-			url: 'audio/' + soundName + '.mp3'
-		});
-	}
-});
-
-function playSoundAfterDing(soundName) {
-	soundManager.play('hding-lding', {
-		onfinish: function() {
-			soundManager.play(soundName);
-		}
-	});
-}
-
 function showInactiveSiteScreen() {
 	showMiscMessageTab('There\'s nobody online :-(',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
@@ -586,6 +545,8 @@ $(window).bind('load', function() {
 	//changeTabTo(chatTab);
 	//updatePositionInLine(5);
 	// END OF DEBUG
+	
+	initializeAudio();
 	
 	$(window).resize(onResize);
 

@@ -489,6 +489,74 @@ function generatePersonColor() {
 	}
 }
 
+// audio
+var myJplayerPlaylist;
+var myJplayerReady = false;
+
+// TODO: detect failures (no flash or html5 support)
+function initializeAudio() {
+	$('body').append(
+		$('<div/>').attr('id', 'jPlayer')
+	);
+	myJplayerPlaylist = new jPlayerPlaylist({
+		jPlayer: '#jPlayer'
+	},
+	[],
+	{
+		ready: function() {
+			myJplayerReady = true;
+		},
+		swfPath: 'audio',
+		solution: 'flash, html',
+		supplied: 'oga, mp3',
+		errorAlerts: true // TODO: remove
+	});
+}
+
+function playSoundAfterDing(soundName) {
+	if (myJplayerReady) {
+		myJplayerPlaylist.setPlaylist(
+			[
+				{
+					mp3: '../audio/hding-lding.mp3',
+					oga: '../audio/hding-lding.ogg'
+				},
+				{
+					mp3: '../audio/' + soundName + '.mp3',
+					oga: '../audio/' + soundName + '.ogg'
+				}
+			]
+		);
+		myJplayerPlaylist.play(0);
+	} else {
+		log('Sound play requested before jPlayer is initialized.');
+	}
+}
+
+function playSoundUntilStopped(soundName) {
+	if (myJplayerReady) {
+		// TODO: this loop set has a confusing side effect. move it to initializeAudio
+		myJplayerPlaylist.loop = true;
+		myJplayerPlaylist.setPlaylist(
+			[
+				{
+					mp3: '../audio/' + soundName + '.mp3',
+					oga: '../audio/' + soundName + '.ogg'
+				}
+			]
+		);
+		myJplayerPlaylist.play(0);
+	} else {
+		log('Sound play requested before jPlayer is initialized.');
+	}
+}
+
+function clearSoundPlaylist() {
+	if (myJplayerReady) {
+		myJplayerPlaylist.setPlaylist([]);
+	}
+}
+
 // misc
 function stripPx(text) {
 	return text.replace('px', '');

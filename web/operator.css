@@ -75,7 +75,13 @@
 	border-radius:5px;
 	color:#656565;
 	line-height:24px;
-	text-align:center;
+}
+#chat_noopenchatsessionsdiv ul {
+	margin:10px 10px 6px 0px;
+}
+#chat_noopenchatsessionsdiv li {
+	line-height:20px;
+	padding-bottom:5px;
 }
 #chat_nextinlinewrapper {
 	height:71px;
