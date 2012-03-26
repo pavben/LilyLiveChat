@@ -38,7 +38,6 @@ $(window).bind('load', function() {
 	});
 
 	// chat tab's menu effects
-	// TODO: simplify this to be click-based as the hover is annoying
 	var menuSlideTarget = 0;
 	var menuSlideBusy = false;
 

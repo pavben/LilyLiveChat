@@ -328,8 +328,13 @@ function onChangeToFieldValue(field, callback) {
 		}
 	}
 
-	field.keyup(checkForChange);
-	field.change(checkForChange);
+	field.bind({
+		'input': checkForChange,
+		'paste': checkForChange,
+		'keypress': checkForChange,
+		'keydown': checkForChange,
+		'change': checkForChange
+	});
 }
 
 function onNameOrTitleEdited(nameOrTitleStr) {
