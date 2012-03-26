@@ -39,17 +39,17 @@ $(window).bind('load', function() {
 	});
 	
 	// main tab handlers
-	replaceIconWith('images/hotairballoon.png', $('#main_btn_general'));
+	replaceIconWith('images/admin_general.png', $('#main_btn_general'));
 	$('#main_btn_general').click(function() {
 		changeSubtabTo(generalSubtab);
 	});
 
-	replaceIconWith('images/globes.png', $('#main_btn_operators'));
+	replaceIconWith('images/admin_operators.png', $('#main_btn_operators'));
 	$('#main_btn_operators').click(function() {
 		changeSubtabTo(operatorsSubtab);
 	});
 
-	replaceIconWith('images/lock.png', $('#main_btn_adminpassword'));
+	replaceIconWith('images/admin_security.png', $('#main_btn_adminpassword'));
 	$('#main_btn_adminpassword').click(function() {
 		changeSubtabTo(adminPasswordSubtab);
 	});
@@ -57,14 +57,6 @@ $(window).bind('load', function() {
 	// general subtab
 	// site name
 	{
-		onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
-		$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
-		$('#main_general_sitename').keypress(function(e) {
-			if (e.which == 13) { // enter
-				siteNameSaveHandler();
-			}
-		});
-
 		function onSiteNameChange(field) {
 			if (!field[0].unsaved) {
 				field[0].unsaved = true;
@@ -86,6 +78,14 @@ $(window).bind('load', function() {
 				$('#main_general_sitename_savediv').delay(1800).animate({height:'0px'}, 400);
 			}
 		}
+
+		onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
+		$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
+		$('#main_general_sitename').keypress(function(e) {
+			if (e.which == 13) { // enter
+				siteNameSaveHandler();
+			}
+		});
 	}
 
 	// operators subtab
@@ -130,16 +130,6 @@ $(window).bind('load', function() {
 	// admin password subtab
 	// admin password field
 	{
-		onChangeToFieldValue($('#main_adminpassword_password'), onAdminPasswordChange);
-		setFieldValue($('#main_adminpassword_password'), ''); // empty
-
-		$('#main_adminpassword_btn_save').click(adminPasswordSaveHandler)
-		$('#main_adminpassword_password').keypress(function(e) {
-			if (e.which == 13) { // enter
-				adminPasswordSaveHandler();
-			}
-		});
-
 		function onAdminPasswordChange(field) {
 			if (!field[0].unsaved) {
 				field[0].unsaved = true;
@@ -174,6 +164,16 @@ $(window).bind('load', function() {
 				}
 			}
 		}
+
+		onChangeToFieldValue($('#main_adminpassword_password'), onAdminPasswordChange);
+		setFieldValue($('#main_adminpassword_password'), ''); // empty
+
+		$('#main_adminpassword_btn_save').click(adminPasswordSaveHandler)
+		$('#main_adminpassword_password').keypress(function(e) {
+			if (e.which == 13) { // enter
+				adminPasswordSaveHandler();
+			}
+		});
 	}
 
 	$(window).resize(onResize);
