@@ -328,13 +328,7 @@ function onChangeToFieldValue(field, callback) {
 		}
 	}
 
-	field.bind({
-		'input': checkForChange,
-		'paste': checkForChange,
-		'keypress': checkForChange,
-		'keydown': checkForChange,
-		'change': checkForChange
-	});
+	bindTextChangeEvents(field, checkForChange);
 }
 
 function onNameOrTitleEdited(nameOrTitleStr) {

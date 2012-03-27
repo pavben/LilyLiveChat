@@ -262,11 +262,20 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 		chatBox.css('height', targetHeight);
 		onResize();
 	};
-	chatBox.change(checkHeight);
-	chatBox.keyup(checkHeight);
+	bindTextChangeEvents(chatBox, checkHeight);
 
 	// call it initially to set the initial height
 	checkHeight();
+}
+
+function bindTextChangeEvents(field, checkForChangeFunction) {
+	field.bind({
+		'input': checkForChangeFunction,
+		'paste': checkForChangeFunction,
+		'keypress': checkForChangeFunction,
+		'keydown': checkForChangeFunction,
+		'change': checkForChangeFunction
+	});
 }
 
 // tab switcher
