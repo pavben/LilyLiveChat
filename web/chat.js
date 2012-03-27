@@ -251,24 +251,6 @@ function updatePositionInLine(position) {
 
 	if (firstPositionUpdateProcessed) {
 		switch (position) {
-			case 9:
-				playSoundAfterDing('youare9thinline');
-				break;
-			case 8:
-				playSoundAfterDing('youarenow8thinline');
-				break;
-			case 7:
-				playSoundAfterDing('7thinline');
-				break;
-			case 6:
-				playSoundAfterDing('youarenow6thinline');
-				break;
-			case 5:
-				playSoundAfterDing('youarenow5thinline');
-				break;
-			case 4:
-				playSoundAfterDing('youre4thinline');
-				break;
 			case 3:
 				playSoundAfterDing('youarenow3rd');
 				break;
@@ -459,6 +441,70 @@ function disableEndChatButton() {
 	$('#chat_btn_endchat_wrapper').fadeTo(300, 0.5);
 }
 
+// sounds
+
+var jPlayerDing;
+var jPlayerNext;
+
+function initializeJplayers() {
+	jPlayerNext = initializeJplayerNext();
+	jPlayerDing = initializeJplayerDing(jPlayerNext);
+}
+
+// TODO: detect failures (no flash or html5 support)
+function initializeJplayerDing(jPlayerNext) {
+	var jPlayerDiv = $('<div/>');
+	$('body').append(jPlayerDiv);
+	
+	jPlayerDiv.jPlayer({
+		ready: function() {
+			jPlayerDiv.jPlayer('setMedia', {
+				mp3: '../audio/hding-lding.mp3',
+				oga: '../audio/hding-lding.ogg'
+			}).jPlayer('load');
+		},
+		ended: function() {
+			jPlayerNext.jPlayer('play');
+		},
+		swfPath: 'audio',
+		solution: 'flash, html',
+		supplied: 'oga, mp3',
+		errorAlerts: true // TODO: remove
+	});
+
+	return jPlayerDiv;
+}
+
+function initializeJplayerNext() {
+	var jPlayerDiv = $('<div/>');
+	$('body').append(jPlayerDiv);
+	
+	jPlayerDiv.jPlayer({
+		swfPath: 'audio',
+		solution: 'flash, html',
+		supplied: 'oga, mp3',
+		errorAlerts: true // TODO: remove
+	});
+
+	return jPlayerDiv;
+}
+
+function playSoundAfterDing(soundName) {
+	// first, stop the ding player if it's playing
+	jPlayerDing.jPlayer('stop');
+
+	// then set the next player to the desired sound (stop is implicit)
+	jPlayerNext.jPlayer('setMedia', {
+		mp3: '../audio/' + soundName + '.mp3',
+		oga: '../audio/' + soundName + '.ogg'
+	}).jPlayer('load');
+
+	// begin playing the ding while the next sound is loading
+	jPlayerDing.jPlayer('play');
+
+	// the ding player will automatically play the next sound on 'ended'
+}
+
 $(window).bind('load', function() {
 	welcomeTab = $('#welcome_tab');
 	chatTab = $('#chat_tab');
@@ -546,7 +592,7 @@ $(window).bind('load', function() {
 	//updatePositionInLine(5);
 	// END OF DEBUG
 	
-	initializeAudio();
+	initializeJplayers();
 	
 	$(window).resize(onResize);
 

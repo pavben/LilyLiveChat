@@ -72,10 +72,8 @@ $(window).bind('load', function() {
 	}
 	// end chat tab's menu effects
 	
-	initializeAudio();
-
-	// begin running this loop
-	checkRingtoneStateLoop();
+	// initialize the ringtone player
+	jPlayerRingtone = initializeJplayerRingtone();
 
 	$(window).resize(onResize);
 
@@ -90,6 +88,36 @@ $(window).bind('load', function() {
 		}
 	);
 });
+
+// audio
+
+var jPlayerRingtone;
+
+function initializeJplayerRingtone() {
+	var jPlayerDiv = $('<div/>');
+	$('body').append(jPlayerDiv);
+	
+	jPlayerDiv.jPlayer({
+		ready: function() {
+			jPlayerDiv.jPlayer('setMedia', {
+				mp3: '../audio/hding-lding.mp3',
+				oga: '../audio/hding-lding.ogg'
+			}).jPlayer('load');
+
+			// begin running this loop when the player is ready
+			checkRingtoneStateLoop();
+		},
+		ended: function() {
+			jPlayerDiv.jPlayer('play');
+		},
+		swfPath: 'audio',
+		solution: 'flash, html',
+		supplied: 'oga, mp3',
+		errorAlerts: true // TODO: remove
+	});
+
+	return jPlayerDiv;
+}
 
 var loginTabOkActive = false;
 
@@ -124,11 +152,11 @@ function checkRingtoneStateLoop() {
 		if (ringtoneActive === false) {
 			ringtoneActive = true;
 
-			playSoundUntilStopped('hding-lding');
+			jPlayerRingtone.jPlayer('play');
 		}
 	} else {
 		// either we have active chats or there isn't anyone in line
-		clearSoundPlaylist();
+		jPlayerRingtone.jPlayer('stop');
 
 		ringtoneActive = false;
 	}
