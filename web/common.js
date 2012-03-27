@@ -239,6 +239,8 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 		chatBox.css('overflow-y', 'hidden');
 		shadow.css('width', chatBox.width());
 
+		var previousHeight = chatBox.height();
+
 		var newContentHtml = chatBox.val().replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;')
 			.replace(/&/g, '&amp;')
@@ -259,8 +261,11 @@ function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 		} else if (targetHeight < minHeight) {
 			targetHeight = minHeight;
 		}
-		chatBox.css('height', targetHeight);
-		onResize();
+
+		if (targetHeight != previousHeight) {
+			chatBox.css('height', targetHeight);
+			onResize();
+		}
 	};
 	bindTextChangeEvents(chatBox, checkHeight);
 

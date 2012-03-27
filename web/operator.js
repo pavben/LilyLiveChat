@@ -149,12 +149,12 @@ var ringtoneActive = false;
 
 function checkRingtoneStateLoop() {
 	if (numActiveChats === 0 && numCustomersInLine > 0 && currentTab == chatTab) {
-		if (ringtoneActive === false) {
+		if (!ringtoneActive) {
 			ringtoneActive = true;
 
 			jPlayerRingtone.jPlayer('play');
 		}
-	} else {
+	} else if (ringtoneActive) {
 		// either we have active chats or there isn't anyone in line
 		jPlayerRingtone.jPlayer('stop');
 
@@ -931,6 +931,10 @@ function updateChatLogHeight() {
 			$('body').css('overflow-y', 'auto');
 		}
 		chatlogDiv.css('height', newChatLogHeight);
+
+		// scroll the chatlog to the bottom, if possible
+		chatlogDiv.scrollTop(getScrollTopTarget(chatlogDiv));
+
 		$('#chat_chatbox_' + visibleChatSessionId).focus();
 	}
 }

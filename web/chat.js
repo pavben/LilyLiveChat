@@ -300,6 +300,10 @@ function onChatTabResize() {
 	}
 
 	chatlogDiv.css('height', newChatLogHeight);
+
+	// scroll the chatlog to the bottom, if possible
+	chatlogDiv.scrollTop(getScrollTopTarget(chatlogDiv));
+
 	$('#chat_chatbox').focus();
 }
 
