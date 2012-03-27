@@ -164,7 +164,8 @@ input {
 .personmenubutton {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
-	background-color:#ECECEC;
+	background-image:url('images/buttontile.png');
+	background-repeat:repeat-x;
 	text-shadow:1px 1px 0px #f4f4f4;
 	text-align:center;
 	line-height:22px;

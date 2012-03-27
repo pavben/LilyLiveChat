@@ -313,24 +313,6 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 	changeSubtabTo(editOperatorSubtab);
 }
 
-// functions for instant tracking of changes to textboxes
-function setFieldValue(field, value) {
-	field.val(value)[0].lastKnownValue = value;
-}
-
-function onChangeToFieldValue(field, callback) {
-	var checkForChange = function() {
-		if (field.val() != field[0].lastKnownValue) {
-			// update the last known value
-			field[0].lastKnownValue = field.val();
-
-			callback(field);
-		}
-	}
-
-	bindTextChangeEvents(field, checkForChange);
-}
-
 function onNameOrTitleEdited(nameOrTitleStr) {
 	$('#main_editoperator_' + nameOrTitleStr + '_preview').text($('#main_editoperator_' + nameOrTitleStr).val());
 }

@@ -11,7 +11,7 @@ $(window).bind('load', function() {
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
-	replaceIconWith('images/globes.png', $('#login_icon'));
+	replaceIconWith('images/operator_login.png', $('#login_icon'));
 	// default these labels
 	$('#chat_nextinlineheadertext').text('No customers waiting');
 	$('#chat_activechatsheader').text('No active chats');
@@ -290,7 +290,7 @@ function updateActiveChatsLabel() {
 		if (numActiveChats == 0) {
 			activeChatsHeader.text('No active chats');
 		} else {
-			activeChatsHeader.text('My chats (' + numActiveChats + ' active)');
+			activeChatsHeader.text('My chats');
 		}
 		activeChatsHeader.fadeTo(500, 1);
 	});
@@ -517,7 +517,7 @@ function setChatSessionIndicator(chatSessionId, targetValue) {
 		 */
 
 		var fadeInTime = 500;
-		var fadeOutTime = 500;
+		var fadeOutTime = 250;
 
 		if (sessionData.buttonIndicatorState === ButtonIndicatorStates.Normal) {
 			switch (targetValue) {

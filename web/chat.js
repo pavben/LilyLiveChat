@@ -531,12 +531,19 @@ $(window).bind('load', function() {
 	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
 
 	// welcome tab handlers
-	// TODO: If the user has changed the name value to something non-empty, do not reset it with Randomize
+	var nameEdited = false;
+	onChangeToFieldValue($('#welcome_myname'), function() {
+		nameEdited = true;
+	});
 	$('#welcome_btn_randomize').click(function(e) {
 		$('#welcome_myname').fadeTo(100, 0, function() {
 			var nameAndIcon = randomizeNameAndIcon();
 			// name
-			$('#welcome_myname').val(nameAndIcon[0]);
+			// only set the random name if the user hasn't edited the name field
+			if (nameEdited === false || $.trim($('#welcome_myname').val()) === '') {
+				setFieldValue($('#welcome_myname'), nameAndIcon[0]);
+				nameEdited = false;
+			}
 			// color
 			myColor = generatePersonColor();
 			$('#welcome_myname').css('color', myColor);
