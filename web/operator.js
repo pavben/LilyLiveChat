@@ -395,8 +395,6 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	// start in the normal state, which means no active or ended class in the indicator
 	getChatSessionData(chatSessionId).buttonIndicatorState = ButtonIndicatorStates.Normal;
 
-	initializeAutoGrowingTextArea($('#chat_chatbox_' + chatSessionId), $('#chat_chatboxwrapper_' + chatSessionId));
-
 	// close handler
 	$('#chat_btn_endchat_' + chatSessionId).click(function() {
 		// setVisibleChatSessionId to another chat session, if any
@@ -429,6 +427,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 
 	// send handler
 	var chatBox = $('#chat_chatbox_' + chatSessionId);
+
 	chatBox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
@@ -443,6 +442,8 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 			return false;
 		}
 	});
+
+	initializeAutoGrowingTextArea(chatBox, $('#chat_chatboxwrapper_' + chatSessionId));
 
 	setVisibleChatSessionId(chatSessionId);
 
@@ -741,9 +742,9 @@ function followVisibleChatSessionIdTarget() {
 			targetCell.fadeTo(0, 0, function() {
 				onChatTabResize();
 				if (currentVisibleChatSessionIdTarget !== null) {
-					var chatLogDiv = chatSessionIdToObject('#chat_chatlog_', currentVisibleChatSessionIdTarget);
+					var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', currentVisibleChatSessionIdTarget);
 					// scroll to the bottom, if possible
-					chatLogDiv.scrollTop(getScrollTopTarget(chatLogDiv));
+					instantScrollChatlogToBottom(chatlogDiv);
 				}
 				targetCell.fadeTo(300, 1, function() {
 					if (currentVisibleChatSessionIdTarget === visibleChatSessionIdTarget) {
@@ -755,7 +756,7 @@ function followVisibleChatSessionIdTarget() {
 
 						// and scroll to the bottom again, in case something messed up our last scroll
 						if (currentVisibleChatSessionIdTarget !== null) {
-							chatLogWritten(chatLogDiv);
+							chatLogWritten(chatlogDiv);
 						}
 					} else {
 						// otherwise, transition to the new target
@@ -933,7 +934,7 @@ function updateChatLogHeight() {
 		chatlogDiv.css('height', newChatLogHeight);
 
 		// scroll the chatlog to the bottom, if possible
-		chatlogDiv.scrollTop(getScrollTopTarget(chatlogDiv));
+		instantScrollChatlogToBottom(chatlogDiv);
 
 		$('#chat_chatbox_' + visibleChatSessionId).focus();
 	}

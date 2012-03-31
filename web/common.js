@@ -460,6 +460,7 @@ function chatLogWritten(chatlogDiv) {
 		// here we use a custom "scroll" queue to make sure scrolling does not interfere with other animations
 		// we do this because we are using .stop() and clearing the queue, and we only want scroll tasks cleared
 		chatlogDiv.stop('scroll', true, false)
+		.stop(true, false)
 		.queue('scroll', function(next) {
 			chatlogDiv.animate({scrollTop: scrollTopTarget}, {duration:500, queue:false});
 			next();
@@ -469,6 +470,13 @@ function chatLogWritten(chatlogDiv) {
 
 	chatlogObject.lastScrollTop = chatlogDiv.scrollTop();
 	chatlogObject.lastScrollTopTarget = scrollTopTarget;
+}
+
+function instantScrollChatlogToBottom(chatlogDiv) {
+	chatlogDiv.stop('scroll', true, false)
+	.stop(true, false)
+	
+	chatlogDiv.scrollTop(getScrollTopTarget(chatlogDiv));
 }
 
 function getScrollTopTarget(theDiv) {

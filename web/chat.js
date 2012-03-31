@@ -1,7 +1,3 @@
-// CONSIDER: allow the operator to see what the customer is typing before they send it
-// CONSIDER: allow attaching a file (picture?)
-// TODO: On the menu screen, implement a tooltip on hover
-
 // these will be set onload
 var welcomeTab = null;
 var chatTab = null;
@@ -302,7 +298,7 @@ function onChatTabResize() {
 	chatlogDiv.css('height', newChatLogHeight);
 
 	// scroll the chatlog to the bottom, if possible
-	chatlogDiv.scrollTop(getScrollTopTarget(chatlogDiv));
+	instantScrollChatlogToBottom(chatlogDiv);
 
 	$('#chat_chatbox').focus();
 }
@@ -569,10 +565,10 @@ $(window).bind('load', function() {
 	});
 
 	// chat tab handlers
-	$('#chat_chatbox').keypress(function(e) {
+	var chatBox = $('#chat_chatbox');
+	chatBox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			if (!chatSessionEnded) {
-				var chatBox = $('#chat_chatbox');
 				if ($.trim(chatBox.val()).length > 0) {
 					queueAjaxCommand([Messages.CustomerSendChatMessage, chatBox.val()]);
 					writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog'));
@@ -580,7 +576,7 @@ $(window).bind('load', function() {
 			} else {
 				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog'));
 			}
-			$('#chat_chatbox').val('');
+			chatBox.val('');
 			return false;
 		}
 	});
