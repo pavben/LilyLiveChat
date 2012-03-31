@@ -231,6 +231,7 @@ var Messages = {
 	AdminOperatorDeleteFailedMessage : 63
 };
 
+// TODO: fix the chatlog scrolling, it's a total disaster
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
 	var shadow = $('<div/>').addClass('chatboxshadow').appendTo(appendShadowTo);
 

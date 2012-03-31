@@ -328,7 +328,7 @@ function welcomeTabOkHandler() {
 }
 
 function showInactiveSiteScreen() {
-	showMiscMessageTab('There\'s nobody online :-(',
+	showMiscMessageTab('No representatives available...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
 			$('<div/>').text('Our representatives are currently unavailable. Please try again later.')
 		),

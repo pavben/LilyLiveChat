@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+	<title>LilyLiveChat</title>
+	<script src="jquery/jquery.min.js"></script>
+	<script src="jquery/jquery.cookie.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+	{
+		var siteId = 'virtivia'
+
+		function getUrlParameter(name) {
+			var v = (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1];
+			return (v !== null) ? decodeURIComponent(v) : v;
+		}
+
+		var originalReferrer = getUrlParameter('originalReferrer');
+
+		if (originalReferrer !== null) {
+			$.cookie(siteId + '.referrer', originalReferrer, { expires: 1, path: '/' });
+		} else {
+			// if no original referrer given, clear the cookie
+			$.cookie(siteId + '.referrer', null);
+		}
+
+		window.location.replace('chat.html');
+	}
+</script>
+</body>
+</html>
