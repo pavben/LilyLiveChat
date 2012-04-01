@@ -19,13 +19,15 @@ module Liberty.Server.Types (
   ClientSendChan,
   DatabaseOperationQueueChanMessage(..),
   DatabaseOperationQueueChan,
-  module Liberty.Common.Types
+  module Liberty.Common.Types,
+  module Liberty.Server.Constants
 ) where
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Data.Text.Lazy (Text)
 import Network.Socket (Socket)
 import Liberty.Common.Types
+import Liberty.Server.Constants
 
 -- CONSIDER: Get rid of OtherClientData and ClientDataTVar in favor of UnregisteredDataTVar, CustomerDataTVar, OperatorDataTVar
 -- Note: Think about how createAndSendMessage will be done in this case

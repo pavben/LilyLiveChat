@@ -9,8 +9,9 @@ import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
---import Data.Map (Map)
+import Data.Int
 import Data.List
+--import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -123,7 +124,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
               atomically $ closeClientSocket clientDataTVar
     OCDClientCustomerData clientCustomerData ->
       case (messageType,params) of
-        (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData
+        (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
         (CustomerEndingChatMessage,[]) -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData)
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
@@ -132,7 +133,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
       case (messageType,params) of
         (OperatorAcceptNextChatSessionMessage,[]) -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         (OperatorSendChatMessage,[chatSessionIdT,text]) -> case parseIntegral chatSessionIdT of
-          Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text (codChatSessions clientOperatorData)
+          Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text clientDataTVar (codChatSessions clientOperatorData)
           Nothing -> atomically $ closeClientSocket clientDataTVar
         (OperatorEndingChatMessage, [chatSessionIdT]) -> case parseIntegral chatSessionIdT of
           Just chatSessionId -> handleOperatorEndingChatMessage chatSessionId (codChatSessions clientOperatorData)
@@ -171,25 +172,31 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomical
     Nothing -> createAndSendMessage (UnregisteredSiteInvalidMessage,[]) clientDataTVar
 
 handleCustomerJoinMessage :: Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar = atomically $ do
-  clientData <- readTVar clientDataTVar
-  siteData <- readTVar siteDataTVar
-  if not $ null $ sdOnlineOperators siteData then do
-    let thisChatSessionId = sdNextSessionId siteData
-    -- create a new chat session with this client as the customer and no operator
-    chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
-    writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color icon siteDataTVar chatSessionTVar }
+handleCustomerJoinMessage name color iconUrl clientDataTVar siteDataTVar =
+  atomically $ do
+    ensureTextLengthLimits [
+        (name, maxPersonNameLength),
+        (color, maxColorLength),
+        (iconUrl, maxIconUrlLength)
+      ] clientDataTVar $ do
+      clientData <- readTVar clientDataTVar
+      siteData <- readTVar siteDataTVar
+      if not $ null $ sdOnlineOperators siteData then do
+        let thisChatSessionId = sdNextSessionId siteData
+        -- create a new chat session with this client as the customer and no operator
+        chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
+        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color iconUrl siteDataTVar chatSessionTVar }
 
-    -- add the newly-created chat session to the site data's waiting list
-    let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
-    writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
+        -- add the newly-created chat session to the site data's waiting list
+        let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
+        writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
 
-    -- and notify all waiting clients and operators about the update (including sending the position to this customer)
-    waitingListUpdated siteDataTVar
-  else do
-    -- otherwise, there are no operators online, so we will not queue this customer
-    createAndSendMessage (CustomerNoOperatorsAvailableMessage,[]) clientDataTVar
-    closeClientSocket clientDataTVar
+        -- and notify all waiting clients and operators about the update (including sending the position to this customer)
+        waitingListUpdated siteDataTVar
+      else do
+        -- otherwise, there are no operators online, so we will not queue this customer
+        createAndSendMessage (CustomerNoOperatorsAvailableMessage,[]) clientDataTVar
+        closeClientSocket clientDataTVar
 
 handleOperatorLoginRequestMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar =
@@ -197,148 +204,153 @@ handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar 
     matchSiteOperatorCredentials siteOperatorData = (sodUsername siteOperatorData == username) && (sodPasswordHash siteOperatorData == hashTextWithSalt password)
   in
     atomically $ do
-      -- read the site data
-      siteData <- readTVar siteDataTVar
-      -- see if any operators match the given credentials
-      maybeSiteOperatorData <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
-        [siteOperatorData] -> do
-          -- Successful match
-          return $ Just siteOperatorData
-        [] -> do
-          -- No match
-          return Nothing
-        _ -> do
-          -- Multiple match -- data integrity error
-          return Nothing
+      ensureTextLengthLimits [(username, maxOperatorUsernameLength), (password, maxOperatorPasswordLength)] clientDataTVar $ do
+        -- read the site data
+        siteData <- readTVar siteDataTVar
+        -- see if any operators match the given credentials
+        maybeSiteOperatorData <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
+          [siteOperatorData] -> do
+            -- Successful match
+            return $ Just siteOperatorData
+          [] -> do
+            -- No match
+            return Nothing
+          _ -> do
+            -- Multiple match -- data integrity error
+            return Nothing
 
-      case maybeSiteOperatorData of
-        Just (SiteOperatorData operatorId _ _ name color title iconUrl) -> do
-          -- Operator login successful
-          -- update the site, adding the operator to it
-          let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
-          writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
+        case maybeSiteOperatorData of
+          Just (SiteOperatorData operatorId _ _ name color title iconUrl) -> do
+            -- Operator login successful
+            -- update the site, adding the operator to it
+            let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
+            writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
 
-          -- update the client, associating it with the site
-          clientData <- readTVar clientDataTVar
-          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData operatorId name color title iconUrl siteDataTVar [] }
-          createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
+            -- update the client, associating it with the site
+            clientData <- readTVar clientDataTVar
+            writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData operatorId name color title iconUrl siteDataTVar [] }
+            createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
 
-          -- send the line status
-          lineStatusInfo <- getLineStatusInfo siteDataTVar
-          sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
-        Nothing -> do
-          -- Operator login failed: Invalid credentials
-          createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
-          closeClientSocket clientDataTVar
+            -- send the line status
+            lineStatusInfo <- getLineStatusInfo siteDataTVar
+            sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
+          Nothing -> do
+            -- Operator login failed: Invalid credentials
+            createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+            closeClientSocket clientDataTVar
 
 handleAdminLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
   atomically $ do
-    -- read the site data
-    siteData <- readTVar siteDataTVar
-    if hashTextWithSalt password == sdAdminPasswordHash siteData then do
-      -- Admin login successful
-      -- update the site, adding the admin to it
-      let newOnlineAdmins = clientDataTVar : sdOnlineAdmins siteData
-      writeTVar siteDataTVar $ siteData { sdOnlineAdmins = newOnlineAdmins }
+    ensureTextLengthLimits [(password, maxOperatorPasswordLength)] clientDataTVar $ do
+      -- read the site data
+      siteData <- readTVar siteDataTVar
+      if hashTextWithSalt password == sdAdminPasswordHash siteData then do
+        -- Admin login successful
+        -- update the site, adding the admin to it
+        let newOnlineAdmins = clientDataTVar : sdOnlineAdmins siteData
+        writeTVar siteDataTVar $ siteData { sdOnlineAdmins = newOnlineAdmins }
 
-      -- update the client, associating it with the site
-      clientData <- readTVar clientDataTVar
-      writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientAdminData $ ClientAdminData siteDataTVar }
-      createAndSendMessage (AdminLoginSuccessMessage, []) clientDataTVar
+        -- update the client, associating it with the site
+        clientData <- readTVar clientDataTVar
+        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientAdminData $ ClientAdminData siteDataTVar }
+        createAndSendMessage (AdminLoginSuccessMessage, []) clientDataTVar
 
-      -- send the site info (siteId, name, expiryTimestamp)
-      sendSiteInfoToAdmin siteData clientDataTVar
+        -- send the site info (siteId, name, expiryTimestamp)
+        sendSiteInfoToAdmin siteData clientDataTVar
 
-      -- send the operators list
-      sendOperatorsListToAdmin siteData clientDataTVar
-    else do
-      -- Admin login failed: Invalid credentials
-      createAndSendMessage (AdminLoginFailedMessage, []) clientDataTVar
-      closeClientSocket clientDataTVar
+        -- send the operators list
+        sendOperatorsListToAdmin siteData clientDataTVar
+      else do
+        -- Admin login failed: Invalid credentials
+        createAndSendMessage (AdminLoginFailedMessage, []) clientDataTVar
+        closeClientSocket clientDataTVar
 
-handleCustomerSendChatMessage :: Text -> ClientCustomerData -> IO ()
-handleCustomerSendChatMessage messageText clientCustomerData = do
+handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
+handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar =
   atomically $ do
-    let chatSessionTVar = ccdChatSessionTVar clientCustomerData
-    chatSession <- readTVar $ chatSessionTVar
-    writeTVar chatSessionTVar $ chatSession {
-      csMessagesWaiting = case csOperator chatSession of
-        -- if there is no operator, buffer the message
-        ChatOperatorNobody -> messageText : csMessagesWaiting chatSession
-        -- otherwise, don't buffer the message since it'll be immediately sent to the operator
-        _ -> csMessagesWaiting chatSession
-    }
-    case csOperator chatSession of
-      ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession,messageText]) operatorClientDataTVar
-      ChatOperatorNobody -> return () -- we have buffered the message above
+    ensureTextLengthLimits [(messageText, maxChatMessageLength)] clientDataTVar $ do
+      let chatSessionTVar = ccdChatSessionTVar clientCustomerData
+      chatSession <- readTVar $ chatSessionTVar
+      writeTVar chatSessionTVar $ chatSession {
+        csMessagesWaiting = case csOperator chatSession of
+          -- if there is no operator, buffer the message
+          ChatOperatorNobody -> messageText : csMessagesWaiting chatSession
+          -- otherwise, don't buffer the message since it'll be immediately sent to the operator
+          _ -> csMessagesWaiting chatSession
+      }
+      case csOperator chatSession of
+        ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession,messageText]) operatorClientDataTVar
+        ChatOperatorNobody -> return () -- we have buffered the message above
 
 handleCustomerEndingChatMessage :: ChatSessionTVar -> IO ()
 handleCustomerEndingChatMessage chatSessionTVar = atomically $ endChatSession chatSessionTVar
 
 handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
-handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = atomically $ do
-  siteData <- readTVar siteDataTVar
-  case sdSessionsWaiting siteData of
-    chatSessionTVar:remainingChatSessionTVars -> do
-      clientData <- readTVar clientDataTVar
-      case cdOtherData clientData of
-        OCDClientOperatorData clientOperatorData -> do
-          -- add the chat session to the operator
-          writeTVar clientDataTVar $ clientData {
-            cdOtherData = OCDClientOperatorData $ clientOperatorData {
-              codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
-            }
-          }
-          -- remove the chat session from sdSessionsWaiting
-          writeTVar siteDataTVar $ siteData {
-            sdSessionsWaiting = remainingChatSessionTVars
-          }
-          -- set the operator as the operator for this chat session
-          chatSession <- readTVar chatSessionTVar
-          writeTVar chatSessionTVar $ chatSession {
-            csOperator = ChatOperatorClient clientDataTVar,
-            csMessagesWaiting = []
-          }
-          -- read additional data that will be needed below
-          updatedChatSession <- readTVar chatSessionTVar
-          customerClientData <- readTVar (csCustomerClientDataTVar updatedChatSession)
-          (customerName, customerColor, customerIconUrl) <- case cdOtherData customerClientData of
-            OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData)
-            _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty)
-          -- update the operators with 'next in line' and waiting customers with their new position
-          waitingListUpdated siteDataTVar
-        
-          -- send the CustomerNowTalkingToMessage to the customer
-          createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar updatedChatSession)
-          
-          -- send the OperatorNowTalkingToMessage to the operator
-          createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl]) clientDataTVar
-
-          -- send all csMessagesWaiting to the operator
-          -- note: chatSession is a snapshot from before we emptied csMessagesWaiting
-          forM_ (reverse $ csMessagesWaiting chatSession) (\messageText -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession, messageText]) clientDataTVar)
-
-        _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
-
-    _ -> return () -- no waiting sessions, so do nothing
-
-handleOperatorSendChatMessage :: Integer -> Text -> [ChatSessionTVar] -> IO ()
-handleOperatorSendChatMessage chatSessionId text chatSessionTVars =
+handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
   atomically $ do
-    matchedSessions <- filterM (\chatSessionTVar -> do
-      chatSession <- readTVar chatSessionTVar
-      return $ chatSessionId == csId chatSession
-      ) chatSessionTVars
+    siteData <- readTVar siteDataTVar
+    case sdSessionsWaiting siteData of
+      chatSessionTVar:remainingChatSessionTVars -> do
+        clientData <- readTVar clientDataTVar
+        case cdOtherData clientData of
+          OCDClientOperatorData clientOperatorData -> do
+            -- add the chat session to the operator
+            writeTVar clientDataTVar $ clientData {
+              cdOtherData = OCDClientOperatorData $ clientOperatorData {
+                codChatSessions = (codChatSessions clientOperatorData) ++ [chatSessionTVar]
+              }
+            }
+            -- remove the chat session from sdSessionsWaiting
+            writeTVar siteDataTVar $ siteData {
+              sdSessionsWaiting = remainingChatSessionTVars
+            }
+            -- set the operator as the operator for this chat session
+            chatSession <- readTVar chatSessionTVar
+            writeTVar chatSessionTVar $ chatSession {
+              csOperator = ChatOperatorClient clientDataTVar,
+              csMessagesWaiting = []
+            }
+            -- read additional data that will be needed below
+            updatedChatSession <- readTVar chatSessionTVar
+            customerClientData <- readTVar (csCustomerClientDataTVar updatedChatSession)
+            (customerName, customerColor, customerIconUrl) <- case cdOtherData customerClientData of
+              OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData)
+              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty)
+            -- update the operators with 'next in line' and waiting customers with their new position
+            waitingListUpdated siteDataTVar
+          
+            -- send the CustomerNowTalkingToMessage to the customer
+            createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar updatedChatSession)
+            
+            -- send the OperatorNowTalkingToMessage to the operator
+            createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl]) clientDataTVar
 
-    case matchedSessions of
-      [chatSessionTVar] -> do
+            -- send all csMessagesWaiting to the operator
+            -- note: chatSession is a snapshot from before we emptied csMessagesWaiting
+            forM_ (reverse $ csMessagesWaiting chatSession) (\messageText -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession, messageText]) clientDataTVar)
+
+          _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
+
+      _ -> return () -- no waiting sessions, so do nothing
+
+handleOperatorSendChatMessage :: Integer -> Text -> ClientDataTVar -> [ChatSessionTVar] -> IO ()
+handleOperatorSendChatMessage chatSessionId messageText clientDataTVar chatSessionTVars =
+  atomically $ do
+    ensureTextLengthLimits [(messageText, maxChatMessageLength)] clientDataTVar $ do
+      matchedSessions <- filterM (\chatSessionTVar -> do
         chatSession <- readTVar chatSessionTVar
-        createAndSendMessage (CustomerReceiveChatMessage, [text]) (csCustomerClientDataTVar chatSession)
-      _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
+        return $ chatSessionId == csId chatSession
+        ) chatSessionTVars
+
+      case matchedSessions of
+        [chatSessionTVar] -> do
+          chatSession <- readTVar chatSessionTVar
+          createAndSendMessage (CustomerReceiveChatMessage, [messageText]) (csCustomerClientDataTVar chatSession)
+        _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
 handleOperatorEndingChatMessage :: Integer -> [ChatSessionTVar] -> IO ()
-handleOperatorEndingChatMessage chatSessionId chatSessionTVars = do
+handleOperatorEndingChatMessage chatSessionId chatSessionTVars =
   atomically $ do
     matchedSessions <- filterM (\chatSessionTVar -> do
       chatSession <- readTVar chatSessionTVar
@@ -352,62 +364,77 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars = do
 handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
   atomically $ do
-    clientData <- readTVar clientDataTVar
-    case cdOtherData clientData of
-      OCDClientAdminData clientAdminData -> do
-        let siteDataTVar = cadSiteDataTVar clientAdminData
-        siteData <- readTVar siteDataTVar
-        if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
-          let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username (hashTextWithSalt password) name color title iconUrl
-          -- save siteDataTVar with the new operator and sdNextOperatorId
-          writeTVar siteDataTVar $ siteData {
-            sdOperators = newSiteOperatorData : sdOperators siteData,
-            sdNextOperatorId = sdNextOperatorId siteData + 1
-          }
-          -- save to the database
-          queueSaveSiteData siteDataTVar databaseOperationQueueChan
-          -- respond to the admin who issued the create command
-          createAndSendMessage (AdminOperatorCreateSuccessMessage,[]) clientDataTVar
-          -- notify the admins with the new list
-          sendOperatorsListToAdmins siteDataTVar
-        else
-          createAndSendMessage (AdminOperatorCreateDuplicateUsernameMessage,[]) clientDataTVar
-      _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
+    ensureTextLengthLimits [
+        (username, maxOperatorUsernameLength),
+        (password, maxOperatorPasswordLength),
+        (name, maxPersonNameLength),
+        (color, maxColorLength),
+        (title, maxOperatorTitleLength),
+        (iconUrl, maxIconUrlLength)
+      ] clientDataTVar $ do
+      clientData <- readTVar clientDataTVar
+      case cdOtherData clientData of
+        OCDClientAdminData clientAdminData -> do
+          let siteDataTVar = cadSiteDataTVar clientAdminData
+          siteData <- readTVar siteDataTVar
+          if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
+            let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username (hashTextWithSalt password) name color title iconUrl
+            -- save siteDataTVar with the new operator and sdNextOperatorId
+            writeTVar siteDataTVar $ siteData {
+              sdOperators = newSiteOperatorData : sdOperators siteData,
+              sdNextOperatorId = sdNextOperatorId siteData + 1
+            }
+            -- save to the database
+            queueSaveSiteData siteDataTVar databaseOperationQueueChan
+            -- respond to the admin who issued the create command
+            createAndSendMessage (AdminOperatorCreateSuccessMessage,[]) clientDataTVar
+            -- notify the admins with the new list
+            sendOperatorsListToAdmins siteDataTVar
+          else
+            createAndSendMessage (AdminOperatorCreateDuplicateUsernameMessage,[]) clientDataTVar
+        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
-  -- TODO: validate the length of all inputs
   atomically $ do
-    clientData <- readTVar clientDataTVar
-    case cdOtherData clientData of
-      OCDClientAdminData clientAdminData -> do
-        let siteDataTVar = cadSiteDataTVar clientAdminData
-        siteData <- readTVar siteDataTVar
-        case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
-          ([oldSiteOperatorData], remainingOperators) ->
-            -- exactly 1 operator matched the search
-            if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
-              -- the new password hash is either the same as the old (if no new password given) or a hash of the new password
-              let newPasswordHash = if LT.null password then sodPasswordHash oldSiteOperatorData else hashTextWithSalt password
-              -- the new username does not collide with any other operators
-              let newSiteOperatorData = SiteOperatorData operatorId username newPasswordHash name color title iconUrl
-              -- save siteDataTVar with the new operator
-              writeTVar siteDataTVar $ siteData {
-                sdOperators = newSiteOperatorData : remainingOperators
-              }
-              -- save to the database
-              queueSaveSiteData siteDataTVar databaseOperationQueueChan
-              -- respond to the admin who issued the replace command
-              createAndSendMessage (AdminOperatorReplaceSuccessMessage,[]) clientDataTVar
-              -- notify the admins with the new list
-              sendOperatorsListToAdmins siteDataTVar
-            else
-              -- an operator with that username already exists
-              createAndSendMessage (AdminOperatorReplaceDuplicateUsernameMessage,[]) clientDataTVar
-          _ ->
-            -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
-            createAndSendMessage (AdminOperatorReplaceInvalidIdMessage,[]) clientDataTVar
-      _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
+    ensureTextLengthLimits [
+        (username, maxOperatorUsernameLength),
+        (password, maxOperatorPasswordLength),
+        (name, maxPersonNameLength),
+        (color, maxColorLength),
+        (title, maxOperatorTitleLength),
+        (iconUrl, maxIconUrlLength)
+      ] clientDataTVar $ do
+      clientData <- readTVar clientDataTVar
+      case cdOtherData clientData of
+        OCDClientAdminData clientAdminData -> do
+          let siteDataTVar = cadSiteDataTVar clientAdminData
+          siteData <- readTVar siteDataTVar
+          case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
+            ([oldSiteOperatorData], remainingOperators) ->
+              -- exactly 1 operator matched the search
+              if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
+                -- the new password hash is either the same as the old (if no new password given) or a hash of the new password
+                let newPasswordHash = if LT.null password then sodPasswordHash oldSiteOperatorData else hashTextWithSalt password
+                -- the new username does not collide with any other operators
+                let newSiteOperatorData = SiteOperatorData operatorId username newPasswordHash name color title iconUrl
+                -- save siteDataTVar with the new operator
+                writeTVar siteDataTVar $ siteData {
+                  sdOperators = newSiteOperatorData : remainingOperators
+                }
+                -- save to the database
+                queueSaveSiteData siteDataTVar databaseOperationQueueChan
+                -- respond to the admin who issued the replace command
+                createAndSendMessage (AdminOperatorReplaceSuccessMessage,[]) clientDataTVar
+                -- notify the admins with the new list
+                sendOperatorsListToAdmins siteDataTVar
+              else
+                -- an operator with that username already exists
+                createAndSendMessage (AdminOperatorReplaceDuplicateUsernameMessage,[]) clientDataTVar
+            _ ->
+              -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
+              createAndSendMessage (AdminOperatorReplaceInvalidIdMessage,[]) clientDataTVar
+        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
 
 handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan =
@@ -451,7 +478,7 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueu
 handleAdminSetSiteNameMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
   atomically $ do
-    if LT.length name <= 20 then do
+    ensureTextLengthLimits [(name, maxSiteNameLength)] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
       case cdOtherData clientData of
         OCDClientAdminData clientAdminData -> do
@@ -472,15 +499,11 @@ handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
           -- notify the admins of the new site name
           sendSiteInfoToAdmins siteDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetSiteNameMessage" ()
-    else
-      -- if the browser allowed them to set an extra long site name, something is wrong
-      createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
 
 handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan =
   atomically $ do
-    -- TODO: replace with a length checker function that works on a list
-    if LT.length password <= 100 then do
+    ensureTextLengthLimits [(password, maxAdminPasswordLength)] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
       case cdOtherData clientData of
         OCDClientAdminData clientAdminData -> do
@@ -508,9 +531,6 @@ handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueu
               return ()
             )
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
-    else
-      -- if the browser allowed them to set an extra long password, something is wrong
-      createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
@@ -697,4 +717,13 @@ closeClientSocket :: ClientDataTVar -> STM ()
 closeClientSocket clientDataTVar = do
   clientData <- readTVar clientDataTVar
   writeTChan (cdSendChan clientData) CloseSocket
+
+ensureTextLengthLimits :: [(Text, Int64)] -> ClientDataTVar -> STM () -> STM ()
+ensureTextLengthLimits pairs clientDataTVar f =
+  if checkTextLengthLimits pairs == True then
+    f
+  else do
+    -- if the browser allowed them to send excessively long values, something is wrong
+    createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
+    closeClientSocket clientDataTVar
 
