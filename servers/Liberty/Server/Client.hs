@@ -479,6 +479,7 @@ handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
 handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
 handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan =
   atomically $ do
+    -- TODO: replace with a length checker function that works on a list
     if LT.length password <= 100 then do
       clientData <- readTVar clientDataTVar
       case cdOtherData clientData of
@@ -497,7 +498,15 @@ handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueu
           -- respond to the admin who issued the set password command
           createAndSendMessage (AdminSetAdminPasswordSuccessMessage,[]) clientDataTVar
 
-          -- TODO: disconnect all other admins
+          -- disconnect all other admins
+          forM_ (sdOnlineAdmins siteData) (\targetAdminClientDataTVar -> do
+            -- if the admin we're looping through is not the same as the admin who issued the command
+            if targetAdminClientDataTVar /= clientDataTVar then
+              -- disconnect the target admin
+              closeClientSocket targetAdminClientDataTVar
+            else
+              return ()
+            )
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
     else
       -- if the browser allowed them to set an extra long password, something is wrong
