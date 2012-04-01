@@ -68,39 +68,43 @@ clientSocketSendLoop clientSendChan clientDataTVar = do
       putStrLn "Got CloseSocket message. Closing client socket."
       sClose clientSocket
 
--- TODO: DoS vulnerability: Filling the buffer until out of memory
 clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
-clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueChan = do
-  case parseMessage buffer of
-    Just (maybeMessage, newBuffer) ->
-      case maybeMessage of
-        Just message -> do
-          putStrLn $ "Msg: " ++ show message
-          handleMessage message clientDataTVar siteMapTVar databaseOperationQueueChan
-          clientSocketReadLoop clientDataTVar newBuffer siteMapTVar databaseOperationQueueChan
-        Nothing -> do
-          putStrLn "No valid message in current buffer yet"
-          clientData <- atomically $ readTVar clientDataTVar
-          maybeReceivedData <- catch (do
-            recvResult <- recv (cdSocket clientData) 2048
-            if not $ LBS.null recvResult then do
-              return $ Just recvResult
-            else do
-              return Nothing
-            )
-            (\(SomeException ex) -> do
-              putStrLn $ "Client disconnecting due to exception: " ++ show ex
-              return Nothing
-            )
+clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueChan =
+  if LBS.length buffer <= maxReceiveBufferLength then do
+    case parseMessage buffer of
+      Just (maybeMessage, newBuffer) ->
+        case maybeMessage of
+          Just message -> do
+            putStrLn $ "Msg: " ++ show message
+            handleMessage message clientDataTVar siteMapTVar databaseOperationQueueChan
+            clientSocketReadLoop clientDataTVar newBuffer siteMapTVar databaseOperationQueueChan
+          Nothing -> do
+            putStrLn "No valid message in current buffer yet"
+            clientData <- atomically $ readTVar clientDataTVar
+            maybeReceivedData <- catch (do
+              recvResult <- recv (cdSocket clientData) 2048
+              if not $ LBS.null recvResult then do
+                return $ Just recvResult
+              else do
+                return Nothing
+              )
+              (\(SomeException ex) -> do
+                putStrLn $ "Client disconnecting due to exception: " ++ show ex
+                return Nothing
+              )
 
-          case maybeReceivedData of
-            Just receivedData ->
-              -- now that we've received some data, loop around and try parsing it
-              clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar databaseOperationQueueChan
-            Nothing ->
-              putStrLn $ "Client disconnecting -- recv returned nothing"
-    Nothing ->
-      putStrLn "Client disconnecting due to a protocol violation"
+            case maybeReceivedData of
+              Just receivedData ->
+                -- now that we've received some data, loop around and try parsing it
+                clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar databaseOperationQueueChan
+              Nothing ->
+                putStrLn $ "Client disconnecting -- recv returned nothing"
+      Nothing ->
+        putStrLn "Client disconnecting due to a protocol violation"
+  else atomically $ do
+    -- if the client allowed them to send excessively long data, something is wrong
+    createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
+    closeClientSocket clientDataTVar
 
 handleMessage :: Message -> ClientDataTVar -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
 handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperationQueueChan = do
@@ -723,7 +727,7 @@ ensureTextLengthLimits pairs clientDataTVar f =
   if checkTextLengthLimits pairs == True then
     f
   else do
-    -- if the browser allowed them to send excessively long values, something is wrong
+    -- if the client allowed them to send excessively long values, something is wrong
     createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
     closeClientSocket clientDataTVar
 

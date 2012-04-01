@@ -18,7 +18,7 @@ maxPersonNameLength :: Int64
 maxPersonNameLength = 20
 
 maxColorLength :: Int64
-maxColorLength = 7
+maxColorLength = 7 -- #abcdef
 
 maxOperatorTitleLength :: Int64
 maxOperatorTitleLength = 25
@@ -30,4 +30,7 @@ maxIconUrlLength = 250
 -- CONSIDER: Instead of limiting individual messages, limit all traffic from the client
 maxChatMessageLength :: Int64
 maxChatMessageLength = 20000
+
+maxReceiveBufferLength :: Int64
+maxReceiveBufferLength = maxChatMessageLength + 1000
 
