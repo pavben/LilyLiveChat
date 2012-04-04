@@ -120,7 +120,7 @@ handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperation
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
           case (messageType,params) of
-            (CustomerJoinMessage,[name,color,icon]) -> handleCustomerJoinMessage name color icon clientDataTVar siteDataTVar
+            (CustomerJoinMessage,[name,color,icon,referrer]) -> handleCustomerJoinMessage name color icon referrer clientDataTVar siteDataTVar
             (OperatorLoginRequestMessage,[username,password]) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
             (AdminLoginRequestMessage,[password]) -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
             _ -> do
@@ -175,8 +175,8 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomical
       createAndSendMessage (UnregisteredSiteSelectedMessage,[sdName siteData, LT.pack $ isActive]) clientDataTVar
     Nothing -> createAndSendMessage (UnregisteredSiteInvalidMessage,[]) clientDataTVar
 
-handleCustomerJoinMessage :: Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleCustomerJoinMessage name color iconUrl clientDataTVar siteDataTVar =
+handleCustomerJoinMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVar =
   atomically $ do
     ensureTextLengthLimits [
         (name, maxPersonNameLength),
@@ -189,7 +189,7 @@ handleCustomerJoinMessage name color iconUrl clientDataTVar siteDataTVar =
         let thisChatSessionId = sdNextSessionId siteData
         -- create a new chat session with this client as the customer and no operator
         chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
-        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color iconUrl siteDataTVar chatSessionTVar }
+        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color iconUrl referrer siteDataTVar chatSessionTVar }
 
         -- add the newly-created chat session to the site data's waiting list
         let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
@@ -318,9 +318,9 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
             -- read additional data that will be needed below
             updatedChatSession <- readTVar chatSessionTVar
             customerClientData <- readTVar (csCustomerClientDataTVar updatedChatSession)
-            (customerName, customerColor, customerIconUrl) <- case cdOtherData customerClientData of
-              OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData)
-              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty)
+            (customerName, customerColor, customerIconUrl, customerReferrer) <- case cdOtherData customerClientData of
+              OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData, ccdReferrer clientCustomerData)
+              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty, LT.empty)
             -- update the operators with 'next in line' and waiting customers with their new position
             waitingListUpdated siteDataTVar
           
@@ -328,7 +328,7 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
             createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar updatedChatSession)
             
             -- send the OperatorNowTalkingToMessage to the operator
-            createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl]) clientDataTVar
+            createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl, customerReferrer]) clientDataTVar
 
             -- send all csMessagesWaiting to the operator
             -- note: chatSession is a snapshot from before we emptied csMessagesWaiting

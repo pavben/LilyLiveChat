@@ -312,6 +312,7 @@ function welcomeTabOkHandler() {
 	if (!welcomeTabOkActive) {
 		welcomeTabOkActive = true;
 
+		// myName is global
 		myName = $.trim($('#welcome_myname').val());
 		// if no valid name was entered, randomize instead of logging in -- next click will login
 		// this allows the customer to see their profile before it's used
@@ -320,7 +321,12 @@ function welcomeTabOkHandler() {
 			welcomeTabOkActive = false;
 			return;
 		}
-		queueAjaxCommand([Messages.CustomerJoinMessage, myName, myColor, myIcon]);
+		var referrer = $.cookie(siteId + '.referrer');
+		if (referrer === null) {
+			referrer = '';
+		}
+		
+		queueAjaxCommand([Messages.CustomerJoinMessage, myName, myColor, myIcon, referrer]);
 
 		// on success, don't re-enable the OK button to avoid a double-send if the user double-clicks
 	}

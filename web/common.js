@@ -1,4 +1,5 @@
 // communication protocol globals
+var siteId = 'virtivia'; // TODO: read siteId from URL
 var mySessionId;
 var lastInSequence;
 var nextOutSequence;

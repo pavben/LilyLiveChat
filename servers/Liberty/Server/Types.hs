@@ -44,6 +44,7 @@ data ClientCustomerData = ClientCustomerData {
   ccdName :: Text,
   ccdColor :: Text,
   ccdIconUrl :: Text,
+  ccdReferrer :: Text,
   ccdSiteDataTVar :: SiteDataTVar,
   ccdChatSessionTVar :: ChatSessionTVar
 } deriving (Show)
