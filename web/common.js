@@ -410,8 +410,89 @@ function replaceIconWith(iconUrl, icon) {
 	});
 }
 
-// TODO: Support clickable links
-function writeMessageToChatLog(name, color, msg, chatLogDiv) {
+var ChunkType = {
+	Text : 1,
+	Url : 2,
+	Email : 3
+}
+
+function textMessageToChunks(textMessage) {
+	/*
+	\b(https?:\/\/www\.|https?:\/\/|www\.)
+	(([-\w\d]+\.)+([\w]{2,4})|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))
+	(:\d{1,5})?
+	(\/
+		(
+			(
+				[-\w\d+&@#\/%=$?~_\|\.]*
+				\([-\w\d+&@#\/%=$?~_\|\.]*\)
+				(
+					[-\w\d+&@#\/%=$?~_\|\.]+
+					(\.[-\w\d+&@#\/%=$?~_\|]+)*
+				)?
+			)
+			|
+			(
+				[-\w\d+&@#\/%=$?~_\|]+
+				(\.[-\w\d+&@#\/%=$?~_\|]+)*
+			)
+		)?
+	)?
+	*/
+	var urlRegex = /\b(https?:\/\/www\.|https?:\/\/|www\.)(([-\w\d]+\.)+([\w]{2,4})|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d{1,5})?(\/(([-\w\d+&@#\/%=$?~_\|\.]*\([-\w\d+&@#\/%=$?~_\|\.]*\)([-\w\d+&@#\/%=$?~_\|]+(\.[-\w\d+&@#\/%=$?~_\|]+)*)?)|([A-Z]+(\.[-\w\d+&@#\/%=$?~_\|]+)*))?)?/i;
+	var emailRegex = /\b[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i;
+
+	var first = true;
+	var tempString = textMessage;
+	var chunks = [];
+
+	function addChunk(type, text) {
+		chunks.push({ type: type, text: text });
+	}
+
+	while (true) {
+		var nextMatchPosUrl = tempString.search(urlRegex);
+		var nextMatchPosEmail = tempString.search(emailRegex);
+
+		var nextMatchType = null;
+		var nextMatchPos = -1;
+
+		if (nextMatchPosUrl >= 0 && (nextMatchPosEmail == -1 || nextMatchPosUrl <= nextMatchPosEmail)) {
+			nextMatchType = ChunkType.Url;
+			nextMatchPos = nextMatchPosUrl;
+		} else if (nextMatchPosEmail >= 0 /* && (nextMatchPosUrl == -1 || nextMatchPosEmail <= nextMatchPosUrl */) {
+			nextMatchType = ChunkType.Email;
+			nextMatchPos = nextMatchPosEmail;
+		}
+
+		if (nextMatchPos >= 0) {
+			// the text before the match is considered to be normal text
+			var normalTextChunk = tempString.substring(0, nextMatchPos);
+			if (normalTextChunk != '') {
+				addChunk(ChunkType.Text, normalTextChunk);
+			}
+
+			// advance the string past the normal text to the beginning of the match
+			tempString = tempString.substring(nextMatchPos);
+
+			var matchLength = tempString.match(nextMatchType == ChunkType.Url ? urlRegex : emailRegex)[0].length;
+			addChunk(nextMatchType, tempString.substring(0, matchLength));
+
+			// advance the string past the match
+			tempString = tempString.substring(matchLength);
+		} else {
+			// take the last normal text chunk and push it, if non-empty
+			if (tempString != '') {
+				addChunk(ChunkType.Text, tempString);
+			}
+			break;
+		}
+	}
+	
+	return chunks;
+}
+
+function writeMessageToChatlog(name, color, msg, chatlogDiv) {
 	var tempDiv = $('<div/>').addClass('chatmsgtext');
 	tempDiv.append($('<span/>').css('color', color).text(name + ': '));
 	var lines = msg.split('\n');
@@ -419,29 +500,51 @@ function writeMessageToChatLog(name, color, msg, chatLogDiv) {
 		tempDiv.append($('<br/>'));
 	}
 	for (var i in lines) {
-		tempDiv.append($('<span/>').text(lines[i]));
-		tempDiv.append($('<br/>'));
+		var chunks = textMessageToChunks(lines[i]);
+		for (var c in chunks) {
+			var chunk = chunks[c];
+			switch (chunk.type) {
+			case ChunkType.Text:
+				tempDiv.append($('<span/>').text(chunk.text));
+				break;
+			case ChunkType.Url:
+			case ChunkType.Email:
+				var linkPrefix = '';
+				if (chunk.type == ChunkType.Url && chunk.text.match(/^https?:\/\//i) === null) {
+					linkPrefix = 'http://';
+				} else if (chunk.type == ChunkType.Email) {
+					linkPrefix = 'mailto:';
+				}
+				tempDiv.append($('<a/>').attr('href', linkPrefix + chunk.text).text(chunk.text).click(function() {
+					return false;
+				}));
+				break;
+			}
+		}
+		if (i < lines.length - 1) {
+			tempDiv.append($('<br/>'));
+		}
 	}
 
-	// append tempDiv to chatLogDiv
-	chatLogDiv.append(tempDiv);
+	// append tempDiv to chatlogDiv
+	chatlogDiv.append(tempDiv);
 
 	/*
-	chatLogDiv.append(tempDiv.fadeTo(1, 0.5, function() {
+	chatlogDiv.append(tempDiv.fadeTo(1, 0.5, function() {
 		tempDiv.fadeTo(500, 1);
 	}));
 	*/
 
-	chatLogWritten(chatLogDiv);
+	chatlogWritten(chatlogDiv);
 }
 
-function writeInfoTextToChatLog(text, chatlogDiv) {
+function writeInfoTextToChatlog(text, chatlogDiv) {
 	chatlogDiv.append($('<div/>').addClass('chatinfotext').text(text));
 
-	chatLogWritten(chatlogDiv);
+	chatlogWritten(chatlogDiv);
 }
 
-function chatLogWritten(chatlogDiv) {
+function chatlogWritten(chatlogDiv) {
 	var chatlogObject = chatlogDiv[0];
 	if (chatlogObject.lastScrollTopTarget && chatlogDiv.scrollTop() >= chatlogObject.lastScrollTopTarget - 30) {
 		// if they scroll within 200px of the bottom

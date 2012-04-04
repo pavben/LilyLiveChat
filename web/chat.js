@@ -115,6 +115,9 @@ function handleMessage(message) {
 			if (getCurrentTabOrTarget() == welcomeTab) {
 				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
 				changeTabTo(chatTab);
+
+				writeWelcomeTextToChatlog();
+				writeSoundsStatusToChatlog();
 			}
 			updatePositionInLine(parseInt(message[0]));
 
@@ -130,15 +133,15 @@ function handleMessage(message) {
 			break;
 		case Messages.CustomerReceiveChatMessage:
 			var text = message[0];
-			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog'));
+			writeMessageToChatlog(they.name, they.color, text, $('#chat_chatlog'));
 			break;
 		case Messages.SomethingWentWrongMessage:
 			break;
 		case Messages.CustomerChatEndedMessage:
 			if (chatSessionEnded) {
-				writeInfoTextToChatLog('The chat session has ended.', $('#chat_chatlog'));
+				writeInfoTextToChatlog('The chat session has ended.', $('#chat_chatlog'));
 			} else {
-				writeInfoTextToChatLog('The operator has ended the chat session.', $('#chat_chatlog'));
+				writeInfoTextToChatlog('The operator has ended the chat session.', $('#chat_chatlog'));
 				// also disable the End Chat button, since it no longer has any effect
 				disableEndChatButton();
 			}
@@ -279,7 +282,7 @@ function onChatTabResize() {
 	$('body').css('overflow-y', 'hidden');
 	var chatlogDiv = $('#chat_chatlog');
 	var chatboxWrapper = $('#chat_chatboxwrapper');
-	var newChatLogHeight = $(window).height() // start with the full height
+	var newChatlogHeight = $(window).height() // start with the full height
 		- chatlogDiv.offset().top // remove all up to the start of chatlog
 		- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
 		- stripPx(chatlogDiv.css('padding-bottom'))
@@ -289,13 +292,13 @@ function onChatTabResize() {
 		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
 		- stripPx($('#chat_tab').css('padding-bottom')); // remove the height of the spacer below the chatbox
 
-	if (newChatLogHeight < 200) {
-		newChatLogHeight = 200;
+	if (newChatlogHeight < 200) {
+		newChatlogHeight = 200;
 		// if the scrollbars are needed, enable them
 		$('body').css('overflow-y', 'auto');
 	}
 
-	chatlogDiv.css('height', newChatLogHeight);
+	chatlogDiv.css('height', newChatlogHeight);
 
 	// scroll the chatlog to the bottom, if possible
 	instantScrollChatlogToBottom(chatlogDiv);
@@ -446,6 +449,8 @@ function disableEndChatButton() {
 var jPlayerDing;
 var jPlayerNext;
 
+var soundsEnabled = true;
+
 function initializeJplayers() {
 	jPlayerNext = initializeJplayerNext();
 	jPlayerDing = initializeJplayerDing(jPlayerNext);
@@ -466,6 +471,10 @@ function initializeJplayerDing(jPlayerNext) {
 		ended: function() {
 			jPlayerNext.jPlayer('play');
 		},
+		error: function(e) {
+			log('Disabling sounds due to an error in the \'ding\' player');
+			soundsEnabled = false;
+		},
 		swfPath: 'audio',
 		solution: 'flash, html',
 		supplied: 'oga, mp3',
@@ -480,6 +489,10 @@ function initializeJplayerNext() {
 	$('body').append(jPlayerDiv);
 	
 	jPlayerDiv.jPlayer({
+		error: function(e) {
+			log('Disabling sounds due to an error in the \'next\' player');
+			soundsEnabled = false;
+		},
 		swfPath: 'audio',
 		solution: 'flash, html',
 		supplied: 'oga, mp3',
@@ -490,19 +503,81 @@ function initializeJplayerNext() {
 }
 
 function playSoundAfterDing(soundName) {
-	// first, stop the ding player if it's playing
-	jPlayerDing.jPlayer('stop');
+	if (soundsEnabled) {
+		// first, stop the ding player if it's playing
+		jPlayerDing.jPlayer('stop');
 
-	// then set the next player to the desired sound (stop is implicit)
-	jPlayerNext.jPlayer('setMedia', {
-		mp3: '../audio/' + soundName + '.mp3',
-		oga: '../audio/' + soundName + '.ogg'
-	}).jPlayer('load');
+		// then set the next player to the desired sound (stop is implicit)
+		jPlayerNext.jPlayer('setMedia', {
+			mp3: '../audio/' + soundName + '.mp3',
+			oga: '../audio/' + soundName + '.ogg'
+		}).jPlayer('load');
 
-	// begin playing the ding while the next sound is loading
-	jPlayerDing.jPlayer('play');
+		// begin playing the ding while the next sound is loading
+		jPlayerDing.jPlayer('play');
 
-	// the ding player will automatically play the next sound on 'ended'
+		// the ding player will automatically play the next sound on 'ended'
+	}
+}
+
+function writeSoundsStatusToChatlog() {
+	var chatlogDiv = $('#chat_chatlog');
+
+	if (soundsEnabled) {
+		chatlogDiv.append(
+			$('<div/>').addClass('chatinfotext').append(
+				$('<span/>').text('Sounds are ')
+			).append(
+				$('<span/>').css('color', '#008A2E').text('on')
+			).append(
+				$('<span/>').text(', so we\'ll tell you when a representative is available.')
+			)
+		).append(
+			$('<div/>').addClass('chatinfotext').append(
+				$('<span/>').text('If you prefer to ')
+			).append(
+				$('<a/>').attr('href', '').text('turn the sounds off').click(function() {
+					if (soundsEnabled) {
+						soundsEnabled = false;
+						chatlogDiv.append(
+							$('<div/>').addClass('chatinfotext').append(
+								$('<span/>').text('Sounds are now ')
+							).append(
+								$('<span/>').css('color', '#8A0017').text('off')
+							).append(
+								$('<span/>').text('.')
+							)
+						);
+					} else {
+						chatlogDiv.append(
+							$('<div/>').addClass('chatinfotext').append(
+								$('<span/>').text('Sounds are already off.')
+							)
+						);
+					}
+					return false; // avoid following the blank link
+				})
+			).append(
+				$('<span/>').text(', you can. No hard feelings :-)')
+			)
+		);
+	} else {
+		// if the sounds are off (due to an error), don't show any extra messages
+	}
+
+	chatlogWritten(chatlogDiv);
+}
+
+function writeWelcomeTextToChatlog() {
+	var chatlogDiv = $('#chat_chatlog');
+
+	chatlogDiv.append(
+		$('<div/>').addClass('chatinfotext').append(
+			$('<span/>').text('Someone will be with you soon. You can save time by asking your question while you wait.')
+		)
+	);
+
+	chatlogWritten(chatlogDiv);
 }
 
 $(window).bind('load', function() {
@@ -571,10 +646,10 @@ $(window).bind('load', function() {
 			if (!chatSessionEnded) {
 				if ($.trim(chatBox.val()).length > 0) {
 					queueAjaxCommand([Messages.CustomerSendChatMessage, chatBox.val()]);
-					writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog'));
+					writeMessageToChatlog(me.name, me.color, chatBox.val(), $('#chat_chatlog'));
 				}
 			} else {
-				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog'));
+				writeInfoTextToChatlog('This chat session is no longer active.', $('#chat_chatlog'));
 			}
 			chatBox.val('');
 			return false;

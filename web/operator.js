@@ -232,7 +232,7 @@ function handleMessage(message) {
 
 			var they = getChatSessionData(chatSessionId).they;
 
-			writeMessageToChatLog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
+			writeMessageToChatlog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
 			if (visibleChatSessionId !== chatSessionId) {
 				setChatSessionIndicator(chatSessionId, ButtonIndicatorStates.Active);
 			}
@@ -244,7 +244,7 @@ function handleMessage(message) {
 			var chatSessionData = getChatSessionData(chatSessionId);
 			if (chatSessionData !== null) {
 				// if the chat window still exists, it means the customer (not the operator) ended the chat session
-				writeInfoTextToChatLog('The customer has ended the chat session.', $('#chat_chatlog_' + chatSessionId));
+				writeInfoTextToChatlog('The customer has ended the chat session.', $('#chat_chatlog_' + chatSessionId));
 				// set the session indicator to ended
 				setChatSessionIndicator(chatSessionId, ButtonIndicatorStates.Ended);
 
@@ -433,10 +433,10 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
 				if ($.trim(chatBox.val()).length > 0) {
 					queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
-					writeMessageToChatLog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
+					writeMessageToChatlog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
 				}
 			} else {
-				writeInfoTextToChatLog('This chat session is no longer active.', $('#chat_chatlog_' + chatSessionId));
+				writeInfoTextToChatlog('This chat session is no longer active.', $('#chat_chatlog_' + chatSessionId));
 			}
 			chatBox.val('');
 			return false;
@@ -756,7 +756,7 @@ function followVisibleChatSessionIdTarget() {
 
 						// and scroll to the bottom again, in case something messed up our last scroll
 						if (currentVisibleChatSessionIdTarget !== null) {
-							chatLogWritten(chatlogDiv);
+							chatlogWritten(chatlogDiv);
 						}
 					} else {
 						// otherwise, transition to the new target
@@ -892,7 +892,7 @@ function onResize() {
 function onChatTabResize() {
 	var chatMaincellDiv = $('#chat_maincell');
 	if (visibleChatSessionId) {
-		updateChatLogHeight();
+		updateChatlogHeight();
 		chatMaincellDiv.css('height', 'auto');
 	} else {
 		// disable scrolling as it causes scrollbar flickering
@@ -908,7 +908,7 @@ function onChatTabResize() {
 }
 
 // only called by onChatTabResize
-function updateChatLogHeight() {
+function updateChatlogHeight() {
 	if (visibleChatSessionId) {
 		// disable scrolling as it causes scrollbar flickering
 		$('body').css('overflow-y', 'hidden');
@@ -916,7 +916,7 @@ function updateChatLogHeight() {
 		var chatlogDiv = $('#chat_chatlog_' + visibleChatSessionId);
 		var chatboxWrapper = $('#chat_chatboxwrapper_' + visibleChatSessionId);
 		var chatMaincellDiv = $('#chat_maincell');
-		var newChatLogHeight = $(window).height()
+		var newChatlogHeight = $(window).height()
 			- chatlogDiv.offset().top // remove the space from the start of maincell to the start of chatlog
 			- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
 			- stripPx(chatlogDiv.css('padding-bottom'))
@@ -926,12 +926,12 @@ function updateChatLogHeight() {
 			- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
 			- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
 
-		if (newChatLogHeight < 200) {
-			newChatLogHeight = 200;
+		if (newChatlogHeight < 200) {
+			newChatlogHeight = 200;
 			// if the scrollbars are needed, enable them
 			$('body').css('overflow-y', 'auto');
 		}
-		chatlogDiv.css('height', newChatLogHeight);
+		chatlogDiv.css('height', newChatlogHeight);
 
 		// scroll the chatlog to the bottom, if possible
 		instantScrollChatlogToBottom(chatlogDiv);
