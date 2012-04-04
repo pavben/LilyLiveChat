@@ -208,30 +208,26 @@ input {
 	border-left:1px solid #BBBBBB;
 	border-right:1px solid #BBBBBB;
 }
-/* TODO: Consolidate this and shadow */
-.chatbox {
-	display:block;
-	width:100%;
-	resize:none;
-	font-family:'Signika', sans-serif;
-	font-size:18px;
+.chatbox, .chatboxshadow {
 	padding:0px 0px 0px 0px;
 	border:0px;
 	line-height:22px;
+	font-family:'Signika', sans-serif;
+	font-size:18px;
+	resize:none;
 	background-color:#F4F4F4;
 	color:#303030;
 	outline:none;
 	vertical-align:top;
 }
+.chatbox {
+	width:100%;
+}
 .chatboxshadow {
-	font-family:'Signika', sans-serif;
-	font-size:18px;
-	line-height:22px;
 	width:200px;
 	position:absolute;
 	top:-9999px;
 	left:-9999px;
-	resize:none;
 	white-space: pre-wrap;      /* CSS3 */   
 	white-space: -moz-pre-wrap; /* Firefox */    
 	white-space: -pre-wrap;     /* Opera <7 */   

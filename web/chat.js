@@ -456,7 +456,6 @@ function initializeJplayers() {
 	jPlayerDing = initializeJplayerDing(jPlayerNext);
 }
 
-// TODO: detect failures (no flash or html5 support)
 function initializeJplayerDing(jPlayerNext) {
 	var jPlayerDiv = $('<div/>');
 	$('body').append(jPlayerDiv);
