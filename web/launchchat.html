@@ -4,16 +4,12 @@
 	<title>LilyLiveChat</title>
 	<script src="jquery/jquery.min.js"></script>
 	<script src="jquery/jquery.cookie.js"></script>
+	<script src='common.js'></script>
 </head>
 <body>
 <script type="text/javascript">
 	{
-		var siteId = 'virtivia'
-
-		function getUrlParameter(name) {
-			var v = (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1];
-			return (v !== null) ? decodeURIComponent(v) : v;
-		}
+		var siteId = 'virtivia'; // TODO: get siteId
 
 		var originalReferrer = getUrlParameter('originalReferrer');
 

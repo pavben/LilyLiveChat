@@ -516,9 +516,7 @@ function writeMessageToChatlog(name, color, msg, chatlogDiv) {
 				} else if (chunk.type == ChunkType.Email) {
 					linkPrefix = 'mailto:';
 				}
-				tempDiv.append($('<a/>').attr('href', linkPrefix + chunk.text).text(chunk.text).click(function() {
-					return false;
-				}));
+				tempDiv.append($('<a/>').attr('href', linkPrefix + chunk.text).attr('target', '_blank').text(chunk.text));
 				break;
 			}
 		}
@@ -634,6 +632,12 @@ function generatePersonColor() {
 }
 
 // misc
+function getUrlParameter(name, queryString) {
+	queryString = (queryString !== undefined) ? queryString : location.search;
+	var v = (RegExp(name + '=' + '(.*?)(&|$)').exec(queryString)||[,null])[1];
+	return (v !== null) ? decodeURIComponent(v) : v;
+}
+
 function stripPx(text) {
 	return text.replace('px', '');
 }

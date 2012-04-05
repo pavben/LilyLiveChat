@@ -224,7 +224,8 @@ function handleMessage(message) {
 			var name = message[1];
 			var color = message[2];
 			var iconUrl = message[3];
-			addActiveChatSession(chatSessionId, name, color, iconUrl);
+			var referrer = message[4];
+			addActiveChatSession(chatSessionId, name, color, iconUrl, referrer);
 			break;
 		case Messages.OperatorReceiveChatMessage:
 			var chatSessionId = message[0];
@@ -272,6 +273,127 @@ function handleSessionEnded() {
 	}
 }
 
+// TODO: unrelated: rename all global vars to g_*
+
+function processReferrer(url, chatSessionId) {
+	var they = getChatSessionData(chatSessionId).they;
+	var chatlog = $('#chat_chatlog_' + chatSessionId);
+
+	function getSearchEngineAndKeywords(hostAndPort, queryString) {
+		var googleDomain = hostAndPort.match(/google\.\w{2,4}$/i);
+		if (googleDomain !== null) {
+			// NOTE: Google no longer passes along the keywords for any users that are logged in to their Google account
+			return [googleDomain, getUrlParameter('q', queryString)];
+		}
+
+		var bingDomain = hostAndPort.match(/bing\.com$/i);
+		if (bingDomain !== null) {
+			return [bingDomain, $.trim(getUrlParameter('q', queryString).replace(/\+/g, ' '))];
+		}
+
+		var yahooDomain = hostAndPort.match(/yahoo\.com$/i);
+		if (yahooDomain !== null) {
+			return [yahooDomain, $.trim(getUrlParameter('p', queryString).replace(/\+/g, ' '))];
+		}
+
+		// by default, no search engine and no keywords
+		return [null, null];
+	}
+
+	function writeSearchEngineReferrerToChatlog(searchEngine, searchKeywords) {
+		var theDiv = $('<div/>').addClass('chatinfotext');
+		chatlog.append(
+			theDiv.append(
+				$('<span/>').css('color', they.color).text(they.name)
+			)
+		);
+
+		if (searchKeywords !== null) {
+			theDiv.append(
+				$('<span/>').text(' searched for ')
+			).append(
+				$('<span/>').css('color', '#454545').text(searchKeywords)
+			).append(
+				$('<span/>').text(' on ')
+			).append(
+				$('<span/>').text(searchEngine)
+			);
+		} else {
+			theDiv.append(
+				$('<span/>').text(' came from ')
+			).append(
+				$('<span/>').css('color', '#454545').text(searchEngine)
+			).append(
+				$('<span/>').text(', but the search keywords are unavailable.')
+			);
+		}
+
+		chatlogWritten(chatlog);
+	}
+
+	function writeRegularReferrerToChatlog(referrerUrl, referrerUrlWithoutProtocol) {
+		chatlog.append(
+			$('<div/>').addClass('chatinfotext ellipsis').append(
+				$('<span/>').css('color', they.color).text(they.name)
+			).append(
+				$('<span/>').text(' came from ')
+			).append(
+				$('<a/>').attr('href', referrerUrl).attr('target', '_blank').text(referrerUrlWithoutProtocol)
+			)
+		);
+
+		chatlogWritten(chatlog);
+	}
+
+	{
+		var protocolMatch = url.match(/^https?:\/\//i);
+		if (protocolMatch === null) {
+			return; // do nothing because the URL didn't have an HTTP protocol prefix (or was empty)
+		}
+
+		var urlWithoutProtocol = url.substring(protocolMatch[0].length);
+
+		var hostPathAndQueryString = urlWithoutProtocol.match(/^(.*?)(?:(\/.*?)(\?.*?)?)?$/);
+		if (hostPathAndQueryString === null) {
+			return; // can't extract the host, path, and query string -- invalid URL
+		}
+
+		var hostAndPort = hostPathAndQueryString[1];
+		var path = hostPathAndQueryString[2];
+		var queryString = hostPathAndQueryString[3];
+
+		if (queryString !== undefined) {
+			// if there is a query string, find out if it's a known search engine so that we can attempt to extract the keywords
+
+			var searchEngineAndKeywords = getSearchEngineAndKeywords(hostAndPort, queryString);
+			var searchEngine = searchEngineAndKeywords[0];
+			// if the keywords are empty (''), we treat that as if the keywords key wasn't even present
+			var searchKeywords = (searchEngineAndKeywords[1] !== '') ? searchEngineAndKeywords[1] : null;
+
+			if (searchEngine !== null) {
+				writeSearchEngineReferrerToChatlog(searchEngine, searchKeywords, chatlog);
+				return;
+			}
+		}
+
+		// if here, the referrer is not a known search engine
+		writeRegularReferrerToChatlog(url, urlWithoutProtocol);
+	}
+}
+
+/*
+function testRef(chatSessionId) {
+	processReferrer('http://www.google.ca/url?sa=t&rct=j&q=lily%20live%20chat&source=web&cd=1&ved=0CD8QFjAA&url=http%3A%2F%2Flilylivechat.net%2F&ei=7KB8T7e5Feuo0AHP59nmCw&usg=AFQjCNHLtFTggNtAY3RGSCazetNYB2zRkw', chatSessionId);
+	processReferrer('http://www.google.ca/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CEEQFjAA&url=http%3A%2F%2Flilylivechat.net%2F&ei=sqB8T4a6A-bn0QHJhKCPDA&usg=AFQjCNHLtFTggNtAY3RGSCazetNYB2zRkw', chatSessionId);
+	processReferrer('http://www.bing.com/search?q=%2blily+live+chat&FORM=RCRE', chatSessionId);
+	processReferrer('http://ca.search.yahoo.com/search;_ylt=A0geu8KjEX1P72gA4TDrFAx.?ei=UTF-8&fr=yfp-t-715&p=%2Blily+live+chat&fr2=sp-qrw-orig-top&norw=1', chatSessionId);
+	processReferrer('http://www.goog2le.ca/url?sa=t&rct=j&q=lily%20live%20chat&source=web&cd=1&ved=0CD8QFjAA&url=http%3A%2F%2Flilylivechat.net%2F&ei=7KB8T7e5Feuo0AHP59nmCw&usg=AFQjCNHLtFTggNtAY3RGSCazetNYB2zRkw', chatSessionId);
+	processReferrer('http://www.goog2le.ca/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CEEQFjAA&url=http%3A%2F%2Flilylivechat.net%2F&ei=sqB8T4a6A-bn0QHJhKCPDA&usg=AFQjCNHLtFTggNtAY3RGSCazetNYB2zRkw', chatSessionId);
+	processReferrer('http://www.bin2g.com/search?q=%2blily+live+chat&FORM=RCRE', chatSessionId);
+	processReferrer('http://ca.search.yah2oo.com/search;_ylt=A0geu8KjEX1P72gA4TDrFAx.?ei=UTF-8&fr=yfp-t-715&p=%2Blily+live+chat&fr2=sp-qrw-orig-top&norw=1', chatSessionId);
+}
+*/
+
 var numActiveChats = 0;
 
 function increaseNumActiveChats() {
@@ -296,7 +418,7 @@ function updateActiveChatsLabel() {
 	});
 }
 
-function addActiveChatSession(chatSessionId, name, color, iconUrl) {
+function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
 		$('<div/>').attr('id', 'chat_sessionlistbuttonwrapper_' + chatSessionId).append(
@@ -426,24 +548,28 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl) {
 	});
 
 	// send handler
-	var chatBox = $('#chat_chatbox_' + chatSessionId);
+	var chatbox = $('#chat_chatbox_' + chatSessionId);
+	var chatlog = $('#chat_chatlog_' + chatSessionId);
 
-	chatBox.keypress(function(e) {
+	chatbox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
 			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
-				if ($.trim(chatBox.val()).length > 0) {
-					queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatBox.val()]);
-					writeMessageToChatlog(me.name, me.color, chatBox.val(), $('#chat_chatlog_' + chatSessionId));
+				if ($.trim(chatbox.val()).length > 0) {
+					queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatbox.val()]);
+					writeMessageToChatlog(me.name, me.color, chatbox.val(), chatlog);
 				}
 			} else {
-				writeInfoTextToChatlog('This chat session is no longer active.', $('#chat_chatlog_' + chatSessionId));
+				writeInfoTextToChatlog('This chat session is no longer active.', chatlog);
 			}
-			chatBox.val('');
+			chatbox.val('');
 			return false;
 		}
 	});
 
-	initializeAutoGrowingTextArea(chatBox, $('#chat_chatboxwrapper_' + chatSessionId));
+	initializeAutoGrowingTextArea(chatbox, $('#chat_chatboxwrapper_' + chatSessionId));
+
+	// process the 'referrer' parameter we got in the OperatorNowTalkingToMessage -- this is the URL the customer came from to arrive at the operator's site
+	processReferrer(referrer, chatSessionId);
 
 	setVisibleChatSessionId(chatSessionId);
 

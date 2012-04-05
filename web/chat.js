@@ -371,7 +371,7 @@ function showInvalidSiteScreen() {
 }
 
 function showNoOperatorsAvailableScreen() {
-	showMiscMessageTab('There\'s nobody available :-(',
+	showMiscMessageTab('Bad news...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
 			$('<div/>').text('The representative you were waiting for has just become unavailable. Unfortunately, there is nobody else online for us to connect you with. Please try again another time.')
 		),

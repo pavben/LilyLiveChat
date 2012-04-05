@@ -264,6 +264,11 @@ input {
 	color:#006DA3;
 	text-decoration:underline;
 }
+.ellipsis {
+	overflow:hidden;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+}
 .skybgdiv {
 	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
 }
