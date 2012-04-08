@@ -48,25 +48,20 @@
 	width:200px;
 	vertical-align:top;
 }
-.chat_menucell {
+.chat_namecell {
 	display:table-cell;
 	background-image:url('images/gtile29.png');
 	vertical-align:middle;
-	cursor:pointer;
 }
-.chat_menulabelwidthlimiter {
+.chat_namelabelwidthlimiter {
 	width:180px;
 }
-#chat_menulabel {
+#chat_namelabel {
 	padding: 0px 5px 0px 5px;
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;
 	text-align:center;
-}
-#chat_menuwrapper {
-	display:none;
-	border-bottom:1px solid #BBBBBB;
 }
 #chat_noopenchatsessionsdiv {
 	padding:9px 9px 9px 9px;

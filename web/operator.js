@@ -37,42 +37,6 @@ $(window).bind('load', function() {
 		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
 	});
 
-	// chat tab's menu effects
-	// TODO: look into removing the menu
-	var menuSlideTarget = 0;
-	var menuSlideBusy = false;
-
-	$('#chat_menuouterwrapper').click(function() {
-		// toggle
-		menuSlideTarget = menuSlideTarget == 0 ? 1 : 0;
-		followSlideTarget();
-	});
-
-	function followSlideTarget() {
-		if (!menuSlideBusy) {
-			menuSlideBusy = true;
-
-			if (menuSlideTarget === 0) {
-				$('#chat_menuwrapper').slideUp(400, function() {
-					menuSlideBusy = false;
-
-					if (menuSlideTarget !== 0) {
-						followSlideTarget();
-					}
-				});
-			} else if (menuSlideTarget === 1) {
-				$('#chat_menuwrapper').slideDown(400, function() {
-					menuSlideBusy = false;
-
-					if (menuSlideTarget !== 1) {
-						followSlideTarget();
-					}
-				});
-			}
-		}
-	}
-	// end chat tab's menu effects
-	
 	// initialize the ringtone player
 	jPlayerRingtone = initializeJplayerRingtone();
 
@@ -208,8 +172,8 @@ function handleMessage(message) {
 				changeTabTo(chatTab);
 			}
 			log("Login successful");
-			$('#chat_menulabel').text(name);
-			$('#chat_menulabel').css('color', color);
+			$('#chat_namelabel').text(name);
+			$('#chat_namelabel').css('color', color);
 			break;
 		case Messages.OperatorLoginFailedMessage:
 			showLoginFailedScreen();
