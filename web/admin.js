@@ -180,7 +180,7 @@ $(window).bind('load', function() {
 
 	ajaxJsonGetSessionId(
 		function() {
-			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, 'virtivia']);
+			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, siteId]);
 		},
 		function() {
 			resetSession();
@@ -429,6 +429,11 @@ function handleMessage(message) {
 			var siteName = message[1];
 			var siteExpiryTS = message[2];
 
+			$('#main_general_siteid').text(siteId);
+			{
+				var operatorsLoginUrl = 'https://' + siteId + '.lilylivechat.net/operator';
+				$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
+			}
 			setFieldValue($('#main_general_sitename'), siteName);
 
 			var siteExpiryDate = new Date(siteExpiryTS * 1000);
@@ -492,7 +497,7 @@ function handleMessage(message) {
 
 			if (operatorsCount === 0) {
 				listbox.append(
-					$('<div/>').text('This is where you manage your list of operators. People added here will be able to login at <TODO> and accept chats from your customers.')
+					$('<div/>').text('This is where you manage your list of operators. People added here will be able to accept chats from your customers.')
 				).append(
 					$('<div/>').addClass('main_operators_listbox_centertext').text('Currently, there are no operators for your site.')
 				);
@@ -503,7 +508,7 @@ function handleMessage(message) {
 			listbox.removeClass('main_operators_listbox_large');
 
 			// set either the listbox or listbox_large class depending on the number of operators we're listing
-			listbox.addClass(operatorsCount <= 3 ? 'main_operators_listbox' : 'main_operators_listbox_large');
+			listbox.addClass(operatorsCount <= 2 ? 'main_operators_listbox' : 'main_operators_listbox_large');
 
 			break;
 		case Messages.AdminOperatorCreateSuccessMessage:

@@ -38,6 +38,7 @@ $(window).bind('load', function() {
 	});
 
 	// chat tab's menu effects
+	// TODO: look into removing the menu
 	var menuSlideTarget = 0;
 	var menuSlideBusy = false;
 
@@ -77,16 +78,21 @@ $(window).bind('load', function() {
 
 	$(window).resize(onResize);
 
-	ajaxJsonGetSessionId(
-		function() {
-			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, 'virtivia']);
-		},
-		function() {
-			resetSession();
+	// check if the siteId was successfully parsed from the URL
+	if (siteId !== null) {
+		ajaxJsonGetSessionId(
+			function() {
+				queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, siteId]);
+			},
+			function() {
+				resetSession();
 
-			showCantConnectScreen();
-		}
-	);
+				showCantConnectScreen();
+			}
+		);
+	} else {
+		showInvalidSiteScreen();
+	}
 });
 
 // audio
@@ -935,7 +941,7 @@ function showLoginFailedScreen() {
 function showInvalidSiteScreen() {
 	showMiscMessageTab('Invalid Site',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('The site you\'ve specified isn\'t registered with LilyLiveChat.')
+			$('<div/>').text('This site isn\'t registered with LilyLiveChat.')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(

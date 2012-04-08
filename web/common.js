@@ -1,5 +1,11 @@
 // communication protocol globals
-var siteId = 'virtivia'; // TODO: read siteId from URL
+var siteId = null;
+{
+	var siteIdMatch = document.location.hostname.match(/(\w+)\.lilylivechat\.net/);
+	if (siteIdMatch !== null && siteIdMatch[1] !== undefined) {
+		siteId = siteIdMatch[1];
+	}
+}
 var mySessionId;
 var lastInSequence;
 var nextOutSequence;

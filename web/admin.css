@@ -70,10 +70,10 @@
 	height:1px;
 	background:#BBBBBB;
 }
-#main_rightcell_adminpassword ul {
+.tab ul {
 	margin:0px 10px 7px 0px;
 }
-#main_rightcell_adminpassword li {
+.tab li {
 	line-height:20px;
 	padding-bottom:5px;
 }
@@ -86,13 +86,6 @@
 	font-size:140%;
 	text-align:center;
 }
-.main_centertext {
-	padding:4px 0px 12px 0px;
-}
-.main_centertext {
-	color:#454545;
-	text-align:center;
-}
 .main_contentbox {
 	padding:9px 9px 9px 9px;
 	background-color:#ECECEC;
@@ -101,11 +94,22 @@
 	color:#656565;
 	text-align:center;
 }
+.main_contentbox a:link, .main_contentbox a:visited {
+	color:#006DA3;
+	text-decoration:none;
+}
+.main_contentbox a:hover, .main_contentbox a:active {
+	color:#006DA3;
+	text-decoration:underline;
+}
 .main_settings_label {
 	display:table-cell;
 	text-align:center;
 	font-size:120%;
 	line-height:29px;
+}
+#main_general_siteid {
+	color:#454545;
 }
 #main_general_sitename {
 	text-align:center;
@@ -128,7 +132,7 @@
 	padding:9px 0px 9px 0px;
 }
 .main_operators_listbox_large {
-	height:300px;
+	height:299px;
 	padding:9px 9px 9px 0px;
 	overflow-y:scroll;
 }

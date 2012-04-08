@@ -128,6 +128,7 @@ function handleMessage(message) {
 			var title = message[2];
 			var iconUrl = message[3];
 			replaceThemWith(new Person(name, color, title, iconUrl));
+			writeNowTalkingToTextToChatlog(name, color);
 
 			playSoundAfterDing('nowspeakingwithrep');
 			break;
@@ -531,26 +532,14 @@ function writeSoundsStatusToChatlog() {
 	if (soundsEnabled) {
 		chatlogDiv.append(
 			$('<div/>').addClass('chatinfotext').append(
-				$('<span/>').text('Sounds are ')
+				$('<span/>').text('You\'ll hear a sound when a representative is available. ')
 			).append(
-				$('<span/>').css('color', '#008A2E').text('on')
-			).append(
-				$('<span/>').text(', so we\'ll tell you when a representative is available.')
-			)
-		).append(
-			$('<div/>').addClass('chatinfotext').append(
-				$('<span/>').text('If you prefer to ')
-			).append(
-				$('<a/>').attr('href', '').text('turn the sounds off').click(function() {
+				$('<a/>').attr('href', '#').text('Don\'t want sounds?').click(function() {
 					if (soundsEnabled) {
 						soundsEnabled = false;
 						chatlogDiv.append(
 							$('<div/>').addClass('chatinfotext').append(
-								$('<span/>').text('Sounds are now ')
-							).append(
-								$('<span/>').css('color', '#8A0017').text('off')
-							).append(
-								$('<span/>').text('.')
+								$('<span/>').text('Okay, we won\'t play any sounds. Just make sure you don\'t miss your turn!')
 							)
 						);
 					} else {
@@ -562,8 +551,6 @@ function writeSoundsStatusToChatlog() {
 					}
 					return false; // avoid following the blank link
 				})
-			).append(
-				$('<span/>').text(', you can. No hard feelings :-)')
 			)
 		);
 	} else {
@@ -579,6 +566,22 @@ function writeWelcomeTextToChatlog() {
 	chatlogDiv.append(
 		$('<div/>').addClass('chatinfotext').append(
 			$('<span/>').text('Someone will be with you soon. You can save time by asking your question while you wait.')
+		)
+	);
+
+	chatlogWritten(chatlogDiv);
+}
+
+function writeNowTalkingToTextToChatlog(name, color) {
+	var chatlogDiv = $('#chat_chatlog');
+
+	chatlogDiv.append(
+		$('<div/>').addClass('chatinfotext').append(
+			$('<span/>').text('You are now speaking with ')
+		).append(
+			$('<span/>').css('color', color).text(name)
+		).append(
+			$('<span/>').text('.')
 		)
 	);
 
@@ -683,19 +686,24 @@ $(window).bind('load', function() {
 	
 	$(window).resize(onResize);
 
-	ajaxJsonGetSessionId(
-		function() {
-			queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, "virtivia"]);
+	// check if the siteId was successfully parsed from the URL
+	if (siteId !== null) {
+		ajaxJsonGetSessionId(
+			function() {
+				queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, siteId]);
 
-			// TEMP: remove this
-			//$('#welcome_btn_ok').click();
-			//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
-		},
-		function() {
-			resetSession();
+				// TEMP: remove this
+				//$('#welcome_btn_ok').click();
+				//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
+			},
+			function() {
+				resetSession();
 
-			showCantConnectScreen();
-		}
-	);
+				showCantConnectScreen();
+			}
+		);
+	} else {
+		showInvalidSiteScreen();
+	}
 });
 
