@@ -78,7 +78,6 @@ type SiteId = Text
 data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdName :: Text,
-  sdExpiryTimestamp :: Integer,
   sdNextOperatorId :: Integer,
   sdOperators :: [SiteOperatorData],
   sdSessionsWaiting :: [ChatSessionTVar],

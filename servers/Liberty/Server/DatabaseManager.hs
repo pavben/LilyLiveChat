@@ -146,15 +146,14 @@ getSiteDataFromDb databaseHandleTVar = do
   case res of
     Just siteDocs ->
       return $ mapM (\siteDoc ->
-        case (,,,,,) <$>
+        case (,,,,) <$>
           (asMaybeText $ lookup "siteId" siteDoc) <*>
           (asMaybeText $ lookup "name" siteDoc) <*>
-          (lookup "expiryTimestamp" siteDoc :: Maybe Integer) <*>
           (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
           (lookup "operators" siteDoc :: Maybe [Document]) <*>
           (asMaybeText $ lookup "adminPasswordHash" siteDoc)
         of
-          Just (siteId, name, expiryTimestamp, nextOperatorId, operators, adminPasswordHash) ->
+          Just (siteId, name, nextOperatorId, operators, adminPasswordHash) ->
             let
               maybeOperatorDatas = mapM (\operatorDoc ->
                 SiteOperatorData <$>
@@ -168,7 +167,7 @@ getSiteDataFromDb databaseHandleTVar = do
                 ) operators
             in
               case maybeOperatorDatas of
-                Just siteOperatorDatas -> Just $ SiteData siteId name expiryTimestamp nextOperatorId siteOperatorDatas [] [] adminPasswordHash [] 0
+                Just siteOperatorDatas -> Just $ SiteData siteId name nextOperatorId siteOperatorDatas [] [] adminPasswordHash [] 0
                 Nothing -> Nothing
           Nothing -> Nothing
         ) siteDocs
@@ -193,7 +192,6 @@ saveSiteData siteData databaseHandleTVar = do
       [
         "siteId" := (asStringValue $ sdSiteId siteData),
         "name" := (asStringValue $ sdName siteData),
-        "expiryTimestamp" := Int64 (fromInteger $ sdExpiryTimestamp siteData),
         "nextOperatorId" := Int32 (fromInteger $ sdNextOperatorId siteData),
         "operators" := Array (map (\siteOperatorData ->
           Doc [

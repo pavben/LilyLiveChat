@@ -427,7 +427,6 @@ function handleMessage(message) {
 		case Messages.AdminSiteInfoMessage:
 			var siteId = message[0];
 			var siteName = message[1];
-			var siteExpiryTS = message[2];
 
 			$('#main_general_siteid').text(siteId);
 			{
@@ -435,9 +434,6 @@ function handleMessage(message) {
 				$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
 			}
 			setFieldValue($('#main_general_sitename'), siteName);
-
-			var siteExpiryDate = new Date(siteExpiryTS * 1000);
-			$('#main_general_siteexpiry').text(siteExpiryDate.toDateString());
 			break;
 		case Messages.AdminSetSiteNameSuccessMessage:
 			// site name set successfully

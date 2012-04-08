@@ -54,7 +54,7 @@ Server to Admin
 ================================================================
 28 - AdminLoginSuccessMessage
 29 - AdminLoginFailedMessage
-30 - AdminSiteInfoMessage [siteId, name, expiryTimestamp]
+30 - AdminSiteInfoMessage [siteId, name]
 39 - AdminSetSiteNameSuccessMessage
 31 - AdminOperatorDetailsStartMessage
 32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, iconUrl]
@@ -77,10 +77,10 @@ Server to Admin
 SA to Server
 ================================================================
 41 - SALoginRequestMessage
-42 - SASiteCreateMessage [siteId, name, expiryTimestamp, adminUsername, adminPassword]
+42 - SASiteCreateMessage [siteId, name, adminUsername, adminPassword]
 43 - SASiteDeleteMessage [siteId]
 44 - SAGetSiteInfoMessage [siteId]
-45 - SASetExpiryTimestampMessage [siteId, expiryTimestamp]
+45 - SASetExpiryTimestampMessage [siteId]
 
 Server to SA
 ================================================================
@@ -90,7 +90,7 @@ Server to SA
 49 - SASiteCreateFailedMessage
 50 - SASiteDeleteSuccessMessage
 51 - SASiteDeleteFailedMessage
-52 - SASiteInfoMessage [siteId, name, expiryTimestamp]
+52 - SASiteInfoMessage [siteId, name]
 53 - SASiteInfoFailedMessage
 54 - SASetExpiryTimestampSuccessMessage
 

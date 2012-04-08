@@ -574,7 +574,7 @@ sendSiteInfoToAdmins siteDataTVar = do
   forM_ (sdOnlineAdmins siteData) $ sendSiteInfoToAdmin siteData
 
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
-sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage (AdminSiteInfoMessage,[sdSiteId siteData, sdName siteData, LT.pack $ show $ sdExpiryTimestamp siteData]) adminClientDataTVar
+sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage (AdminSiteInfoMessage,[sdSiteId siteData, sdName siteData]) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
