@@ -141,8 +141,8 @@ establishProxyConnection = do
     Right proxySocket ->
       catch
         (do
-          hostAddr <- inet_addr "127.0.0.1"
-          connect proxySocket (SockAddrInet 9801 hostAddr)
+          hostAddress <- inet_addr "192.168.1.102"
+          connect proxySocket (SockAddrInet 9801 hostAddress)
           return $ Just proxySocket
         )
         (\(SomeException _) -> return Nothing)

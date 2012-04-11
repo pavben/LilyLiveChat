@@ -17,7 +17,8 @@ runClientDispatcher databaseOperationQueueChan siteMapTVar = do
       catch
       (finally
         (do
-          initializeListenerSocket listenerSocket 9801
+          hostAddress <- inet_addr "192.168.1.102"
+          initializeListenerSocket listenerSocket hostAddress 9801
           acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -34,11 +35,11 @@ runClientDispatcher databaseOperationQueueChan siteMapTVar = do
       runClientDispatcher databaseOperationQueueChan siteMapTVar
 
 -- Exceptions handled by caller
-initializeListenerSocket :: Socket -> PortNumber -> IO ()
-initializeListenerSocket listenerSocket portNumber = do
+initializeListenerSocket :: Socket -> HostAddress -> PortNumber -> IO ()
+initializeListenerSocket listenerSocket hostAddress portNumber = do
   putStrLn $ "Initializing client listener socket on port " ++ show portNumber
   setSocketOption listenerSocket ReuseAddr 1
-  bindSocket listenerSocket $ SockAddrInet portNumber iNADDR_ANY
+  bindSocket listenerSocket $ SockAddrInet portNumber hostAddress
   listen listenerSocket 1000
 
 -- Exceptions handled by caller

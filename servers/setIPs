@@ -1,0 +1,7 @@
+# SiteLocatorService
+sudo ip addr add 192.168.1.100/32 dev lo
+# SiteDataService
+sudo ip addr add 192.168.1.101/32 dev lo
+# Chat Server S38
+sudo ip addr add 192.168.1.102/32 dev lo
+

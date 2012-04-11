@@ -19,7 +19,8 @@ runConnectionDispatcher sessionMapTVar = do
       (finally
         (do
           httpRegex <- getHttpRegex
-          initializeListenerSocket listenerSocket 9802
+          hostAddress <- inet_addr "192.168.1.102"
+          initializeListenerSocket listenerSocket hostAddress 9802
           acceptLoop listenerSocket sessionMapTVar httpRegex
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -29,18 +30,18 @@ runConnectionDispatcher sessionMapTVar = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept/getHttpRegex: " ++ show ex
+      putStrLn $ "Error in listen/bind/accept/inet_addr/getHttpRegex: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
       runConnectionDispatcher sessionMapTVar
 
 -- Exceptions handled by caller
-initializeListenerSocket :: Socket -> PortNumber -> IO ()
-initializeListenerSocket listenerSocket portNumber = do
+initializeListenerSocket :: Socket -> HostAddress -> PortNumber -> IO ()
+initializeListenerSocket listenerSocket hostAddress portNumber = do
   putStrLn $ "Initializing connection listener socket on port " ++ show portNumber
   setSocketOption listenerSocket ReuseAddr 1
-  bindSocket listenerSocket $ SockAddrInet portNumber iNADDR_ANY
+  bindSocket listenerSocket $ SockAddrInet portNumber hostAddress
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
