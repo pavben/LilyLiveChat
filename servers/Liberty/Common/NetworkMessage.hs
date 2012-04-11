@@ -132,14 +132,14 @@ parseMessage buffer = flip runGet buffer $ do
   case maybeMessageTypeId of
     Just messageTypeId -> case messageIdToType messageTypeId of
       Just messageType -> do
-	maybeNumParams <- safeGet 1 getWord8
-	case maybeNumParams of
-	  Just numParams -> do
-	    maybeTexts <- readTexts numParams
-	    case maybeTexts of
-	      Just texts -> bytesRead >>= \bytesRead' -> return $ Just (Just (messageType, texts), LBS.drop bytesRead' buffer)
-	      Nothing -> return $ Just (Nothing, buffer) -- not received all the texts yet
-	  Nothing -> return $ Just (Nothing, buffer) -- could not read the number of parameters byte
+        maybeNumParams <- safeGet 1 getWord8
+        case maybeNumParams of
+          Just numParams -> do
+            maybeTexts <- readTexts numParams
+            case maybeTexts of
+              Just texts -> bytesRead >>= \bytesRead' -> return $ Just (Just (messageType, texts), LBS.drop bytesRead' buffer)
+              Nothing -> return $ Just (Nothing, buffer) -- not received all the texts yet
+          Nothing -> return $ Just (Nothing, buffer) -- could not read the number of parameters byte
       Nothing -> return $ Nothing -- invalid message type / protocol not followed
     Nothing -> return $ Just (Nothing, buffer) -- messageTypeId byte not yet received
 

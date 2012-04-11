@@ -290,11 +290,11 @@ function processReferrer(url, chatSessionId) {
 			);
 		} else {
 			theDiv.append(
-				$('<span/>').text(' came from ')
+				$('<span/>').text(' arrived from ')
 			).append(
 				$('<span/>').css('color', '#454545').text(searchEngine)
 			).append(
-				$('<span/>').text(', but the search keywords are unavailable.')
+				$('<span/>').text(', but the search keywords are hidden.')
 			);
 		}
 
@@ -306,7 +306,7 @@ function processReferrer(url, chatSessionId) {
 			$('<div/>').addClass('chatinfotext ellipsis').append(
 				$('<span/>').css('color', they.color).text(they.name)
 			).append(
-				$('<span/>').text(' came from ')
+				$('<span/>').text(' arrived from ')
 			).append(
 				$('<a/>').attr('href', referrerUrl).attr('target', '_blank').text(referrerUrlWithoutProtocol)
 			)
