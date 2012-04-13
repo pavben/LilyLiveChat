@@ -1,7 +1,7 @@
 // communication protocol globals
 var siteId = null;
 {
-	var siteIdMatch = document.location.hostname.match(/(\w+)\.lilylivechat\.net/);
+	var siteIdMatch = document.location.pathname.match(/^\/([\w\d]+)\//);
 	if (siteIdMatch !== null && siteIdMatch[1] !== undefined) {
 		siteId = siteIdMatch[1];
 	}
@@ -612,14 +612,14 @@ function showMiscMessageTab(title, content, buttons) {
 // icons and suffixes table
 
 var iconsAndSuffixes = [
-	['images/cc/batty.png', 'Bat'],
-	['images/cc/bird.png', 'Bird'],
-	['images/cc/dog.png', 'Dog'],
-	['images/cc/froggy.png', 'Frog'],
-	['images/cc/kitty.png', 'Cat'],
-	['images/cc/lion.png', 'Lion'],
-	['images/cc/panda.png', 'Panda'],
-	['images/cc/penguin.png', 'Penguin']
+	['/images/cc/batty.png', 'Bat'],
+	['/images/cc/bird.png', 'Bird'],
+	['/images/cc/dog.png', 'Dog'],
+	['/images/cc/froggy.png', 'Frog'],
+	['/images/cc/kitty.png', 'Cat'],
+	['/images/cc/lion.png', 'Lion'],
+	['/images/cc/panda.png', 'Panda'],
+	['/images/cc/penguin.png', 'Penguin']
 ];
 
 function generatePersonColor() {

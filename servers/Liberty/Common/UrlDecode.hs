@@ -1,4 +1,4 @@
-module Liberty.WebGateway.UrlDecode (
+module Liberty.Common.UrlDecode (
   urlDecode
 ) where 
 import Control.Applicative

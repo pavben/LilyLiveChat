@@ -11,7 +11,7 @@ $(window).bind('load', function() {
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
-	replaceIconWith('images/operator_login.png', $('#login_icon'));
+	replaceIconWith('/images/operator_login.png', $('#login_icon'));
 	// default these labels
 	$('#chat_nextinlineheadertext').text('No customers waiting');
 	$('#chat_activechatsheader').text('No active chats');
@@ -70,8 +70,8 @@ function initializeJplayerRingtone() {
 	jPlayerDiv.jPlayer({
 		ready: function() {
 			jPlayerDiv.jPlayer('setMedia', {
-				mp3: '../audio/hding-lding.mp3',
-				oga: '../audio/hding-lding.ogg'
+				mp3: '/audio/hding-lding.mp3',
+				oga: '/audio/hding-lding.ogg'
 			}).jPlayer('load');
 
 			// begin running this loop when the player is ready
@@ -80,7 +80,7 @@ function initializeJplayerRingtone() {
 		ended: function() {
 			jPlayerDiv.jPlayer('play');
 		},
-		swfPath: 'audio',
+		swfPath: '/audio',
 		solution: 'flash, html',
 		supplied: 'oga, mp3',
 		errorAlerts: true // TODO: remove

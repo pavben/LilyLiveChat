@@ -135,7 +135,7 @@ input {
 .basicbutton {
 	padding:0px 0px 1px 0px;
 	border:1px solid #BBBBBB;
-	background-image:url('images/buttontile.png');
+	background-image:url('/images/buttontile.png');
 	background-repeat:repeat-x;
 	border-radius:5px;
 	text-shadow:1px 1px 0px #f4f4f4;
@@ -164,7 +164,7 @@ input {
 .personmenubutton {
 	border:1px solid #BBBBBB;
 	border-radius:5px;
-	background-image:url('images/buttontile.png');
+	background-image:url('/images/buttontile.png');
 	background-repeat:repeat-x;
 	text-shadow:1px 1px 0px #f4f4f4;
 	text-align:center;
@@ -194,7 +194,7 @@ input {
 }
 .edgelinesleft, .edgelinesright, .edgelinesboth {
 	display:table-cell;
-	background:url('images/edgelines.png');
+	background:url('/images/edgelines.png');
 	width:9px;
 	height:29px;
 }
@@ -270,7 +270,7 @@ input {
 	text-overflow:ellipsis;
 }
 .skybgdiv {
-	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
+	background: #C2E8F1 url('/images/skybg.png') repeat-x left top;
 }
 /* misc message tab */
 #miscmessage_tab {

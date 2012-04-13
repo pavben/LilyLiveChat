@@ -470,8 +470,8 @@ function initializeJplayerDing(jPlayerNext) {
 	jPlayerDiv.jPlayer({
 		ready: function() {
 			jPlayerDiv.jPlayer('setMedia', {
-				mp3: '../audio/hding-lding.mp3',
-				oga: '../audio/hding-lding.ogg'
+				mp3: '/audio/hding-lding.mp3',
+				oga: '/audio/hding-lding.ogg'
 			}).jPlayer('load');
 		},
 		ended: function() {
@@ -481,7 +481,7 @@ function initializeJplayerDing(jPlayerNext) {
 			log('Disabling sounds due to an error in the \'ding\' player');
 			soundsEnabled = false;
 		},
-		swfPath: 'audio',
+		swfPath: '/audio',
 		solution: 'flash, html',
 		supplied: 'oga, mp3',
 		errorAlerts: true // TODO: remove
@@ -499,7 +499,7 @@ function initializeJplayerNext() {
 			log('Disabling sounds due to an error in the \'next\' player');
 			soundsEnabled = false;
 		},
-		swfPath: 'audio',
+		swfPath: '/audio',
 		solution: 'flash, html',
 		supplied: 'oga, mp3',
 		errorAlerts: true // TODO: remove
@@ -515,8 +515,8 @@ function playSoundAfterDing(soundName) {
 
 		// then set the next player to the desired sound (stop is implicit)
 		jPlayerNext.jPlayer('setMedia', {
-			mp3: '../audio/' + soundName + '.mp3',
-			oga: '../audio/' + soundName + '.ogg'
+			mp3: '/audio/' + soundName + '.mp3',
+			oga: '/audio/' + soundName + '.ogg'
 		}).jPlayer('load');
 
 		// begin playing the ding while the next sound is loading
@@ -611,7 +611,7 @@ $(window).bind('load', function() {
 	replaceIconWith(myIcon, $('#welcome_icon'));
 
 	// set the waiting clock icon
-	replaceIconWith('images/waiting_clock.png', $('#chat_waiticon'));
+	replaceIconWith('/images/waiting_clock.png', $('#chat_waiticon'));
 
 	// welcome tab handlers
 	var nameEdited = false;

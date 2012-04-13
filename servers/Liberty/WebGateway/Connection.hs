@@ -25,9 +25,9 @@ import qualified Text.JSON as JSON
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
 import Liberty.Common.NetworkMessage
 import Liberty.Common.Timeouts
+import Liberty.Common.UrlDecode
 import Liberty.Common.Utils
 import Liberty.WebGateway.Sessions
-import Liberty.WebGateway.UrlDecode
 
 -- TODO: DoS vulnerability: memory exhaustion by sending tons of random crap to buffer
 processConnection :: Socket -> SessionMapTVar -> PCRE.Regex -> IO ()

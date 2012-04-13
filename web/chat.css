@@ -28,7 +28,7 @@
 	height:659px;
 	margin-left:auto;
 	margin-right:auto;
-	background-image: url('images/welcomebg.png');
+	background-image: url('/images/welcomebg.png');
 }
 #welcome_loginbox {
 	width:320px;

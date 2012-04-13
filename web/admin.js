@@ -25,7 +25,7 @@ $(window).bind('load', function() {
 	editOperatorSubtab = $('#main_rightcell_editoperator');
 	adminPasswordSubtab = $('#main_rightcell_adminpassword');
 
-	replaceIconWith('images/lock.png', $('#login_icon'));
+	replaceIconWith('/images/lock.png', $('#login_icon'));
 
 	// login tab handlers
 
@@ -39,17 +39,17 @@ $(window).bind('load', function() {
 	});
 	
 	// main tab handlers
-	replaceIconWith('images/admin_general.png', $('#main_btn_general'));
+	replaceIconWith('/images/admin_general.png', $('#main_btn_general'));
 	$('#main_btn_general').click(function() {
 		changeSubtabTo(generalSubtab);
 	});
 
-	replaceIconWith('images/admin_operators.png', $('#main_btn_operators'));
+	replaceIconWith('/images/admin_operators.png', $('#main_btn_operators'));
 	$('#main_btn_operators').click(function() {
 		changeSubtabTo(operatorsSubtab);
 	});
 
-	replaceIconWith('images/admin_security.png', $('#main_btn_adminpassword'));
+	replaceIconWith('/images/admin_security.png', $('#main_btn_adminpassword'));
 	$('#main_btn_adminpassword').click(function() {
 		changeSubtabTo(adminPasswordSubtab);
 	});
@@ -416,9 +416,6 @@ function handleMessage(message) {
 		case Messages.AdminLoginSuccessMessage:
 			changeTabTo(mainTab);
 			log("Login successful");
-			//queueAjaxCommand([Messages.AdminOperatorCreateMessage, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
-			//queueAjaxCommand([Messages.AdminOperatorReplaceMessage, 1, "mike2", "mike", "Michael", "#000000", "Representative", "images/cc/panda.png"]);
-			//queueAjaxCommand([Messages.AdminSetSiteNameMessage, "Virtivia"]);
 			changeSubtabTo(generalSubtab);
 			break;
 		case Messages.AdminLoginFailedMessage:
@@ -430,7 +427,7 @@ function handleMessage(message) {
 
 			$('#main_general_siteid').text(siteId);
 			{
-				var operatorsLoginUrl = 'https://' + siteId + '.lilylivechat.net/operator';
+				var operatorsLoginUrl = 'https://sl.lilylivechat.net/' + siteId + '/operator';
 				$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
 			}
 			setFieldValue($('#main_general_sitename'), siteName);
