@@ -250,18 +250,8 @@ function updatePositionInLine(position) {
 	});
 
 	if (firstPositionUpdateProcessed) {
-		switch (position) {
-			case 3:
-				playSoundAfterDing('youarenow3rd');
-				break;
-			case 2:
-				playSoundAfterDing('youre2ndinline');
-				break;
-			case 1:
-				playSoundAfterDing('getreadyyourenextinline');
-				break;
-			default:
-				// no sound
+		if (position == 1) {
+			playSoundAfterDing('getreadyyourenextinline');
 		}
 	} else {
 		firstPositionUpdateProcessed = true;

@@ -388,6 +388,7 @@ function updateActiveChatsLabel() {
 	});
 }
 
+// TODO: BUG: click a few times on the customer's name button while session is active
 function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
