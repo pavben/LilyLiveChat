@@ -68,6 +68,7 @@ receiveHttpRequestLoop handleStream siteMapTVar = do
       let requestUriPath = C8.pack $ uriPath $ rqURI request
       case headMay $ filter (not . LBS.null) $ C8.split '/' $ requestUriPath of
         Just siteId -> do
+          -- TODO: convert the siteId to lowercase
           maybeServerId <- lookupServerForSite siteId siteMapTVar
           case maybeServerId of
             Just serverId -> do

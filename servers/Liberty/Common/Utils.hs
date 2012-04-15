@@ -16,6 +16,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Read as LTR
 import Liberty.Common.UrlDecode
 
+-- TODO: These functions are possibly not needed any more
 parseIntegralCheckBounds :: forall a . (Integral a, Bounded a) => Text -> Maybe a
 parseIntegralCheckBounds text = do
   case parseIntegral text of

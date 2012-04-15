@@ -23,7 +23,8 @@ import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import qualified Text.JSON as JSON
 import qualified Text.Regex.PCRE.ByteString.Lazy as PCRE
-import Liberty.Common.NetworkMessage
+import Liberty.Common.Messages
+import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Timeouts
 import Liberty.Common.UrlDecode
 import Liberty.Common.Utils

@@ -1,3 +1,6 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ExistentialQuantification #-}
+
 module Liberty.Server.Client (
   initializeClient
 ) where
@@ -13,6 +16,7 @@ import Data.Int
 import Data.List
 --import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.MessagePack as MP
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 --import qualified Data.Text.Lazy.IO as LTI
@@ -20,7 +24,8 @@ import qualified Data.Text.Lazy as LT
 import Debug.Trace
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
-import Liberty.Common.NetworkMessage
+import Liberty.Common.Messages
+import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
@@ -74,9 +79,9 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueCha
     case parseMessage buffer of
       Just (maybeMessage, newBuffer) ->
         case maybeMessage of
-          Just message -> do
-            putStrLn $ "Msg: " ++ show message
-            handleMessage message clientDataTVar siteMapTVar databaseOperationQueueChan
+          Just (messageType, encodedMessageParams) -> do
+            putStrLn $ "Msg: " ++ show messageType ++ ", Encoded Params: " ++ show encodedMessageParams
+            handleMessage messageType encodedMessageParams clientDataTVar siteMapTVar databaseOperationQueueChan
             clientSocketReadLoop clientDataTVar newBuffer siteMapTVar databaseOperationQueueChan
           Nothing -> do
             putStrLn "No valid message in current buffer yet"
@@ -103,61 +108,60 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueCha
         putStrLn "Client disconnecting due to a protocol violation"
   else atomically $ do
     -- if the client allowed them to send excessively long data, something is wrong
-    createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
+    createAndSendMessage SomethingWentWrongMessage () clientDataTVar
     closeClientSocket clientDataTVar
 
-handleMessage :: Message -> ClientDataTVar -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
-handleMessage (messageType, params) clientDataTVar siteMapTVar databaseOperationQueueChan = do
+handleMessage :: ChatServerMessageType -> ByteString -> ClientDataTVar -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
+handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOperationQueueChan = do
   clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
     OCDClientUnregistered maybeSiteDataTVar ->
       case maybeSiteDataTVar of
         Nothing ->
-          case (messageType,params) of
-            (UnregisteredSelectSiteMessage,[siteId]) -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
+          case messageType of
+            UnregisteredSelectSiteMessage -> unpackAndHandle $ \siteId -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
             _ -> do
               putStrLn "Client (Unregistered) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
-          case (messageType,params) of
-            (CustomerJoinMessage,[name,color,icon,referrer]) -> handleCustomerJoinMessage name color icon referrer clientDataTVar siteDataTVar
-            (OperatorLoginRequestMessage,[username,password]) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
-            (AdminLoginRequestMessage,[password]) -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
+          case messageType of
+            CustomerJoinMessage -> unpackAndHandle $ \(name, color, icon, referrer) -> handleCustomerJoinMessage name color icon referrer clientDataTVar siteDataTVar
+            OperatorLoginRequestMessage -> unpackAndHandle $ \(username, password) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
+            AdminLoginRequestMessage -> unpackAndHandle $ \password -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
             _ -> do
               putStrLn "Client (Unregistered, with site selected) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
     OCDClientCustomerData clientCustomerData ->
-      case (messageType,params) of
-        (CustomerSendChatMessage,[text]) -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
-        (CustomerEndingChatMessage,[]) -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData)
+      case messageType of
+        CustomerSendChatMessage -> unpackAndHandle $ \text -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
+        CustomerEndingChatMessage -> unpackAndHandle $ \() -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData)
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
-      case (messageType,params) of
-        (OperatorAcceptNextChatSessionMessage,[]) -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
-        (OperatorSendChatMessage,[chatSessionIdT,text]) -> case parseIntegral chatSessionIdT of
-          Just chatSessionId -> handleOperatorSendChatMessage chatSessionId text clientDataTVar (codChatSessions clientOperatorData)
-          Nothing -> atomically $ closeClientSocket clientDataTVar
-        (OperatorEndingChatMessage, [chatSessionIdT]) -> case parseIntegral chatSessionIdT of
-          Just chatSessionId -> handleOperatorEndingChatMessage chatSessionId (codChatSessions clientOperatorData)
-          Nothing -> atomically $ closeClientSocket clientDataTVar
+      case messageType of -- TODO: need the $ \_ -> empties?
+        OperatorAcceptNextChatSessionMessage -> unpackAndHandle $ \() -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
+        OperatorSendChatMessage -> unpackAndHandle $ \(chatSessionId :: Int, text) -> handleOperatorSendChatMessage (toInteger chatSessionId) text clientDataTVar (codChatSessions clientOperatorData)
+        OperatorEndingChatMessage -> unpackAndHandle $ \(chatSessionId :: Int) -> handleOperatorEndingChatMessage (toInteger chatSessionId) (codChatSessions clientOperatorData)
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
     OCDClientAdminData _ ->
-      case (messageType,params) of
-        (AdminOperatorCreateMessage,[username,password,name,color,title,iconUrl]) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan
-        (AdminOperatorReplaceMessage,[operatorIdT,username,password,name,color,title,iconUrl]) -> case parseIntegral operatorIdT of
-          Just operatorId -> handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan
-          Nothing -> atomically $ closeClientSocket clientDataTVar
-        (AdminOperatorDeleteMessage,[operatorIdT]) -> case parseIntegral operatorIdT of
-          Just operatorId -> handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan
-          Nothing -> atomically $ closeClientSocket clientDataTVar
-        (AdminSetSiteNameMessage,[name]) -> handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan
-        (AdminSetAdminPasswordMessage,[password]) -> handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan
+      case messageType of
+        AdminOperatorCreateMessage -> unpackAndHandle $ \(username,password,name,color,title,iconUrl) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan
+        AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,username,password,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) username password name color title iconUrl clientDataTVar databaseOperationQueueChan
+        AdminOperatorDeleteMessage -> unpackAndHandle $ \(operatorId :: Int) -> handleAdminOperatorDeleteMessage (toInteger operatorId) clientDataTVar databaseOperationQueueChan
+        AdminSetSiteNameMessage -> unpackAndHandle $ \(name) -> handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan
+        AdminSetAdminPasswordMessage -> unpackAndHandle $ \(password) -> handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
+          atomically $ closeClientSocket clientDataTVar
+  where
+    unpackAndHandle handleFunction =
+      case eitherToMaybe $ MP.tryUnpack encodedParams of
+        Just params -> handleFunction params
+        Nothing -> do
+          putStrLn "Client dropped due to message unpack failure."
           atomically $ closeClientSocket clientDataTVar
 
 handleUnregisteredSelectSiteMessage :: SiteId -> ClientDataTVar -> SiteMapTVar -> IO ()
@@ -171,9 +175,9 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomical
 
       -- send the appropriate message depending on whether or not there are any operators online
       siteData <- readTVar siteDataTVar
-      let isActive = if null $ sdOnlineOperators siteData then "0" else "1"
-      createAndSendMessage (UnregisteredSiteSelectedMessage,[sdName siteData, LT.pack $ isActive]) clientDataTVar
-    Nothing -> createAndSendMessage (UnregisteredSiteInvalidMessage,[]) clientDataTVar
+      let isActive = null $ sdOnlineOperators siteData
+      createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
+    Nothing -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
 
 handleCustomerJoinMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVar =
@@ -199,7 +203,7 @@ handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVa
         waitingListUpdated siteDataTVar
       else do
         -- otherwise, there are no operators online, so we will not queue this customer
-        createAndSendMessage (CustomerNoOperatorsAvailableMessage,[]) clientDataTVar
+        createAndSendMessage CustomerNoOperatorsAvailableMessage () clientDataTVar
         closeClientSocket clientDataTVar
 
 handleOperatorLoginRequestMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
@@ -233,14 +237,14 @@ handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar 
             -- update the client, associating it with the site
             clientData <- readTVar clientDataTVar
             writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData operatorId name color title iconUrl siteDataTVar [] }
-            createAndSendMessage (OperatorLoginSuccessMessage, [name, color, title, iconUrl]) clientDataTVar
+            createAndSendMessage OperatorLoginSuccessMessage (name, color, title, iconUrl) clientDataTVar
 
             -- send the line status
             lineStatusInfo <- getLineStatusInfo siteDataTVar
             sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
           Nothing -> do
             -- Operator login failed: Invalid credentials
-            createAndSendMessage (OperatorLoginFailedMessage, []) clientDataTVar
+            createAndSendMessage OperatorLoginFailedMessage () clientDataTVar
             closeClientSocket clientDataTVar
 
 handleAdminLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
@@ -258,7 +262,7 @@ handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
         -- update the client, associating it with the site
         clientData <- readTVar clientDataTVar
         writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientAdminData $ ClientAdminData siteDataTVar }
-        createAndSendMessage (AdminLoginSuccessMessage, []) clientDataTVar
+        createAndSendMessage AdminLoginSuccessMessage () clientDataTVar
 
         -- send the site info (siteId, name, expiryTimestamp)
         sendSiteInfoToAdmin siteData clientDataTVar
@@ -267,7 +271,7 @@ handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
         sendOperatorsListToAdmin siteData clientDataTVar
       else do
         -- Admin login failed: Invalid credentials
-        createAndSendMessage (AdminLoginFailedMessage, []) clientDataTVar
+        createAndSendMessage AdminLoginFailedMessage () clientDataTVar
         closeClientSocket clientDataTVar
 
 handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
@@ -284,7 +288,7 @@ handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar =
           _ -> csMessagesWaiting chatSession
       }
       case csOperator chatSession of
-        ChatOperatorClient operatorClientDataTVar -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession,messageText]) operatorClientDataTVar
+        ChatOperatorClient operatorClientDataTVar -> createAndSendMessage OperatorReceiveChatMessage (fromIntegral $ csId chatSession :: Int, messageText) operatorClientDataTVar
         ChatOperatorNobody -> return () -- we have buffered the message above
 
 handleCustomerEndingChatMessage :: ChatSessionTVar -> IO ()
@@ -325,14 +329,35 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
             waitingListUpdated siteDataTVar
           
             -- send the CustomerNowTalkingToMessage to the customer
-            createAndSendMessage (CustomerNowTalkingToMessage, [codName clientOperatorData, codColor clientOperatorData, codTitle clientOperatorData, codIconUrl clientOperatorData]) (csCustomerClientDataTVar updatedChatSession)
+            createAndSendMessage CustomerNowTalkingToMessage
+              (
+                codName clientOperatorData,
+                codColor clientOperatorData,
+                codTitle clientOperatorData,
+                codIconUrl clientOperatorData
+              )
+              (csCustomerClientDataTVar updatedChatSession)
             
             -- send the OperatorNowTalkingToMessage to the operator
-            createAndSendMessage (OperatorNowTalkingToMessage, [LT.pack $ show $ csId updatedChatSession, customerName, customerColor, customerIconUrl, customerReferrer]) clientDataTVar
+            createAndSendMessage OperatorNowTalkingToMessage
+              (
+                fromIntegral $ csId updatedChatSession :: Int,
+                customerName,
+                customerColor,
+                customerIconUrl,
+                customerReferrer
+              )
+              clientDataTVar
 
             -- send all csMessagesWaiting to the operator
             -- note: chatSession is a snapshot from before we emptied csMessagesWaiting
-            forM_ (reverse $ csMessagesWaiting chatSession) (\messageText -> createAndSendMessage (OperatorReceiveChatMessage, [LT.pack $ show $ csId chatSession, messageText]) clientDataTVar)
+            forM_ (reverse $ csMessagesWaiting chatSession)
+              (\messageText -> createAndSendMessage OperatorReceiveChatMessage
+                (
+                  fromIntegral $ csId chatSession :: Int,
+                  messageText
+                )
+                clientDataTVar)
 
           _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
 
@@ -350,7 +375,7 @@ handleOperatorSendChatMessage chatSessionId messageText clientDataTVar chatSessi
       case matchedSessions of
         [chatSessionTVar] -> do
           chatSession <- readTVar chatSessionTVar
-          createAndSendMessage (CustomerReceiveChatMessage, [messageText]) (csCustomerClientDataTVar chatSession)
+          createAndSendMessage CustomerReceiveChatMessage (messageText) (csCustomerClientDataTVar chatSession)
         _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
 handleOperatorEndingChatMessage :: Integer -> [ChatSessionTVar] -> IO ()
@@ -391,11 +416,11 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
             -- save to the database
             queueSaveSiteData siteDataTVar databaseOperationQueueChan
             -- respond to the admin who issued the create command
-            createAndSendMessage (AdminOperatorCreateSuccessMessage,[]) clientDataTVar
+            createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
             -- notify the admins with the new list
             sendOperatorsListToAdmins siteDataTVar
           else
-            createAndSendMessage (AdminOperatorCreateDuplicateUsernameMessage,[]) clientDataTVar
+            createAndSendMessage AdminOperatorCreateDuplicateUsernameMessage () clientDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
@@ -429,15 +454,15 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
                 -- save to the database
                 queueSaveSiteData siteDataTVar databaseOperationQueueChan
                 -- respond to the admin who issued the replace command
-                createAndSendMessage (AdminOperatorReplaceSuccessMessage,[]) clientDataTVar
+                createAndSendMessage AdminOperatorReplaceSuccessMessage () clientDataTVar
                 -- notify the admins with the new list
                 sendOperatorsListToAdmins siteDataTVar
               else
                 -- an operator with that username already exists
-                createAndSendMessage (AdminOperatorReplaceDuplicateUsernameMessage,[]) clientDataTVar
+                createAndSendMessage AdminOperatorReplaceDuplicateUsernameMessage () clientDataTVar
             _ ->
               -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
-              createAndSendMessage (AdminOperatorReplaceInvalidIdMessage,[]) clientDataTVar
+              createAndSendMessage AdminOperatorReplaceInvalidIdMessage () clientDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
 
 handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
@@ -471,12 +496,12 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueu
           -- save to the database
           queueSaveSiteData siteDataTVar databaseOperationQueueChan
           -- respond to the admin who issued the delete command
-          createAndSendMessage (AdminOperatorDeleteSuccessMessage,[]) clientDataTVar
+          createAndSendMessage AdminOperatorDeleteSuccessMessage () clientDataTVar
           -- notify the admins with the new list
           sendOperatorsListToAdmins siteDataTVar
         else
           -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
-          createAndSendMessage (AdminOperatorDeleteFailedMessage,[]) clientDataTVar
+          createAndSendMessage AdminOperatorDeleteFailedMessage () clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorDeleteMessage" ()
 
 handleAdminSetSiteNameMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
@@ -498,7 +523,7 @@ handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
           queueSaveSiteData siteDataTVar databaseOperationQueueChan
 
           -- respond to the admin who issued the delete command
-          createAndSendMessage (AdminSetSiteNameSuccessMessage,[]) clientDataTVar
+          createAndSendMessage AdminSetSiteNameSuccessMessage () clientDataTVar
 
           -- notify the admins of the new site name
           sendSiteInfoToAdmins siteDataTVar
@@ -523,7 +548,7 @@ handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueu
           queueSaveSiteData siteDataTVar databaseOperationQueueChan
 
           -- respond to the admin who issued the set password command
-          createAndSendMessage (AdminSetAdminPasswordSuccessMessage,[]) clientDataTVar
+          createAndSendMessage AdminSetAdminPasswordSuccessMessage () clientDataTVar
 
           -- disconnect all other admins
           forM_ (sdOnlineAdmins siteData) (\targetAdminClientDataTVar -> do
@@ -547,24 +572,24 @@ sendOperatorsListToAdmins siteDataTVar = do
 sendOperatorsListToAdmin :: SiteData -> ClientDataTVar -> STM ()
 sendOperatorsListToAdmin siteData adminClientDataTVar = do
   -- send the operator details start message
-  createAndSendMessage (AdminOperatorDetailsStartMessage,[]) adminClientDataTVar
+  createAndSendMessage AdminOperatorDetailsStartMessage () adminClientDataTVar
 
   -- send the operator details, one message per operator
   forM_ (sdOperators siteData) $ (\siteOperatorData ->
-    createAndSendMessage (AdminOperatorDetailsMessage,
-      [
-        LT.pack $ show $ sodOperatorId siteOperatorData,
+    createAndSendMessage AdminOperatorDetailsMessage
+      (
+        fromIntegral $ sodOperatorId siteOperatorData :: Int,
         sodUsername siteOperatorData,
         sodName siteOperatorData,
         sodColor siteOperatorData,
         sodTitle siteOperatorData,
         sodIconUrl siteOperatorData
-      ]
-      ) adminClientDataTVar
+      )
+      adminClientDataTVar
     )
 
   -- send the operator details end message
-  createAndSendMessage (AdminOperatorDetailsEndMessage,[]) adminClientDataTVar
+  createAndSendMessage AdminOperatorDetailsEndMessage () adminClientDataTVar
 
 sendSiteInfoToAdmins :: SiteDataTVar -> STM ()
 sendSiteInfoToAdmins siteDataTVar = do
@@ -574,7 +599,7 @@ sendSiteInfoToAdmins siteDataTVar = do
   forM_ (sdOnlineAdmins siteData) $ sendSiteInfoToAdmin siteData
 
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
-sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage (AdminSiteInfoMessage,[sdSiteId siteData, sdName siteData]) adminClientDataTVar
+sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, sdName siteData) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> IO ()
 handleClientExitEvent clientDataTVar = do
@@ -628,7 +653,7 @@ waitingListUpdated siteDataTVar = do
     )
   where
     sendPositionUpdate chatSessionTVar chatSession positionInLine = do
-      createAndSendMessage (CustomerInLinePositionMessage, [LT.pack $ show $ positionInLine]) (csCustomerClientDataTVar chatSession)
+      createAndSendMessage CustomerInLinePositionMessage (fromIntegral $ positionInLine :: Int) (csCustomerClientDataTVar chatSession)
       writeTVar chatSessionTVar $ chatSession { csLastPositionUpdate = Just $ positionInLine }
 
 -- CONSIDER: When the last operator becomes unavailable, allow 2 minutes or so before kicking everyone off
@@ -642,7 +667,7 @@ onlineOperatorsListUpdated siteDataTVar = do
       return $ csCustomerClientDataTVar chatSession
       ) (sdSessionsWaiting siteData)
     -- send the messages
-    forM_ customerClientDataTVars $ createAndSendMessage (CustomerNoOperatorsAvailableMessage,[])
+    forM_ customerClientDataTVars $ createAndSendMessage CustomerNoOperatorsAvailableMessage ()
     -- remove all clients from the line
     writeTVar siteDataTVar $ siteData { sdSessionsWaiting = [] }
     -- disconnect them
@@ -671,17 +696,17 @@ getLineStatusInfo siteDataTVar = do
 sendLineStatusInfoToOperator :: LineStatusInfo -> ClientDataTVar -> STM ()
 sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersInLine) clientDataTVar =
   let
-    message = case maybeNextCustomerInfo of
+    (messageType, messageParams) = case maybeNextCustomerInfo of
       Just (nextCustomerName, nextCustomerColor) -> (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ numCustomersInLine])
       Nothing -> (OperatorLineStatusEmptyMessage, [])
   in
-    createAndSendMessage message clientDataTVar
+    createAndSendMessage messageType messageParams clientDataTVar
 
 endChatSession :: ChatSessionTVar -> STM ()
 endChatSession chatSessionTVar = do
   chatSession <- readTVar chatSessionTVar
   -- notify the customer that the chat session has ended
-  createAndSendMessage (CustomerChatEndedMessage, []) (csCustomerClientDataTVar chatSession)
+  createAndSendMessage CustomerChatEndedMessage () (csCustomerClientDataTVar chatSession)
   
   case csOperator chatSession of
     ChatOperatorNobody -> do
@@ -707,11 +732,11 @@ endChatSession chatSessionTVar = do
           }
         _ -> trace "ASSERT: operatorClientData contains a non-operator" $ return ()
       -- notify the operator that the chat session has ended
-      createAndSendMessage (OperatorChatEndedMessage, [LT.pack $ show $ csId chatSession]) operatorClientDataTVar
+      createAndSendMessage OperatorChatEndedMessage (fromIntegral $ csId chatSession :: Int) operatorClientDataTVar
 
-createAndSendMessage :: Message -> ClientDataTVar -> STM ()
-createAndSendMessage messageTypeAndParams clientDataTVar = do
-  case createMessage messageTypeAndParams of
+createAndSendMessage :: (MessageType a, MP.Packable b) => a -> b -> ClientDataTVar -> STM ()
+createAndSendMessage messageType params clientDataTVar = do
+  case createMessage messageType params of
     Just encodedMessage -> do
       clientData <- readTVar clientDataTVar
       writeTChan (cdSendChan clientData) $ SendMessage encodedMessage
@@ -728,6 +753,6 @@ ensureTextLengthLimits pairs clientDataTVar f =
     f
   else do
     -- if the client allowed them to send excessively long values, something is wrong
-    createAndSendMessage (SomethingWentWrongMessage,[]) clientDataTVar
+    createAndSendMessage SomethingWentWrongMessage () clientDataTVar
     closeClientSocket clientDataTVar
 

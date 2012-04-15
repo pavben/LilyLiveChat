@@ -24,6 +24,7 @@ module Liberty.Server.Types (
 ) where
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
+import Data.ByteString.Lazy (ByteString)
 import Data.Text.Lazy (Text)
 import Network.Socket (Socket)
 import Liberty.Common.Types
@@ -99,7 +100,7 @@ data SiteOperatorData = SiteOperatorData {
 type SiteDataTVar = TVar SiteData
 
 -- ClientSendChan
-data ClientSendChanMessage = SendMessage EncodedMessage | CloseSocket
+data ClientSendChanMessage = SendMessage ByteString | CloseSocket
 type ClientSendChan = TChan ClientSendChanMessage
 
 -- DatabaseOperationQueue

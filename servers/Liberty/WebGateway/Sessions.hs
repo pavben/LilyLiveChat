@@ -26,7 +26,8 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (recv)
 import Prelude hiding (catch)
 import Liberty.WebGateway.RandomString
-import Liberty.Common.NetworkMessage
+import Liberty.Common.Messages
+import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Timeouts
 
 type SessionId = Text
