@@ -138,7 +138,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOpera
           putStrLn "Client (Customer) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
     OCDClientOperatorData clientOperatorData ->
-      case messageType of -- TODO: need the $ \_ -> empties?
+      case messageType of
         OperatorAcceptNextChatSessionMessage -> unpackAndHandle $ \() -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         OperatorSendChatMessage -> unpackAndHandle $ \(chatSessionId :: Int, text) -> handleOperatorSendChatMessage (toInteger chatSessionId) text clientDataTVar (codChatSessions clientOperatorData)
         OperatorEndingChatMessage -> unpackAndHandle $ \(chatSessionId :: Int) -> handleOperatorEndingChatMessage (toInteger chatSessionId) (codChatSessions clientOperatorData)

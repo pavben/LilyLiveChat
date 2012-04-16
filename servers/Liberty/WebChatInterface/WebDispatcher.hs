@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Liberty.WebChatInterface.WebDispatcher (
   runWebDispatcher
@@ -78,8 +79,6 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
   case receiveResult of
     Right request -> do
       putStrLn "Request:"
-      print request
-      print $ rqBody request
       case J.decode $ rqBody request :: Maybe J.Object of
         Just requestJsonObject -> do
           {- new session: s[empty]
@@ -87,11 +86,9 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
            - long poll: s, i
            -}
           print requestJsonObject
-          -- TODO: look into the ViewPatterns extension: Just (J.String (LT.fromStrict -> sessionId)) -> ...
           case HMS.lookup "s" requestJsonObject of
-            Just (J.String sessionIdST) -> do
+            Just (J.String (LT.fromStrict -> sessionId)) -> do
               -- successfully read sessionId (potentially blank)
-              let sessionId = LT.fromStrict sessionIdST
               if not $ LT.null sessionId then do
                 -- if not blank, locate the session
                 -- this is tested after determining the request type, because the Nothing case handling depends on it

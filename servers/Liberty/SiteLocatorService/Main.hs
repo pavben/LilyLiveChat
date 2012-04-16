@@ -16,6 +16,6 @@ main = do
   -- run the web dispatcher
   _ <- forkIO $ runWebDispatcher siteMapTVar
 
-  -- TODO: go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
+  -- go into a permanent loop until an exception occurs due to CTRL+C -- this is ugly, but haven't found a better way yet
   forever $ threadDelay (10000 * 1000)
 
