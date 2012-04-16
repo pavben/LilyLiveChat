@@ -124,7 +124,7 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
                     -- long poll request
                     case maybeSessionDataTVar of
                       Just sessionDataTVar -> handleLongPoll sessionDataTVar (fromIntegral outSequence :: OutSequence) handleStream sessionMapTVar sessionId
-                      Nothing -> return () -- TODO: if invalid session on a long poll connection, tell the client that their session has ended
+                      Nothing -> sendLongPollJsonResponse handleStream [] False -- if invalid session on a long poll connection, tell the client that their session has ended
                   _ -> return () -- not a proper send or long poll request
               else
                 -- new session request
@@ -181,7 +181,7 @@ handleSendCommand jValues sessionDataTVar inSequence handleStream = do
                   sessionData <- readTVar sessionDataTVar
                   writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
             -- regardless of whether or not the send was successful, acknowledge receipt
-            -- TODO: sendEmptyTextResponse clientSocket
+            sendJsonResponse handleStream (J.toJSON ())
           Nothing -> do
             putStrLn "Failed to encode message"
             return ()
@@ -269,8 +269,7 @@ sendJsonResponse handleStream object =
     encodedObject = J.encode object
     headers = [
       mkHeader HdrContentType "application/json",
-      mkHeader HdrContentLength $ show $ LBS.length encodedObject, -- TODO: make sure Content-Length is the length in bytes, not UTF-8 characters
-      Header (HdrCustom "Access-Control-Allow-Origin") "*" -- TODO: is this needed?
+      mkHeader HdrContentLength $ show $ LBS.length encodedObject
       ]
   in
     respondHTTP handleStream $ Response (2,0,0) "OK" headers encodedObject

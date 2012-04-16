@@ -175,7 +175,7 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomical
 
       -- send the appropriate message depending on whether or not there are any operators online
       siteData <- readTVar siteDataTVar
-      let isActive = null $ sdOnlineOperators siteData
+      let isActive = not $ null $ sdOnlineOperators siteData
       createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
     Nothing -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
 
@@ -695,12 +695,9 @@ getLineStatusInfo siteDataTVar = do
 
 sendLineStatusInfoToOperator :: LineStatusInfo -> ClientDataTVar -> STM ()
 sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersInLine) clientDataTVar =
-  let
-    (messageType, messageParams) = case maybeNextCustomerInfo of
-      Just (nextCustomerName, nextCustomerColor) -> (OperatorLineStatusDetailsMessage, [nextCustomerName, nextCustomerColor, LT.pack $ show $ numCustomersInLine])
-      Nothing -> (OperatorLineStatusEmptyMessage, [])
-  in
-    createAndSendMessage messageType messageParams clientDataTVar
+  case maybeNextCustomerInfo of
+    Just (nextCustomerName, nextCustomerColor) -> createAndSendMessage OperatorLineStatusDetailsMessage (nextCustomerName, nextCustomerColor, numCustomersInLine) clientDataTVar
+    Nothing -> createAndSendMessage OperatorLineStatusEmptyMessage () clientDataTVar
 
 endChatSession :: ChatSessionTVar -> STM ()
 endChatSession chatSessionTVar = do

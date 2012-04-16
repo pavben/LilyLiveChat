@@ -64,11 +64,11 @@ jsonToMP OperatorLoginRequestMessage [J.String username, J.String password] =
 jsonToMP OperatorAcceptNextChatSessionMessage [] =
   createMessage OperatorAcceptNextChatSessionMessage ()
 
-jsonToMP OperatorSendChatMessage [J.String sessionId, J.String text] =
-  createMessage OperatorSendChatMessage (sessionId, text)
+jsonToMP OperatorSendChatMessage [J.Number (DAN.I sessionId), J.String text] =
+  createMessage OperatorSendChatMessage (fromInteger sessionId :: Int, text)
 
-jsonToMP OperatorEndingChatMessage [J.String sessionId] =
-  createMessage OperatorEndingChatMessage (sessionId)
+jsonToMP OperatorEndingChatMessage [J.Number (DAN.I sessionId)] =
+  createMessage OperatorEndingChatMessage (fromInteger sessionId :: Int)
 
 jsonToMP AdminLoginRequestMessage [J.String password] =
   createMessage AdminLoginRequestMessage (password)
@@ -94,7 +94,121 @@ jsonToMP _ _ = Nothing
 messageToJson :: ChatServerMessageType -> ByteString -> Maybe [J.Value]
 
 messageToJson UnregisteredSiteSelectedMessage encodedParams =
-  unpackAndHandle encodedParams $ \(siteName :: Text, siteActive :: Bool) -> [J.toJSON (messageTypeToId UnregisteredSiteSelectedMessage), J.toJSON siteName, J.toJSON siteActive]
+  unpackAndHandle encodedParams $ \(siteName :: Text, isActive :: Bool) -> [J.toJSON (messageTypeToId UnregisteredSiteSelectedMessage), J.toJSON siteName, J.toJSON isActive]
+
+messageToJson UnregisteredSiteInvalidMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId UnregisteredSiteInvalidMessage)]
+
+messageToJson CustomerInLinePositionMessage encodedParams =
+  unpackAndHandle encodedParams $ \(position :: Int) -> [J.toJSON (messageTypeToId CustomerInLinePositionMessage), J.toJSON position]
+
+messageToJson CustomerNowTalkingToMessage encodedParams =
+  unpackAndHandle encodedParams $ \(name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId CustomerNowTalkingToMessage), J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
+
+messageToJson CustomerReceiveChatMessage encodedParams =
+  unpackAndHandle encodedParams $ \(text :: Text) -> [J.toJSON (messageTypeToId CustomerReceiveChatMessage), J.toJSON text]
+
+messageToJson SomethingWentWrongMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SomethingWentWrongMessage)]
+
+messageToJson CustomerChatEndedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CustomerChatEndedMessage)]
+
+messageToJson CustomerNoOperatorsAvailableMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CustomerNoOperatorsAvailableMessage)]
+
+messageToJson OperatorLoginSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \(name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId OperatorLoginSuccessMessage), J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
+
+messageToJson OperatorLoginFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId OperatorLoginFailedMessage)]
+
+messageToJson OperatorLineStatusDetailsMessage encodedParams =
+  unpackAndHandle encodedParams $ \(nextCustomerName :: Text, theirColor :: Text, numberOfWaiters :: Int) -> [J.toJSON (messageTypeToId OperatorLineStatusDetailsMessage), J.toJSON nextCustomerName, J.toJSON theirColor, J.toJSON numberOfWaiters]
+
+messageToJson OperatorLineStatusEmptyMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId OperatorLineStatusEmptyMessage)]
+
+messageToJson OperatorNowTalkingToMessage encodedParams =
+  unpackAndHandle encodedParams $ \(sessionId :: Int, name :: Text, color :: Text, iconUrl :: Text, referrer :: Text) -> [J.toJSON (messageTypeToId OperatorNowTalkingToMessage), J.toJSON sessionId, J.toJSON name, J.toJSON color, J.toJSON iconUrl, J.toJSON referrer]
+
+messageToJson OperatorReceiveChatMessage encodedParams =
+  unpackAndHandle encodedParams $ \(sessionId :: Int, text :: Text) -> [J.toJSON (messageTypeToId OperatorReceiveChatMessage), J.toJSON sessionId, J.toJSON text]
+
+messageToJson OperatorChatEndedMessage encodedParams =
+  unpackAndHandle encodedParams $ \(sessionId :: Int) -> [J.toJSON (messageTypeToId OperatorChatEndedMessage), J.toJSON sessionId]
+
+messageToJson AdminLoginSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginSuccessMessage)]
+
+messageToJson AdminLoginFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginFailedMessage)]
+
+messageToJson AdminSiteInfoMessage encodedParams =
+  unpackAndHandle encodedParams $ \(siteId :: Text, name :: Text) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON name]
+
+messageToJson AdminSetSiteNameSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminSetSiteNameSuccessMessage)]
+
+messageToJson AdminOperatorDetailsStartMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsStartMessage)]
+
+messageToJson AdminOperatorDetailsMessage encodedParams =
+  unpackAndHandle encodedParams $ \(operatorId :: Int, username :: Text, name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId AdminOperatorDetailsMessage), J.toJSON operatorId, J.toJSON username, J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
+
+messageToJson AdminOperatorDetailsEndMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsEndMessage)]
+
+messageToJson AdminOperatorCreateSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorCreateSuccessMessage)]
+
+messageToJson AdminOperatorCreateDuplicateUsernameMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorCreateDuplicateUsernameMessage)]
+
+messageToJson AdminOperatorReplaceSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorReplaceSuccessMessage)]
+
+messageToJson AdminOperatorReplaceDuplicateUsernameMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorReplaceDuplicateUsernameMessage)]
+
+messageToJson AdminOperatorReplaceInvalidIdMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorReplaceInvalidIdMessage)]
+
+messageToJson AdminOperatorDeleteSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDeleteSuccessMessage)]
+
+messageToJson AdminOperatorDeleteFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDeleteFailedMessage)]
+
+messageToJson AdminSetAdminPasswordSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminSetAdminPasswordSuccessMessage)]
+
+messageToJson SALoginSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SALoginSuccessMessage)]
+
+messageToJson SALoginFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SALoginFailedMessage)]
+
+messageToJson SASiteCreateSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteCreateSuccessMessage)]
+
+messageToJson SASiteCreateFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteCreateFailedMessage)]
+
+messageToJson SASiteDeleteSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteDeleteSuccessMessage)]
+
+messageToJson SASiteDeleteFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteDeleteFailedMessage)]
+
+messageToJson SASiteInfoMessage encodedParams =
+  unpackAndHandle encodedParams $ \(siteId :: Text, name :: Text) -> [J.toJSON (messageTypeToId SASiteInfoMessage), J.toJSON siteId, J.toJSON name]
+
+messageToJson SASiteInfoFailedMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteInfoFailedMessage)]
+
+messageToJson SASetExpiryTimestampSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASetExpiryTimestampSuccessMessage)]
 
 messageToJson _ _ = Nothing
 

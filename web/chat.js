@@ -98,9 +98,9 @@ function handleMessage(message) {
 	switch (messageTypeId) {
 		case Messages.UnregisteredSiteSelectedMessage:
 			var siteName = message[0];
-			var siteActive = message[1];
+			var isActive = message[1];
 
-			if (siteActive == "1") {
+			if (isActive === true) {
 				changeTabTo(welcomeTab);
 			} else {
 				showInactiveSiteScreen();

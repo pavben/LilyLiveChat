@@ -393,7 +393,7 @@ function handleMessage(message) {
 	switch (messageTypeId) {
 		case Messages.UnregisteredSiteSelectedMessage:
 			var siteName = message[0];
-			var siteActive = message[1]; // we don't care if it's active or not for admins
+			var isActive = message[1]; // we don't care if it's active or not for admins
 
 			// set the proper login box title
 			$('#login_adminloginlabel').text(siteName + ' Admin Login');
