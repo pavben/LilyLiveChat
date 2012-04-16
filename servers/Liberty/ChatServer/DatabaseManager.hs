@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Liberty.Server.DatabaseManager (
+module Liberty.ChatServer.DatabaseManager (
   DatabaseHandleTVar,
   initializeDatabaseManager,
   runDatabaseManager,
@@ -19,7 +19,7 @@ import qualified Data.Text.Lazy as LT
 import Data.Maybe
 import Database.MongoDB
 import Prelude hiding (catch, lookup)
-import Liberty.Server.Types
+import Liberty.ChatServer.Types
 
 -- public data
 type DatabaseHandleTVar = TVar (Maybe DatabaseHandle)

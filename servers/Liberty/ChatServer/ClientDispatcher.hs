@@ -1,13 +1,13 @@
-module Liberty.Server.ClientDispatcher (
+module Liberty.ChatServer.ClientDispatcher (
   runClientDispatcher
 ) where
 import Control.Concurrent
 import Control.Exception
 import Network.Socket
 import Prelude hiding (catch)
-import Liberty.Server.Client
-import Liberty.Server.SiteMap
-import Liberty.Server.Types
+import Liberty.ChatServer.Client
+import Liberty.ChatServer.SiteMap
+import Liberty.ChatServer.Types
 
 runClientDispatcher :: DatabaseOperationQueueChan -> SiteMapTVar -> IO ()
 runClientDispatcher databaseOperationQueueChan siteMapTVar = do

@@ -3,9 +3,9 @@ module Main (
 ) where
 import Control.Concurrent
 import Control.Monad (forever)
-import Liberty.Server.ClientDispatcher
-import Liberty.Server.DatabaseManager
-import Liberty.Server.SiteMap
+import Liberty.ChatServer.ClientDispatcher
+import Liberty.ChatServer.DatabaseManager
+import Liberty.ChatServer.SiteMap
 
 main :: IO ()
 main = do

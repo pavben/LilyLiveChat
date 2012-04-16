@@ -1,4 +1,4 @@
-module Liberty.Server.Utils (
+module Liberty.ChatServer.Utils (
   hashTextWithSalt,
   checkTextLengthLimits
 ) where

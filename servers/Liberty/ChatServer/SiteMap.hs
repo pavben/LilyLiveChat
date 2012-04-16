@@ -1,4 +1,4 @@
-module Liberty.Server.SiteMap (
+module Liberty.ChatServer.SiteMap (
   SiteMapTVar,
   initializeSiteMap,
 ) where
@@ -6,8 +6,8 @@ import Control.Concurrent.STM.TVar
 import Control.Monad.STM
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Liberty.Server.DatabaseManager
-import Liberty.Server.Types
+import Liberty.ChatServer.DatabaseManager
+import Liberty.ChatServer.Types
 
 -- public data
 type SiteMapTVar = TVar (Map SiteId SiteDataTVar)

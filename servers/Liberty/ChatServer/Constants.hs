@@ -1,4 +1,4 @@
-module Liberty.Server.Constants where
+module Liberty.ChatServer.Constants where
 import Data.Int
 
 -- Text value limits

@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
-module Liberty.Server.Client (
+module Liberty.ChatServer.Client (
   initializeClient
 ) where
 import Control.Concurrent
@@ -26,10 +26,10 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
-import Liberty.Server.DatabaseManager
-import Liberty.Server.SiteMap
-import Liberty.Server.Types
-import Liberty.Server.Utils
+import Liberty.ChatServer.DatabaseManager
+import Liberty.ChatServer.SiteMap
+import Liberty.ChatServer.Types
+import Liberty.ChatServer.Utils
 import Prelude hiding (catch)
 import Safe
 
