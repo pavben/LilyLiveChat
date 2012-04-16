@@ -1,5 +1,8 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Liberty.WebChatInterface.MessageFormatConverter (
-  createMessageFromJson
+  createMessageFromJson,
+  messageToJson
 ) where
 import Control.Arrow (second)
 import Control.Concurrent
@@ -17,6 +20,7 @@ import qualified Data.Map as Map
 import qualified Data.MessagePack as MP
 import Data.Ord
 import qualified Data.Text as T
+import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LE
 import qualified Data.Vector as V
@@ -25,11 +29,12 @@ import Network.Socket
 import Network.URI
 import Prelude hiding (catch)
 import Safe
-import Liberty.WebChatInterface.Sessions
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Utils
+import Debug.Trace
 
+-- JSON to encoded MessagePack message
 createMessageFromJson :: [J.Value] -> Maybe ByteString
 createMessageFromJson jValues =
   case jValues of
@@ -82,4 +87,20 @@ jsonToMP AdminSetSiteNameMessage [J.String name] =
 
 jsonToMP AdminSetAdminPasswordMessage [J.String password] =
   createMessage AdminSetAdminPasswordMessage (password)
+
+jsonToMP _ _ = Nothing
+
+-- MessagePack format to JSON
+messageToJson :: ChatServerMessageType -> ByteString -> Maybe [J.Value]
+
+messageToJson UnregisteredSiteSelectedMessage encodedParams =
+  unpackAndHandle encodedParams $ \(siteName :: Text, siteActive :: Bool) -> [J.toJSON (messageTypeToId UnregisteredSiteSelectedMessage), J.toJSON siteName, J.toJSON siteActive]
+
+messageToJson _ _ = Nothing
+
+unpackAndHandle :: MP.Unpackable a => ByteString -> (a -> b) -> Maybe b
+unpackAndHandle encodedParams handleFunction =
+  case unpackMessage encodedParams of
+    Just params -> Just $ handleFunction params
+    Nothing -> trace "unpackMessage failed" Nothing -- either the encoded params were invalid or they did not match the params we expect
 

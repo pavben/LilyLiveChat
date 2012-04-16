@@ -158,7 +158,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOpera
           atomically $ closeClientSocket clientDataTVar
   where
     unpackAndHandle handleFunction =
-      case eitherToMaybe $ MP.tryUnpack encodedParams of
+      case unpackMessage encodedParams of
         Just params -> handleFunction params
         Nothing -> do
           putStrLn "Client dropped due to message unpack failure."

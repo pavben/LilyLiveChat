@@ -16,6 +16,7 @@ import Control.Concurrent.STM.TVar
 import Control.Exception
 import Control.Monad
 import Control.Monad.STM
+import qualified Data.Aeson as J
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Map (Map)
@@ -25,9 +26,10 @@ import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (recv)
 import Prelude hiding (catch)
-import Liberty.WebGateway.RandomString
+import Liberty.WebChatInterface.MessageFormatConverter
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
+import Liberty.Common.RandomString
 import Liberty.Common.Timeouts
 
 type SessionId = Text
@@ -38,7 +40,7 @@ data SessionData = SessionData {
   sdProxySocket :: Maybe Socket,
   sdLastInSequence :: InSequence,
   sdLastOutSequence :: OutSequence,
-  sdMessagesWaiting :: [(OutSequence, ChatServerMessageType, ByteString)], -- out sequence, msg type, encoded params
+  sdMessagesWaiting :: [(OutSequence, [J.Value])], -- out sequence, msg type, encoded params
   sdLongPollRequestAbortAndTimeoutTVars :: (TVar Bool, TVar Bool),
   sdSessionTimeoutAbortTVar :: TVar Bool
 }
@@ -103,15 +105,23 @@ proxySocketReaderLoop proxySocket buffer sessionDataTVar =
     )
 
 handleReceivedProxyMessage :: ChatServerMessageType -> ByteString -> SessionDataTVar -> IO ()
-handleReceivedProxyMessage messageType encodedParams sessionDataTVar = do
-  -- NOTE: Integer overflow (Word32) after 2^32 messages received from proxySocket
-  atomically $ do
-    sessionData <- readTVar sessionDataTVar
-    let newOutSequence = (sdLastOutSequence sessionData) + 1
-    writeTVar sessionDataTVar $ sessionData {
-      sdLastOutSequence = newOutSequence,
-      sdMessagesWaiting = (sdMessagesWaiting sessionData) ++ [(newOutSequence, messageType, encodedParams)]
-    }
+handleReceivedProxyMessage messageType encodedParams sessionDataTVar =
+  let
+    queueMessageForWebClient jValues =
+      -- NOTE: Integer overflow (Word32) after 2^32 messages received from proxySocket
+      atomically $ do
+        sessionData <- readTVar sessionDataTVar
+        let newOutSequence = (sdLastOutSequence sessionData) + 1
+        writeTVar sessionDataTVar $ sessionData {
+          sdLastOutSequence = newOutSequence,
+          sdMessagesWaiting = (sdMessagesWaiting sessionData) ++ [(newOutSequence, jValues)]
+        }
+  in
+    case messageToJson messageType encodedParams of
+      Just jValues -> queueMessageForWebClient jValues
+      Nothing -> do
+        putStrLn "Error: Message from proxy socket could not be converted to JSON"
+        return ()
 
 tryCreateSessionUntilSuccess :: SessionMapTVar -> Socket -> IO (SessionId, SessionDataTVar)
 tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
