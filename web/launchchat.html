@@ -12,7 +12,7 @@
 		var originalReferrer = getUrlParameter('originalReferrer');
 
 		if (originalReferrer !== null) {
-			$.cookie(siteId + '.referrer', originalReferrer, { expires: 1, path: '/' });
+			$.cookie(siteId + '.referrer', originalReferrer, { expires: 1, path: '/', domain: 'lilylivechat.net' });
 		} else {
 			// if no original referrer given, clear the cookie
 			$.cookie(siteId + '.referrer', null);

@@ -391,7 +391,7 @@ function showDisconnectedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
-						window.location.reload();
+						refreshThroughSiteLocator();
 					})
 				)
 			).append(
@@ -419,8 +419,8 @@ function showCantConnectScreen() {
 				$('<div/>').addClass('cell')
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
-					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
-						window.location.reload();
+					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
+						refreshThroughSiteLocator();
 					})
 				)
 			).append(

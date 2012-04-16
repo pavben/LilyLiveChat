@@ -663,6 +663,10 @@ function getUrlParameter(name, queryString) {
 	return (v !== null) ? decodeURIComponent(v) : v;
 }
 
+function refreshThroughSiteLocator() {
+	window.location = 'http://sl.lilylivechat.net' + window.location.pathname + window.location.search;
+}
+
 function stripPx(text) {
 	return text.replace('px', '');
 }

@@ -887,15 +887,7 @@ function showLoginFailedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
-						window.location.reload();
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '7px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
+						refreshThroughSiteLocator();
 					})
 				)
 			)
@@ -907,17 +899,6 @@ function showInvalidSiteScreen() {
 	showMiscMessageTab('Invalid Site',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
 			$('<div/>').text('This site isn\'t registered with LilyLiveChat.')
-		),
-		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
-			$('<div/>').addClass('tablerow').append(
-				$('<div/>').addClass('cell')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
-					})
-				)
-			)
 		)
 	);
 }
@@ -933,15 +914,7 @@ function showDisconnectedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
-						window.location.reload();
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '7px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
+						refreshThroughSiteLocator();
 					})
 				)
 			)
@@ -959,16 +932,8 @@ function showCantConnectScreen() {
 				$('<div/>').addClass('cell')
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
-					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
-						window.location.reload();
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '7px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
+					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
+						refreshThroughSiteLocator();
 					})
 				)
 			)

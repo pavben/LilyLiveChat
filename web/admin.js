@@ -521,7 +521,7 @@ function handleMessage(message) {
 		case Messages.AdminOperatorReplaceInvalidIdMessage: // the operator being replaced was deleted
 		case Messages.AdminOperatorDeleteFailedMessage: // the operator being deleted is already deleted
 			// these are cases when something very unexpected happens which can likely be fixed with a refresh
-			window.location.reload();
+			refreshThroughSiteLocator();
 			break;
 		default:
 			log("Received an unknown message!");
@@ -551,15 +551,7 @@ function showLoginFailedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
-						window.location.reload();
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '7px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
+						refreshThroughSiteLocator();
 					})
 				)
 			)
@@ -570,18 +562,7 @@ function showLoginFailedScreen() {
 function showInvalidSiteScreen() {
 	showMiscMessageTab('Invalid Site',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('The site you\'ve specified isn\'t registered with LilyLiveChat.')
-		),
-		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
-			$('<div/>').addClass('tablerow').append(
-				$('<div/>').addClass('cell')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
-					})
-				)
-			)
+			$('<div/>').text('This site isn\'t registered with LilyLiveChat.')
 		)
 	);
 }
@@ -597,15 +578,7 @@ function showDisconnectedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
-						window.location.reload();
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '7px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
+						refreshThroughSiteLocator();
 					})
 				)
 			)
@@ -623,16 +596,8 @@ function showCantConnectScreen() {
 				$('<div/>').addClass('cell')
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
-					$('<div/>').addClass('basicbutton').text('Reconnect').click(function() {
-						window.location.reload();
-					})
-				)
-			).append(
-				$('<div/>').addClass('cell').css('width', '7px')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Close').click(function() {
-						window.close();
+					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
+						refreshThroughSiteLocator();
 					})
 				)
 			)
