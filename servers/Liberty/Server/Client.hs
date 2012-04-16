@@ -79,9 +79,9 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueCha
     case parseMessage buffer of
       Just (maybeMessage, newBuffer) ->
         case maybeMessage of
-          Just (messageType, encodedMessageParams) -> do
-            putStrLn $ "Msg: " ++ show messageType ++ ", Encoded Params: " ++ show encodedMessageParams
-            handleMessage messageType encodedMessageParams clientDataTVar siteMapTVar databaseOperationQueueChan
+          Just (messageType, encodedParams) -> do
+            putStrLn $ "Msg: " ++ show messageType ++ ", Encoded Params: " ++ show encodedParams
+            handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOperationQueueChan
             clientSocketReadLoop clientDataTVar newBuffer siteMapTVar databaseOperationQueueChan
           Nothing -> do
             putStrLn "No valid message in current buffer yet"

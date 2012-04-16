@@ -18,13 +18,16 @@ resetSession();
 function resetSession() {
 	mySessionId = null;
 	lastInSequence = 0;
-	nextOutSequence = 0;
+	nextOutSequence = 1;
 	ajaxCommandQueue = [];
 	ajaxCommandSendInProgress = false;
 }
 
 function queueAjaxCommand(data) {
-	ajaxCommandQueue.push([nextOutSequence++].concat(data));
+	ajaxCommandQueue.push({
+		o: nextOutSequence++,
+		m: data
+	});
 
 	if (!ajaxCommandSendInProgress) {
 		setTimeout(sendAjaxCommands, 0);
@@ -39,10 +42,19 @@ function sendAjaxCommands() {
 	if (!ajaxCommandSendInProgress && ajaxCommandQueue.length > 0) {
 		ajaxCommandSendInProgress = true;
 
-		var currentCommand = ajaxCommandQueue.shift();
+		var currentMessageObject = ajaxCommandQueue.shift();
+
+		// add/update the sessionId
+		currentMessageObject.s = mySessionId;
+
+		/* we now have:
+		 * s: ...,		sessionId
+		 * o: ...,		out sequence
+		 * m: [...]		message data
+		 */
 
 		ajaxJson(
-			[mySessionId].concat(currentCommand), // mySessionId,nextOutSequence,...
+			currentMessageObject,
 			function(data) {
 				ajaxCommandSendInProgress = false;
 				// immediately after, send the next entry (if any)
@@ -51,7 +63,7 @@ function sendAjaxCommands() {
 			function (errorThrown) {
 				log("SEND Error: " + errorThrown);
 				// re-add the command to the beginning to retry when possible
-				ajaxCommandQueue.unshift(currentCommand);
+				ajaxCommandQueue.unshift(currentMessageObject);
 				ajaxCommandSendInProgress = false;
 				setTimeout(sendAjaxCommands, 5000); // schedule a retry in 5 seconds
 			},
@@ -63,8 +75,11 @@ function sendAjaxCommands() {
 function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
 	// start with a clean session
 	resetSession();
+
 	ajaxJson(
-		['NEW', nextOutSequence++],
+		{
+			s: ''
+		},
 		function(getSessionIdResponse) {
 			if (getSessionIdResponse.sessionId) {
 				// set the session ID to use in future requests
@@ -98,7 +113,10 @@ function ajaxJsonLongPoll() {
 		return;
 	}
 	ajaxJson(
-		[mySessionId, lastInSequence],
+		{
+			s: mySessionId,
+			i: lastInSequence
+		},
 		function(data) {
 			if (sessionExpiryTimeout) {
 				clearTimeout(sessionExpiryTimeout);
@@ -141,12 +159,13 @@ function ajaxJsonLongPoll() {
 	);
 }
 
-function ajaxJson(data, successFunction, errorFunction, timeout) {
+function ajaxJson(messageObject, successFunction, errorFunction, timeout) {
 	$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 	$.ajax({
 		type: "POST",
 		url: '/c',
-		data: uriEncodeArray(data),
+		data: JSON.stringify(messageObject),
+		contentType: 'application/json; charset=utf-8',
 		dataType: 'json',
 		timeout: timeout,
 		success: function(data, textStatus, jqXHR) {

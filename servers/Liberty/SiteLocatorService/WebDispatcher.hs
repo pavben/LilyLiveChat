@@ -77,7 +77,7 @@ receiveHttpRequestLoop handleStream siteMapTVar = do
               respondHTTP handleStream (Response (3,0,2) "Found" [mkHeader HdrLocation $ C8.unpack targetUrl] $ redirectBody targetUrl)
             Nothing -> do
               putStrLn "No servers available"
-              respondHTTP handleStream (Response (4,0,0) "OK" [] noServersAvailableBody)
+              respondHTTP handleStream (Response (2,0,0) "OK" [] noServersAvailableBody)
         Nothing -> do
           putStrLn "Invalid request"
           respondHTTP handleStream (Response (4,0,0) "Bad Request" [] badRequestBody)

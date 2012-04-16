@@ -4,7 +4,7 @@ Unregistered to Server
 
 Server to Unregistered
 ================================================================
-21 - UnregisteredSiteSelectedMessage [site name, active (1|0)]
+21 - UnregisteredSiteSelectedMessage [siteName, b:isActive]
 22 - UnregisteredSiteInvalidMessage
 
 Customer to Server
@@ -15,7 +15,7 @@ Customer to Server
 
 Server to Customer
 ================================================================
-2  - CustomerInLinePositionMessage [position]
+2  - CustomerInLinePositionMessage [i:position]
 3  - CustomerNowTalkingToMessage [name, color, iconUrl]
 5  - CustomerReceiveChatMessage [text]
 7  - SomethingWentWrongMessage
@@ -26,25 +26,25 @@ Operator to Server
 ================================================================
 8  - OperatorLoginRequestMessage [username, password]
 13 - OperatorAcceptNextChatSessionMessage
-16 - OperatorSendChatMessage [session id, text]
-17 - OperatorEndingChatMessage [session id]
+16 - OperatorSendChatMessage [sessionId, text]
+17 - OperatorEndingChatMessage [sessionId]
 
 Server to Operator
 ================================================================
 9  - OperatorLoginSuccessMessage [name, color, title, iconUrl]
 10 - OperatorLoginFailedMessage
-11 - OperatorLineStatusDetailsMessage [next customer name, their color, number of waiters]
+11 - OperatorLineStatusDetailsMessage [nextCustomerName, theirColor, i:numberOfWaiters]
 12 - OperatorLineStatusEmptyMessage
-14 - OperatorNowTalkingToMessage [session id, name, color, iconUrl, referrer]
-15 - OperatorReceiveChatMessage [session id, text]
-18 - OperatorChatEndedMessage [session id]
+14 - OperatorNowTalkingToMessage [sessionId, name, color, iconUrl, referrer]
+15 - OperatorReceiveChatMessage [sessionId, text]
+18 - OperatorChatEndedMessage [sessionId]
 
 Admin to Server
 ================================================================
 24 - AdminLoginRequestMessage [password]
 25 - AdminOperatorCreateMessage [username, password, name, color, title, iconUrl]
-26 - AdminOperatorReplaceMessage [operatorId, username, password, name, color, title, iconUrl]
-27 - AdminOperatorDeleteMessage [operatorId]
+26 - AdminOperatorReplaceMessage [i:operatorId, username, password, name, color, title, iconUrl]
+27 - AdminOperatorDeleteMessage [i:operatorId]
 38 - AdminSetSiteNameMessage [name]
 55 - AdminSetAdminPasswordMessage [password]
 -56 - AdminAdminReplaceMessage [adminId, password]
@@ -57,7 +57,7 @@ Server to Admin
 30 - AdminSiteInfoMessage [siteId, name]
 39 - AdminSetSiteNameSuccessMessage
 31 - AdminOperatorDetailsStartMessage
-32 - AdminOperatorDetailsMessage [operatorId, username, name, color, title, iconUrl]
+32 - AdminOperatorDetailsMessage [i:operatorId, username, name, color, title, iconUrl]
 33 - AdminOperatorDetailsEndMessage
 34 - AdminOperatorCreateSuccessMessage
 35 - AdminOperatorCreateDuplicateUsernameMessage
