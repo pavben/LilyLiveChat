@@ -3,12 +3,9 @@
 module Liberty.Common.Messages.ChatServer (
   ChatServerMessageType(..)
 ) where
-import Data.ByteString.Lazy (ByteString)
-import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Tuple
 import Liberty.Common.Messages
-import Liberty.Common.Utils
 
 data ChatServerMessageType = CustomerJoinMessage
                            | CustomerInLinePositionMessage

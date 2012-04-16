@@ -4,13 +4,11 @@ module Liberty.SiteLocatorService.Types (
   SiteEntry(..),
   SiteEntryTVar,
   SiteMap,
-  SiteMapTVar,
-  module Liberty.Common.Types
+  SiteMapTVar
 ) where
 import Control.Concurrent.STM.TVar
 import Data.ByteString.Lazy (ByteString)
 import Data.Map (Map)
-import Liberty.Common.Types
 
 -- Site
 type SiteId = ByteString

@@ -3,7 +3,6 @@
 module Liberty.WebChatInterface.WebDispatcher (
   runWebDispatcher
 ) where
-import Control.Arrow (second)
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Exception
@@ -13,29 +12,21 @@ import qualified Data.Aeson as J
 import Data.Attoparsec.Number as DAN
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as C8
 import qualified Data.HashMap.Strict as HMS
 import Data.List
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
-import qualified Data.MessagePack as MP
 import Data.Ord
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LE
 import qualified Data.Vector as V
 import Network.HTTP
-import Network.Socket hiding (recv)
-import Network.Socket.ByteString.Lazy (sendAll, recv)
-import Network.URI
+import Network.Socket
+import Network.Socket.ByteString.Lazy (sendAll)
 import Prelude hiding (catch)
-import Safe
 import Liberty.WebChatInterface.MessageFormatConverter
 import Liberty.WebChatInterface.Sessions
-import Liberty.Common.Messages
-import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Timeouts
-import Liberty.Common.Utils
 
 runWebDispatcher :: SessionMapTVar -> IO ()
 runWebDispatcher sessionMapTVar = do
@@ -133,11 +124,6 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
         Nothing -> return () -- cannot decode JSON object in request body
     Left connError -> do
       print connError
-
-  where
-    redirectBody url = LBS.concat [C8.pack "Redirecting to <a href=\"", url, C8.pack "\">", url, C8.pack "</a>..."]
-    noServersAvailableBody = C8.pack "LilyLiveChat is currently unavailable. We'll be back online soon!"
-    badRequestBody = C8.pack "You've followed an invalid link."
 
 handleNewSession :: SessionMapTVar -> HandleStream ByteString -> IO ()
 handleNewSession sessionMapTVar handleStream = do

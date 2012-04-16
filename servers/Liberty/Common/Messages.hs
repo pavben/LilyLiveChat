@@ -6,20 +6,15 @@ module Liberty.Common.Messages (
   parseMessage,
   unpackMessage
 ) where
-import Control.Monad
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Int (Int64)
 import Data.Map (Map)
-import qualified Data.Map as Map
 import qualified Data.MessagePack as MP
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy.Encoding as LE
 import Data.Word
 import Liberty.Common.Utils
-import Liberty.Common.Types
 
 class MessageType a where
   messageTypeById :: MessageType a => Map Int a

@@ -26,7 +26,6 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
-import Liberty.Common.Utils
 import Liberty.Server.DatabaseManager
 import Liberty.Server.SiteMap
 import Liberty.Server.Types

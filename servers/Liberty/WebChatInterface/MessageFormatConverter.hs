@@ -4,34 +4,14 @@ module Liberty.WebChatInterface.MessageFormatConverter (
   createMessageFromJson,
   messageToJson
 ) where
-import Control.Arrow (second)
-import Control.Concurrent
-import Control.Concurrent.STM.TVar
-import Control.Exception
-import Control.Monad.STM
 import qualified Data.Aeson as J
 import Data.Attoparsec.Number as DAN
 import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as C8
-import qualified Data.HashMap.Strict as HMS
-import Data.List
-import qualified Data.Map as Map
 import qualified Data.MessagePack as MP
-import Data.Ord
-import qualified Data.Text as T
 import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LE
-import qualified Data.Vector as V
-import Network.HTTP
-import Network.Socket
-import Network.URI
 import Prelude hiding (catch)
-import Safe
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
-import Liberty.Common.Utils
 import Debug.Trace
 
 -- JSON to encoded MessagePack message
