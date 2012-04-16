@@ -17,7 +17,6 @@ import Data.List
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Ord
-import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
 import Network.HTTP
@@ -89,7 +88,7 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
            -}
           print requestJsonObject
           -- TODO: look into the ViewPatterns extension: Just (J.String (LT.fromStrict -> sessionId)) -> ...
-          case HMS.lookup (T.pack "s") requestJsonObject of
+          case HMS.lookup "s" requestJsonObject of
             Just (J.String sessionIdST) -> do
               -- successfully read sessionId (potentially blank)
               let sessionId = LT.fromStrict sessionIdST
@@ -101,9 +100,9 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
                   return $ Map.lookup sessionId sessionMap
                 -- determine if this request is a send or a long poll
                 case (
-                  HMS.lookup (T.pack "o") requestJsonObject,
-                  HMS.lookup (T.pack "m") requestJsonObject,
-                  HMS.lookup (T.pack "i") requestJsonObject
+                  HMS.lookup "o" requestJsonObject,
+                  HMS.lookup "m" requestJsonObject,
+                  HMS.lookup "i" requestJsonObject
                   ) of
                   (Just (J.Number (DAN.I inSequence)), Just (J.Array messageArray), _) ->
                     -- send request
@@ -132,7 +131,7 @@ handleNewSession sessionMapTVar handleStream = do
   case createSessionResult of
     Just (sessionId, sessionDataTVar) -> do
       putStrLn "Created new session"
-      sendJsonResponse handleStream $ J.object [(T.pack "sessionId", J.toJSON sessionId)]
+      sendJsonResponse handleStream $ J.object [("sessionId", J.toJSON sessionId)]
       -- set the session timeout in case we don't receive any long poll requests
       resetSessionTimeout sessionDataTVar sessionId sessionMapTVar
       return ()
