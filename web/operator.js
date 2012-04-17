@@ -388,7 +388,7 @@ function updateActiveChatsLabel() {
 	});
 }
 
-// TODO: BUG: click a few times on the customer's name button while session is active
+// TODO: BUG: adding a chat session failed on .scrollHeight being called on undefined/null
 function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
@@ -830,29 +830,32 @@ function testSetVisibleChatSessionId(sessions) {
 
 function followVisibleChatSessionIdTarget() {
 	if (visibleChatSessionIdTarget !== undefined) {
-		chatSessionIdToObject('#chat_maincell_', visibleChatSessionId).fadeOut(200, function() { // NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
-			var currentVisibleChatSessionIdTarget = visibleChatSessionIdTarget;
-			visibleChatSessionId = currentVisibleChatSessionIdTarget;
+		var initialCell = chatSessionIdToObject('#chat_maincell_', visibleChatSessionId);
+		// NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
+		initialCell.fadeTo(200, 0, function() {
+			initialCell.hide();
 
-			var targetCell = chatSessionIdToObject('#chat_maincell_', currentVisibleChatSessionIdTarget);
+			visibleChatSessionId = visibleChatSessionIdTarget;
 
+			var targetCell = chatSessionIdToObject('#chat_maincell_', visibleChatSessionIdTarget);
 			targetCell.fadeTo(0, 0, function() {
 				onChatTabResize();
-				if (currentVisibleChatSessionIdTarget !== null) {
-					var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', currentVisibleChatSessionIdTarget);
-					// scroll to the bottom, if possible
+				// if the target window is a chat session
+				if (visibleChatSessionId !== null) {
+					// scroll to the bottom
+					var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', visibleChatSessionId);
 					instantScrollChatlogToBottom(chatlogDiv);
 				}
 				targetCell.fadeTo(300, 1, function() {
-					if (currentVisibleChatSessionIdTarget === visibleChatSessionIdTarget) {
+					if (visibleChatSessionId === visibleChatSessionIdTarget) {
 						// if the target hasn't changed during the fade-in, we're done
 						visibleChatSessionIdTarget = undefined;
 
-						// always set chat session activity to false when opening
-						setChatSessionIndicator(currentVisibleChatSessionIdTarget, ButtonIndicatorStates.Normal);
+						// set the indicator to Normal
+						setChatSessionIndicator(visibleChatSessionId, ButtonIndicatorStates.Normal);
 
 						// and scroll to the bottom again, in case something messed up our last scroll
-						if (currentVisibleChatSessionIdTarget !== null) {
+						if (visibleChatSessionId !== null) {
 							chatlogWritten(chatlogDiv);
 						}
 					} else {
