@@ -98,14 +98,14 @@ function ajaxJsonGetSessionId(onSuccessCallback, onErrorCallback) {
 	);
 }
 
-var sessionExpiryTimeout = null;
-
 function sessionEnded() {
 	log("Session ended");
 	resetSession();
 
 	handleSessionEnded();
 }
+
+var consecutiveLongPollFailures = 0;
 
 function ajaxJsonLongPoll() {
 	if (!mySessionId) {
@@ -118,9 +118,8 @@ function ajaxJsonLongPoll() {
 			i: lastInSequence
 		},
 		function(data) {
-			if (sessionExpiryTimeout) {
-				clearTimeout(sessionExpiryTimeout);
-			}
+			// since this request succeeded, reset the number of consecutive failures
+			consecutiveLongPollFailures = 0;
 
 			log(data);
 
@@ -145,14 +144,13 @@ function ajaxJsonLongPoll() {
 			}
 		},
 		function (errorThrown) {
-			log("Long Poll Error: " + errorThrown);
-			setTimeout(ajaxJsonLongPoll, 3000); // schedule a retry in 3 seconds
+			log('Long Poll Error: ' + errorThrown);
 
-			// if there isn't already a session expiry timeout, set one
-			if (!sessionExpiryTimeout) {
-				sessionExpiryTimeout = setTimeout(function() {
-					sessionEnded();
-				}, 10000);
+			consecutiveLongPollFailures++;
+			if (consecutiveLongPollFailures < 10) {
+				setTimeout(ajaxJsonLongPoll, 1000); // schedule a retry in 1 second
+			} else {
+				sessionEnded();
 			}
 		},
 		65000
@@ -607,7 +605,7 @@ function instantScrollChatlogToBottom(chatlogDiv) {
 
 function getScrollTopTarget(theDiv) {
 	// scrollHeight of 0 means the div is out of view, so we check for that case to avoid returning a negative
-	if (theDiv[0].scrollHeight > 0) {
+	if (theDiv[0].scrollHeight > 0) { // TODO: BUG: When clicking on the next in line icon as operator: SCRIPT5007: Unable to get value of the property 'scrollHeight': object is null or undefined 
 		return theDiv[0].scrollHeight // start with the total scroll height
 			- theDiv.outerHeight() // subtract (height + padding + border)
 			+ parseInt(theDiv.css('border-top-width')) // readd the top border

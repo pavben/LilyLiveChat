@@ -172,7 +172,7 @@ resetSessionTimeout sessionDataTVar sessionId sessionMapTVar = do
   void $ abortTimeout oldSessionTimeoutAbortTVar
 
   -- create the new timeout
-  setTimeout 10 newSessionTimeoutAbortTVar $ deleteSession sessionDataTVar sessionId sessionMapTVar
+  setTimeout 20 newSessionTimeoutAbortTVar $ deleteSession sessionDataTVar sessionId sessionMapTVar
 
 deleteSession :: SessionDataTVar -> SessionId -> SessionMapTVar -> IO ()
 deleteSession sessionDataTVar sessionId sessionMapTVar = do
