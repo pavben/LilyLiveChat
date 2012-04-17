@@ -388,7 +388,6 @@ function updateActiveChatsLabel() {
 	});
 }
 
-// TODO: BUG: adding a chat session failed on .scrollHeight being called on undefined/null
 function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
@@ -482,7 +481,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	replaceIconWith(they.iconUrl, $('#chat_theiricon_' + chatSessionId));
 	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
 
-	// mark the chat session as open; this is set to false when the session is beginning its fade-out
+	// mark the chat session as open; this is set to false when the session is beginning its 'Close' fade-out
 	getChatSessionData(chatSessionId).isOpen = true;
 
 	// start in the normal state, which means no active or ended class in the indicator
@@ -491,7 +490,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// close handler
 	$('#chat_btn_endchat_' + chatSessionId).click(function() {
 		// setVisibleChatSessionId to another chat session, if any
-		var openChatSessionIds = getOpenChatSessionIds().filter(function(x) { return (x !== chatSessionId); });
+		var openChatSessionIds = getOpenChatSessionIds().filter(function(x) { return (x !== chatSessionId.toString()); });
 		var targetSessionId = (openChatSessionIds.length > 0) ? openChatSessionIds[0] : null;
 
 		var currentChatSessionData = getChatSessionData(chatSessionId);
