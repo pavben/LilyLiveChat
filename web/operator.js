@@ -89,28 +89,28 @@ function initializeJplayerRingtone() {
 	return jPlayerDiv;
 }
 
-var loginTabOkActive = false;
+var loginTabOkHandlerEnabled = true;
 
 function loginTabOkHandler() {
-	if (!loginTabOkActive) {
-		loginTabOkActive = true;
-
+	if (loginTabOkHandlerEnabled) {
 		var username = $.trim($('#login_username').val());
 		var password = $.trim($('#login_password').val());
 
-		// TODO: replace this check with the appropriate enabling/disabling of the login button
-		if (username.length == 0 || password.length == 0) {
-			// TODO: REMOVE THIS DEV CODE
-			username = "mike";
-			password = "mike";
+		if (username.length == 0) {
 			/*
-			alert("Please enter both the username and password.");
-			loginTabOkActive = false;
-			return;
+			$('#login_username').focus();
 			*/
+			// TODO: REMOVE THIS DEV CODE
+			$('#login_username').val('mike');
+			$('#login_password').val('mike');
+			loginTabOkHandler();
+		} else if (password.length == 0) {
+			$('#login_password').focus();
+		} else {
+			// disable the login handler to prevent double-clicks
+			loginTabOkHandlerEnabled = false;
+			queueAjaxCommand([Messages.OperatorLoginRequestMessage, username, password]);
 		}
-
-		queueAjaxCommand([Messages.OperatorLoginRequestMessage, username, password]);
 	}
 }
 

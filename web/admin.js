@@ -361,26 +361,24 @@ function getCurrentSubtabOrTarget() {
 	return (currentSubtabTarget !== undefined) ? currentSubtabTarget : currentSubtab;
 }
 
-var loginTabOkActive = false;
+var loginTabOkHandlerEnabled = true;
 
 function loginTabOkHandler() {
-	if (!loginTabOkActive) {
-		loginTabOkActive = true;
-
+	if (loginTabOkHandlerEnabled) {
 		var password = $.trim($('#login_password').val());
 
-		// TODO: replace this check with the appropriate enabling/disabling of the login button
 		if (password.length == 0) {
-			// TODO: REMOVE THIS DEV CODE
-			password = "mike";
 			/*
-			alert("Please enter both the username and password.");
-			loginTabOkActive = false;
-			return;
+			$('#login_password').focus();
 			*/
+			// TODO: REMOVE THIS DEV CODE
+			$('#login_password').val('mike');
+			loginTabOkHandler();
+		} else {
+			// disable the login handler to prevent double-clicks
+			loginTabOkHandlerEnabled = false;
+			queueAjaxCommand([Messages.AdminLoginRequestMessage, password]);
 		}
-
-		queueAjaxCommand([Messages.AdminLoginRequestMessage, password]);
 	}
 }
 
