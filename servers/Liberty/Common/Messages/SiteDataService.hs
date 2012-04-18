@@ -7,12 +7,24 @@ import Liberty.Common.Messages
 
 data SiteDataServiceMessageType = GetSiteDataMessage
                                 | SaveSiteDataMessage
+                                | SiteNotFoundMessage
+                                | DataNotAvailableMessage
+                                | NonAuthoritativeServerMessage
+                                | SiteDataFoundMessage
+                                | SiteDataSavedMessage
+                                | SiteDataSaveFailedMessage
   deriving (Show, Eq, Ord)
 
 messageIdsAndTypes :: [(Int, SiteDataServiceMessageType)]
 messageIdsAndTypes = [
     (1, GetSiteDataMessage),
-    (2, SaveSiteDataMessage)
+    (2, SaveSiteDataMessage),
+    (3, SiteNotFoundMessage),
+    (4, DataNotAvailableMessage),
+    (5, NonAuthoritativeServerMessage),
+    (6, SiteDataFoundMessage),
+    (7, SiteDataSavedMessage),
+    (8, SiteDataSaveFailedMessage)
   ]
 
 instance MessageType SiteDataServiceMessageType where

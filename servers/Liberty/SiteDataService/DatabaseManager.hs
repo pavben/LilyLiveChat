@@ -4,7 +4,9 @@ module Liberty.SiteDataService.DatabaseManager (
   DatabaseHandleTVar,
   initializeDatabaseManager,
   runDatabaseManager,
-  getSiteDataFromDb
+  GetSiteDataResult(..),
+  getSiteDataFromDb,
+  saveSiteDataToDb
 ) where
 import Control.Applicative
 import Control.Concurrent
@@ -114,47 +116,51 @@ runAction databaseHandleTVar action = do
           return Nothing
     Nothing -> return Nothing
 
-getSiteDataFromDb :: SiteId -> DatabaseHandleTVar -> IO (Maybe SiteData)
+data GetSiteDataResult = GSDRSuccess SiteData | GSDRNotFound | GSDRNotAvailable
+getSiteDataFromDb :: SiteId -> DatabaseHandleTVar -> IO (GetSiteDataResult)
 getSiteDataFromDb siteId databaseHandleTVar = do
   res <- runAction databaseHandleTVar (findOne (select ["siteId" =: (LT.unpack siteId)] "sites"))
   -- one layer of Maybe from runAction, and the other from findOne
-  case join $ res of
-    Just siteDoc ->
-      case (,,,,) <$>
-        (asMaybeText $ lookup "siteId" siteDoc) <*>
-        (asMaybeText $ lookup "name" siteDoc) <*>
-        (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
-        (lookup "operators" siteDoc :: Maybe [Document]) <*>
-        (asMaybeText $ lookup "adminPasswordHash" siteDoc)
-      of
-        Just (siteId, name, nextOperatorId, operators, adminPasswordHash) ->
-          let
-            maybeOperatorDatas = mapM (\operatorDoc ->
-              SiteOperatorData <$>
-                (lookup "operatorId" operatorDoc :: Maybe Integer) <*>
-                (asMaybeText $ lookup "username" operatorDoc) <*>
-                (asMaybeText $ lookup "passwordHash" operatorDoc) <*>
-                (asMaybeText $ lookup "name" operatorDoc) <*>
-                (asMaybeText $ lookup "color" operatorDoc) <*>
-                (asMaybeText $ lookup "title" operatorDoc) <*>
-                (asMaybeText $ lookup "icon" operatorDoc)
-              ) operators
-          in
-            case maybeOperatorDatas of
-              Just siteOperatorDatas -> return $ Just $ SiteData siteId name nextOperatorId siteOperatorDatas adminPasswordHash
-              Nothing -> return Nothing
-        Nothing -> return Nothing
-    Nothing -> return Nothing
+  case res of
+    Just maybeSiteDoc ->
+      case maybeSiteDoc of
+        Just siteDoc ->
+          case (,,,,) <$>
+            (asMaybeText $ lookup "siteId" siteDoc) <*>
+            (asMaybeText $ lookup "name" siteDoc) <*>
+            (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
+            (lookup "operators" siteDoc :: Maybe [Document]) <*>
+            (asMaybeText $ lookup "adminPasswordHash" siteDoc)
+          of
+            Just (siteId, name, nextOperatorId, operators, adminPasswordHash) ->
+              let
+                maybeOperatorDatas = mapM (\operatorDoc ->
+                  SiteOperatorData <$>
+                    (lookup "operatorId" operatorDoc :: Maybe Integer) <*>
+                    (asMaybeText $ lookup "username" operatorDoc) <*>
+                    (asMaybeText $ lookup "passwordHash" operatorDoc) <*>
+                    (asMaybeText $ lookup "name" operatorDoc) <*>
+                    (asMaybeText $ lookup "color" operatorDoc) <*>
+                    (asMaybeText $ lookup "title" operatorDoc) <*>
+                    (asMaybeText $ lookup "icon" operatorDoc)
+                  ) operators
+              in
+                case maybeOperatorDatas of
+                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId name nextOperatorId siteOperatorDatas adminPasswordHash
+                  Nothing -> return GSDRNotAvailable -- can't read operators
+            Nothing -> return GSDRNotAvailable -- can't read site data
+        Nothing -> return GSDRNotFound -- that siteId doesn't exist
+    Nothing -> return GSDRNotAvailable -- runAction failed
 
 asMaybeText :: Maybe String -> Maybe Text
 asMaybeText maybeString = fmap LT.pack maybeString
 
-saveSiteData :: SiteData -> DatabaseHandleTVar -> IO Bool
-saveSiteData siteData databaseHandleTVar = do
+saveSiteDataToDb :: SiteId -> SiteData -> DatabaseHandleTVar -> IO Bool
+saveSiteDataToDb currentSiteId siteData databaseHandleTVar = do
   actionResult <- runAction databaseHandleTVar (
     repsert (
       select
-        ["siteId" := (asStringValue $ sdSiteId siteData)]
+        ["siteId" := (asStringValue $ currentSiteId)]
         "sites")
       [
         "siteId" := (asStringValue $ sdSiteId siteData),
