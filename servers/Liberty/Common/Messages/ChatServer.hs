@@ -1,5 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
-
 module Liberty.Common.Messages.ChatServer (
   ChatServerMessageType(..)
 ) where

@@ -604,8 +604,13 @@ function instantScrollChatlogToBottom(chatlogDiv) {
 }
 
 function getScrollTopTarget(theDiv) {
+	if (!theDiv) {
+		// BUG: When clicking on the next in line icon as operator: SCRIPT5007: Unable to get value of the property 'scrollHeight': object is null or undefined 
+		alert('getScrollTopTarget scrollHeight bug still present');
+		return 0;
+	}
 	// scrollHeight of 0 means the div is out of view, so we check for that case to avoid returning a negative
-	if (theDiv[0].scrollHeight > 0) { // TODO: BUG: When clicking on the next in line icon as operator: SCRIPT5007: Unable to get value of the property 'scrollHeight': object is null or undefined 
+	if (theDiv[0].scrollHeight > 0) {
 		return theDiv[0].scrollHeight // start with the total scroll height
 			- theDiv.outerHeight() // subtract (height + padding + border)
 			+ parseInt(theDiv.css('border-top-width')) // readd the top border

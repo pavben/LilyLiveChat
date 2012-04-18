@@ -541,7 +541,9 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// process the 'referrer' parameter we got in the OperatorNowTalkingToMessage -- this is the URL the customer came from to arrive at the operator's site
 	processReferrer(referrer, chatSessionId);
 
-	setVisibleChatSessionId(chatSessionId);
+	setTimeout(function() {
+		setVisibleChatSessionId(chatSessionId);
+	}, 0);
 
 	// increase the count and update the header
 	increaseNumActiveChats();
@@ -839,12 +841,7 @@ function followVisibleChatSessionIdTarget() {
 			var targetCell = chatSessionIdToObject('#chat_maincell_', visibleChatSessionIdTarget);
 			targetCell.fadeTo(0, 0, function() {
 				onChatTabResize();
-				// if the target window is a chat session
-				if (visibleChatSessionId !== null) {
-					// scroll to the bottom
-					var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', visibleChatSessionId);
-					instantScrollChatlogToBottom(chatlogDiv);
-				}
+
 				targetCell.fadeTo(300, 1, function() {
 					if (visibleChatSessionId === visibleChatSessionIdTarget) {
 						// if the target hasn't changed during the fade-in, we're done
@@ -955,7 +952,7 @@ function onResize() {
 
 function onChatTabResize() {
 	var chatMaincellDiv = $('#chat_maincell');
-	if (visibleChatSessionId) {
+	if (visibleChatSessionId !== null) {
 		updateChatlogHeight();
 		chatMaincellDiv.css('height', 'auto');
 	} else {
