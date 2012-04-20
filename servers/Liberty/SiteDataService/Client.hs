@@ -101,7 +101,7 @@ handleMessage :: SiteDataServiceMessageType -> ByteString -> ClientSendChan -> D
 handleMessage messageType encodedParams clientSendChan databaseHandleTVar = do
   case messageType of
     GetSiteDataMessage -> unpackAndHandle $ \(siteId, requesterServerId) -> handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleTVar
-    SaveSiteDataMessage -> unpackAndHandle $ \(currentSiteId, siteDataParam) -> handleGetSiteDataMessage currentSiteId siteDataParam clientSendChan databaseHandleTVar
+    SaveSiteDataMessage -> unpackAndHandle $ \(currentSiteId, siteDataParam) -> handleSaveSiteDataMessage currentSiteId siteDataParam clientSendChan databaseHandleTVar
     _ -> do
       putStrLn "Client sent an unknown command"
       atomically $ closeClientSocket clientSendChan
