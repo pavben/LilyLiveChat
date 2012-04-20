@@ -17,8 +17,8 @@ module Liberty.ChatServer.Types (
   SiteDataTVar,
   ClientSendChanMessage(..),
   ClientSendChan,
-  DatabaseOperationQueueChanMessage(..),
-  DatabaseOperationQueueChan,
+  SiteDataSaverChanMessage(..),
+  SiteDataSaverChan,
   module Liberty.ChatServer.Constants
 ) where
 import Control.Concurrent.STM.TChan
@@ -101,9 +101,9 @@ type SiteDataTVar = TVar SiteData
 data ClientSendChanMessage = SendMessage ByteString | CloseSocket
 type ClientSendChan = TChan ClientSendChanMessage
 
--- DatabaseOperationQueue
-data DatabaseOperationQueueChanMessage = SaveSite SiteData
-type DatabaseOperationQueueChan = TChan DatabaseOperationQueueChanMessage
+-- SiteDataSaver
+data SiteDataSaverChanMessage = SaveSite SiteData
+type SiteDataSaverChan = TChan SiteDataSaverChanMessage
 
 -- Show instances
 instance Show (TVar a) where

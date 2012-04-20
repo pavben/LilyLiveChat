@@ -9,8 +9,8 @@ import Liberty.ChatServer.Client
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
 
-runClientDispatcher :: DatabaseOperationQueueChan -> SiteMapTVar -> IO ()
-runClientDispatcher databaseOperationQueueChan siteMapTVar = do
+runClientDispatcher :: SiteDataSaverChan -> SiteMapTVar -> IO ()
+runClientDispatcher siteDataSaverChan siteMapTVar = do
   eitherListenerSocket <- try $ socket AF_INET Stream 0 -- create the socket
   case eitherListenerSocket of
     Right listenerSocket ->
@@ -19,7 +19,7 @@ runClientDispatcher databaseOperationQueueChan siteMapTVar = do
         (do
           hostAddress <- inet_addr "192.168.1.102"
           initializeListenerSocket listenerSocket hostAddress 9801
-          acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan
+          acceptLoop listenerSocket siteMapTVar siteDataSaverChan
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -32,7 +32,7 @@ runClientDispatcher databaseOperationQueueChan siteMapTVar = do
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
-      runClientDispatcher databaseOperationQueueChan siteMapTVar
+      runClientDispatcher siteDataSaverChan siteMapTVar
 
 -- Exceptions handled by caller
 initializeListenerSocket :: Socket -> HostAddress -> PortNumber -> IO ()
@@ -43,11 +43,11 @@ initializeListenerSocket listenerSocket hostAddress portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
-acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan = do
+acceptLoop :: Socket -> SiteMapTVar -> SiteDataSaverChan -> IO ()
+acceptLoop listenerSocket siteMapTVar siteDataSaverChan = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ initializeClient clientSocket siteMapTVar databaseOperationQueueChan
+  _ <- forkIO $ initializeClient clientSocket siteMapTVar siteDataSaverChan
   -- and loop around
-  acceptLoop listenerSocket siteMapTVar databaseOperationQueueChan
+  acceptLoop listenerSocket siteMapTVar siteDataSaverChan
 

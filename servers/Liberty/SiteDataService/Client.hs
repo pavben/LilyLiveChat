@@ -140,7 +140,7 @@ handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleT
       sodTitle siteOperatorData,
       sodIconUrl siteOperatorData)
 
-handleSaveSiteDataMessage :: SiteId -> (SiteId, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> ClientSendChan -> DatabaseHandleTVar -> IO ()
+handleSaveSiteDataMessage :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> ClientSendChan -> DatabaseHandleTVar -> IO ()
 handleSaveSiteDataMessage currentSiteId (siteId, name, nextOperatorId, operators, adminPasswordHash) clientSendChan databaseHandleTVar = do
   -- TODO: Ask SL if requesterServerId is authoritative for siteId and respond with NonAuthoritativeServerMessage
   saveResult <- saveSiteDataToDb currentSiteId siteData databaseHandleTVar
@@ -159,7 +159,7 @@ handleSaveSiteDataMessage currentSiteId (siteId, name, nextOperatorId, operators
       operatorTitle,
       operatorIconUrl
       ) ->
-      SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash  operatorName  operatorColor  operatorTitle  operatorIconUrl
+      SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash operatorName operatorColor operatorTitle operatorIconUrl
 
 createAndSendMessage :: (MessageType a, MP.Packable b) => a -> b -> ClientSendChan -> STM ()
 createAndSendMessage messageType params clientSendChan =

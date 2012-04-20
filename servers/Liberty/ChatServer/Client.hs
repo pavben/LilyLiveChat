@@ -26,21 +26,22 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
-import Liberty.ChatServer.DatabaseManager
+import Liberty.Common.Messages.SiteDataService
+import Liberty.ChatServer.SiteDataSaver
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
 import Liberty.ChatServer.Utils
 import Prelude hiding (catch)
 import Safe
 
-initializeClient :: Socket -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
-initializeClient clientSocket siteMapTVar databaseOperationQueueChan = do
+initializeClient :: Socket -> SiteMapTVar -> SiteDataSaverChan -> IO ()
+initializeClient clientSocket siteMapTVar siteDataSaverChan = do
   clientSendChan <- atomically $ newTChan
   clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan (OCDClientUnregistered Nothing))
   finally
     (do
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
-      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar databaseOperationQueueChan
+      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar siteDataSaverChan
     )
     (do
       atomically $ writeTChan clientSendChan $ CloseSocket
@@ -72,16 +73,16 @@ clientSocketSendLoop clientSendChan clientDataTVar = do
       putStrLn "Got CloseSocket message. Closing client socket."
       sClose clientSocket
 
-clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
-clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueChan =
+clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> SiteDataSaverChan -> IO ()
+clientSocketReadLoop clientDataTVar buffer siteMapTVar siteDataSaverChan =
   if LBS.length buffer <= maxReceiveBufferLength then do
     case parseMessage buffer of
       Just (maybeMessage, newBuffer) ->
         case maybeMessage of
           Just (messageType, encodedParams) -> do
             putStrLn $ "Msg: " ++ show messageType ++ ", Encoded Params: " ++ show encodedParams
-            handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOperationQueueChan
-            clientSocketReadLoop clientDataTVar newBuffer siteMapTVar databaseOperationQueueChan
+            handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaverChan
+            clientSocketReadLoop clientDataTVar newBuffer siteMapTVar siteDataSaverChan
           Nothing -> do
             putStrLn "No valid message in current buffer yet"
             clientData <- atomically $ readTVar clientDataTVar
@@ -100,7 +101,7 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueCha
             case maybeReceivedData of
               Just receivedData ->
                 -- now that we've received some data, loop around and try parsing it
-                clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar databaseOperationQueueChan
+                clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar siteDataSaverChan
               Nothing ->
                 putStrLn $ "Client disconnecting -- recv returned nothing"
       Nothing ->
@@ -110,8 +111,8 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar databaseOperationQueueCha
     createAndSendMessage SomethingWentWrongMessage () clientDataTVar
     closeClientSocket clientDataTVar
 
-handleMessage :: ChatServerMessageType -> ByteString -> ClientDataTVar -> SiteMapTVar -> DatabaseOperationQueueChan -> IO ()
-handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOperationQueueChan = do
+handleMessage :: ChatServerMessageType -> ByteString -> ClientDataTVar -> SiteMapTVar -> SiteDataSaverChan -> IO ()
+handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaverChan = do
   clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
     OCDClientUnregistered maybeSiteDataTVar ->
@@ -147,11 +148,11 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOpera
           atomically $ closeClientSocket clientDataTVar
     OCDClientAdminData _ ->
       case messageType of
-        AdminOperatorCreateMessage -> unpackAndHandle $ \(username,password,name,color,title,iconUrl) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan
-        AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,username,password,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) username password name color title iconUrl clientDataTVar databaseOperationQueueChan
-        AdminOperatorDeleteMessage -> unpackAndHandle $ \(operatorId :: Int) -> handleAdminOperatorDeleteMessage (toInteger operatorId) clientDataTVar databaseOperationQueueChan
-        AdminSetSiteNameMessage -> unpackAndHandle $ \(name) -> handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan
-        AdminSetAdminPasswordMessage -> unpackAndHandle $ \(password) -> handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan
+        AdminOperatorCreateMessage -> unpackAndHandle $ \(username,password,name,color,title,iconUrl) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar siteDataSaverChan
+        AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,username,password,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) username password name color title iconUrl clientDataTVar siteDataSaverChan
+        AdminOperatorDeleteMessage -> unpackAndHandle $ \(operatorId :: Int) -> handleAdminOperatorDeleteMessage (toInteger operatorId) clientDataTVar siteDataSaverChan
+        AdminSetSiteNameMessage -> unpackAndHandle $ \(name) -> handleAdminSetSiteNameMessage name clientDataTVar siteDataSaverChan
+        AdminSetAdminPasswordMessage -> unpackAndHandle $ \(password) -> handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -164,10 +165,10 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar databaseOpera
           atomically $ closeClientSocket clientDataTVar
 
 handleUnregisteredSelectSiteMessage :: SiteId -> ClientDataTVar -> SiteMapTVar -> IO ()
-handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomically $ do
-  siteMap <- readTVar siteMapTVar
-  case Map.lookup siteId siteMap of
-    Just siteDataTVar -> do
+handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
+  siteLookupResult <- lookupSite siteId siteMapTVar
+  atomically $ case siteLookupResult of
+    Right siteDataTVar -> do
       -- update the client with the new OCDClientUnregistered entry
       clientData <- readTVar clientDataTVar
       writeTVar clientDataTVar clientData { cdOtherData = OCDClientUnregistered (Just siteDataTVar) }
@@ -176,7 +177,8 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = atomical
       siteData <- readTVar siteDataTVar
       let isActive = not $ null $ sdOnlineOperators siteData
       createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
-    Nothing -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
+    Left SLENotFound -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
+    Left SLENotAvailable -> createAndSendMessage SomethingWentWrongMessage () clientDataTVar -- TODO: Some kind of a "service currently unavailable" message?
 
 handleCustomerJoinMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVar =
@@ -389,8 +391,8 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars =
       [chatSessionTVar] -> endChatSession chatSessionTVar
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
-handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
-handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
+handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar siteDataSaverChan =
   atomically $ do
     ensureTextLengthLimits [
         (username, maxOperatorUsernameLength),
@@ -413,7 +415,7 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
               sdNextOperatorId = sdNextOperatorId siteData + 1
             }
             -- save to the database
-            queueSaveSiteData siteDataTVar databaseOperationQueueChan
+            queueSaveSiteData siteDataTVar siteDataSaverChan
             -- respond to the admin who issued the create command
             createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
             -- notify the admins with the new list
@@ -422,8 +424,8 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
             createAndSendMessage AdminOperatorCreateDuplicateUsernameMessage () clientDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
 
-handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
-handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar databaseOperationQueueChan =
+handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar siteDataSaverChan =
   atomically $ do
     ensureTextLengthLimits [
         (username, maxOperatorUsernameLength),
@@ -451,7 +453,7 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
                   sdOperators = newSiteOperatorData : remainingOperators
                 }
                 -- save to the database
-                queueSaveSiteData siteDataTVar databaseOperationQueueChan
+                queueSaveSiteData siteDataTVar siteDataSaverChan
                 -- respond to the admin who issued the replace command
                 createAndSendMessage AdminOperatorReplaceSuccessMessage () clientDataTVar
                 -- notify the admins with the new list
@@ -464,8 +466,8 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
               createAndSendMessage AdminOperatorReplaceInvalidIdMessage () clientDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorReplaceMessage" ()
 
-handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
-handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueueChan =
+handleAdminOperatorDeleteMessage :: Integer -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminOperatorDeleteMessage operatorId clientDataTVar siteDataSaverChan =
   atomically $ do
     clientData <- readTVar clientDataTVar
     case cdOtherData clientData of
@@ -493,7 +495,7 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueu
             sdOperators = remainingOperators
           }
           -- save to the database
-          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+          queueSaveSiteData siteDataTVar siteDataSaverChan
           -- respond to the admin who issued the delete command
           createAndSendMessage AdminOperatorDeleteSuccessMessage () clientDataTVar
           -- notify the admins with the new list
@@ -503,8 +505,8 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar databaseOperationQueu
           createAndSendMessage AdminOperatorDeleteFailedMessage () clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorDeleteMessage" ()
 
-handleAdminSetSiteNameMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
-handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
+handleAdminSetSiteNameMessage :: Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminSetSiteNameMessage name clientDataTVar siteDataSaverChan =
   atomically $ do
     ensureTextLengthLimits [(name, maxSiteNameLength)] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
@@ -519,7 +521,7 @@ handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
           }
 
           -- save to the database
-          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+          queueSaveSiteData siteDataTVar siteDataSaverChan
 
           -- respond to the admin who issued the delete command
           createAndSendMessage AdminSetSiteNameSuccessMessage () clientDataTVar
@@ -528,8 +530,8 @@ handleAdminSetSiteNameMessage name clientDataTVar databaseOperationQueueChan =
           sendSiteInfoToAdmins siteDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetSiteNameMessage" ()
 
-handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> DatabaseOperationQueueChan -> IO ()
-handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueueChan =
+handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
   atomically $ do
     ensureTextLengthLimits [(password, maxAdminPasswordLength)] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
@@ -544,7 +546,7 @@ handleAdminSetAdminPasswordMessage password clientDataTVar databaseOperationQueu
           }
 
           -- save to the database
-          queueSaveSiteData siteDataTVar databaseOperationQueueChan
+          queueSaveSiteData siteDataTVar siteDataSaverChan
 
           -- respond to the admin who issued the set password command
           createAndSendMessage AdminSetAdminPasswordSuccessMessage () clientDataTVar

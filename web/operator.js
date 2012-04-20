@@ -161,6 +161,7 @@ function handleMessage(message) {
 
 			break;
 		case Messages.SomethingWentWrongMessage:
+			log('Something went wrong...');
 			break;
 		case Messages.OperatorLoginSuccessMessage:
 			if (currentTab == loginTab) {
