@@ -569,7 +569,7 @@ function writeInfoTextToChatlog(text, chatlogDiv) {
 function chatlogWritten(chatlogDiv) {
 	var chatlogObject = chatlogDiv[0];
 	if (chatlogObject.lastScrollTopTarget && chatlogDiv.scrollTop() >= chatlogObject.lastScrollTopTarget - 30) {
-		// if they scroll within 200px of the bottom
+		// if they scroll near the bottom
 		chatlogObject.scrollLock = false;
 	}
 	else if (chatlogObject.lastScrollTop && chatlogDiv.scrollTop() < chatlogObject.lastScrollTop) {

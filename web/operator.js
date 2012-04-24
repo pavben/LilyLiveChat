@@ -850,11 +850,6 @@ function followVisibleChatSessionIdTarget() {
 
 						// set the indicator to Normal
 						setChatSessionIndicator(visibleChatSessionId, ButtonIndicatorStates.Normal);
-
-						// and scroll to the bottom again, in case something messed up our last scroll
-						if (visibleChatSessionId !== null) {
-							chatlogWritten(chatlogDiv);
-						}
 					} else {
 						// otherwise, transition to the new target
 						setTimeout(followVisibleChatSessionIdTarget, 0);
