@@ -484,22 +484,13 @@ function handleMessage(message) {
 
 			break;
 		case Messages.AdminOperatorDetailsEndMessage:
-			var listbox = $('#main_operators_listbox');
-
 			if (operatorsCount === 0) {
-				listbox.append(
+				$('#main_operators_listbox').append(
 					$('<div/>').text('This is where you manage your list of operators. People added here will be able to accept chats from your customers.')
 				).append(
 					$('<div/>').addClass('main_operators_listbox_centertext').text('Currently, there are no operators for your site.')
 				);
 			}
-
-			// remove all classes from the listbox
-			listbox.removeClass('main_operators_listbox');
-			listbox.removeClass('main_operators_listbox_large');
-
-			// set either the listbox or listbox_large class depending on the number of operators we're listing
-			listbox.addClass(operatorsCount <= 2 ? 'main_operators_listbox' : 'main_operators_listbox_large');
 
 			break;
 		case Messages.AdminOperatorCreateSuccessMessage:
@@ -626,7 +617,7 @@ function onResize() {
 	if (currentTab == loginTab) {
 		onBasicVCenterResize('login', 600);
 	} else if (currentTab == mainTab) {
-		onBasicVCenterResize('main', 530);
+		onBasicVCenterResizeMinPadding('main', 9);
 	} else if (currentTab == miscMessageTab) {
 		onBasicVCenterResize('miscmessage', 530);
 	}

@@ -23,9 +23,14 @@
 #main_tab {
 	min-width:620px;
 }
+#main_top {
+	-webkit-transition: height 0.3s ease-in-out;
+	-moz-transition: height 0.3s ease-in-out;
+	-o-transition: height 0.3s ease-in-out;
+	transition: height 0.3s ease-in-out;
+}
 #main_box {
 	width:580px;
-	height:431px;
 	margin-left:auto;
 	margin-right:auto;
 	padding:9px 9px 9px 9px;
@@ -124,17 +129,10 @@
 	line-height:24px;
 	color:#009900;
 }
-.main_operators_listbox, .main_operators_listbox_large {
+#main_operators_listbox {
 	border-top:1px solid #BBBBBB;
 	border-bottom:1px solid #BBBBBB;
-}
-.main_operators_listbox {
 	padding:9px 0px 9px 0px;
-}
-.main_operators_listbox_large {
-	height:299px;
-	padding:9px 9px 9px 0px;
-	overflow-y:scroll;
 }
 .main_operators_listbox_item {
 	border-radius:5px;

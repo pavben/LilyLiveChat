@@ -386,6 +386,22 @@ function onBasicVCenterResize(tabName, minHeight) {
 	$('#' + tabName + '_tab').css('height', newTabHeight);
 }
 
+function onBasicVCenterResizeMinPadding(tabName, minPaddingHeight) {
+	// disable scrolling as it causes visual glitches
+	$('body').css('overflow-y', 'hidden');
+
+	var middleHeight = $('#' + tabName + '_middle').outerHeight();
+	var topAndBottomHeight = ($(window).height() - middleHeight) / 2; // can be negative
+	if (topAndBottomHeight < minPaddingHeight) {
+		topAndBottomHeight = minPaddingHeight;
+		// if the scrollbars are needed, enable them
+		$('body').css('overflow-y', 'auto');
+	}
+	$('#' + tabName + '_top').css('height', topAndBottomHeight);
+	$('#' + tabName + '_bottom').css('height', topAndBottomHeight);
+	$('#' + tabName + '_tab').css('height', middleHeight + topAndBottomHeight * 2);
+}
+
 // other
 
 function Person(name, color, title, iconUrl) {
