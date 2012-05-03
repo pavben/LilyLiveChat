@@ -102,6 +102,10 @@ function handleMessage(message) {
 
 			if (isActive === true) {
 				changeTabTo(welcomeTab);
+				$('#welcome_btn_ok').click();
+				setTimeout(function() {
+					$('#welcome_btn_ok').click();
+				}, 300);
 			} else {
 				showInactiveSiteScreen();
 			}

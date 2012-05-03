@@ -616,8 +616,8 @@ function setChatSessionIndicator(chatSessionId, targetValue) {
 		 * and ignore all others
 		 */
 
-		var fadeInTime = 500;
-		var fadeOutTime = 250;
+		var fadeInTime = 200;
+		var fadeOutTime = 100;
 
 		if (sessionData.buttonIndicatorState === ButtonIndicatorStates.Normal) {
 			switch (targetValue) {
@@ -637,7 +637,7 @@ function setChatSessionIndicator(chatSessionId, targetValue) {
 		} else if (sessionData.buttonIndicatorState === ButtonIndicatorStates.Active) {
 			switch (targetValue) {
 			case ButtonIndicatorStates.Normal:
-				sessionButtonIndicator.fadeTo(fadeOutTime, 0, function() {
+				sessionButtonIndicator.fadeTo(0, 0, function() {
 					sessionButtonIndicator.removeClass(SessionListButtonClasses.Active);
 				});
 				sessionData.buttonIndicatorState = targetValue;
@@ -834,7 +834,7 @@ function followVisibleChatSessionIdTarget() {
 	if (visibleChatSessionIdTarget !== undefined) {
 		var initialCell = chatSessionIdToObject('#chat_maincell_', visibleChatSessionId);
 		// NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
-		initialCell.fadeTo(200, 0, function() {
+		initialCell.fadeTo(100, 0, function() {
 			initialCell.hide();
 
 			visibleChatSessionId = visibleChatSessionIdTarget;
