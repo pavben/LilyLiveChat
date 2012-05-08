@@ -4,4 +4,6 @@ sudo ip addr add 192.168.1.100/32 dev lo
 sudo ip addr add 192.168.1.101/32 dev lo
 # Chat Server "anivia"
 sudo ip addr add 192.168.1.102/32 dev lo
+# Main Website
+sudo ip addr add 192.168.1.103/32 dev lo
 

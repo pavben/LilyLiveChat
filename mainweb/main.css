@@ -1,0 +1,152 @@
+@font-face {
+	font-family:'Signika';
+	font-style:normal;
+	font-weight:400;
+	src:local('Signika-Regular'), url('Signika.woff') format('woff');
+}
+body {
+	background-color:#F4F4F4;
+	color:#303030;
+	font-family:'Signika', sans-serif;
+	padding:0px 0px 0px 0px;
+	margin:0px 0px 0px 0px;
+	line-height:1;
+}
+input {
+	border:0;
+	padding:0;
+	outline:none;
+}
+.tab {
+	display:none;
+}
+.fixedtable {
+	display:table;
+	table-layout:fixed;
+	width:100%;
+}
+.tablerow {
+	display:table-row;
+}
+.cell {
+	display:table-cell;
+	height:100%;
+	vertical-align:top;
+}
+.vlinecell {
+	display:table-cell;
+	width:1px;
+	background-color:#BBBBBB;
+}
+.hlinediv {
+	height:1px;
+	background-color:#BBBBBB;
+}
+.basicbutton {
+	padding:0px 0px 1px 0px;
+	border:1px solid #BBBBBB;
+	background-image:url('images/buttontile.png');
+	background-repeat:repeat-x;
+	border-radius:5px;
+	text-shadow:1px 1px 0px #f4f4f4;
+	text-align:center;
+	cursor:pointer;
+	color:#454545;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	transition: all 0.1s ease-in-out;
+	line-height:24px;
+	vertical-align:top;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+}
+.basicbutton:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+.basicbutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+#skybgdiv {
+	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
+}
+
+/* main tab */
+
+#main_tab {
+	opacity:0;
+	min-width:620px;
+}
+.main_top_heighttrans {
+	-webkit-transition: height 0.3s ease-in-out;
+	-moz-transition: height 0.3s ease-in-out;
+	-o-transition: height 0.3s ease-in-out;
+	transition: height 0.3s ease-in-out;
+}
+#main_box {
+	width:700px;
+	margin-left:auto;
+	margin-right:auto;
+	padding:9px 9px 9px 0px;
+	background-color:#E3E3E3;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#main_leftcell {
+	display:table-cell;
+	width:150px;
+	padding:0px 7px 0px 7px;
+	vertical-align:top;
+}
+#main_leftcell .menubutton {
+	height:25px;
+	padding:0px 5px 0px 5px;
+	line-height:25px;
+	font-size:18px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	text-shadow:1px 1px 0px #f4f4f4;
+	cursor:pointer;
+	-webkit-transition: all 0.1s ease-in-out;
+	-moz-transition: all 0.1s ease-in-out;
+	-o-transition: all 0.1s ease-in-out;
+	transition: all 0.1s ease-in-out;
+	vertical-align:top;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+	overflow:hidden;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+	text-align:center;
+	margin-bottom:7px;
+}
+#main_leftcell .menubutton:last-child {
+	margin-bottom:0px;
+}
+#main_leftcell .menubutton:hover {
+	box-shadow: 0px 0px 1px 1px #84d3e6;
+}
+#main_leftcell .menubutton:active {
+	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
+}
+#main_leftcell .sep {
+	height:7px;
+}
+#main_rightcell {
+	display:table-cell;
+	padding:9px 9px 9px 9px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+}
+#watchvideo_tab {
+}
