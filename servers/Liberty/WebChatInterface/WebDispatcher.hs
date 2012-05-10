@@ -37,7 +37,7 @@ runWebDispatcher sessionMapTVar = do
       (finally
         (do
           hostAddress <- inet_addr "192.168.1.102"
-          initializeListenerSocket listenerSocket hostAddress 9802
+          initializeListenerSocket listenerSocket hostAddress 9700
           acceptLoop listenerSocket sessionMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised

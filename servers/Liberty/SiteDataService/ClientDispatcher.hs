@@ -7,7 +7,6 @@ import Network.Socket
 import Prelude hiding (catch)
 import Liberty.SiteDataService.Client
 import Liberty.SiteDataService.DatabaseManager
-import Liberty.SiteDataService.Types
 
 runClientDispatcher :: DatabaseHandleTVar -> IO ()
 runClientDispatcher databaseHandleTVar = do

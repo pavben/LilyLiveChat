@@ -4,8 +4,11 @@ module Liberty.SiteLocatorService.Types (
   SiteEntry(..),
   SiteEntryTVar,
   SiteMap,
-  SiteMapTVar
+  SiteMapTVar,
+  ClientSendChanMessage(..),
+  ClientSendChan
 ) where
+import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Data.ByteString.Lazy (ByteString)
 import Data.Map (Map)
@@ -23,4 +26,7 @@ type SiteEntryTVar = TVar SiteEntry
 type SiteMap = Map SiteId SiteEntryTVar
 type SiteMapTVar = TVar SiteMap
 
+-- ClientSendChan
+data ClientSendChanMessage = SendMessage ByteString | CloseSocket
+type ClientSendChan = TChan ClientSendChanMessage
 

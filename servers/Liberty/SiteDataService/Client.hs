@@ -5,7 +5,6 @@ module Liberty.SiteDataService.Client (
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TChan
-import Control.Concurrent.STM.TVar
 import Control.Exception
 import Control.Monad
 import Control.Monad.STM
@@ -13,18 +12,11 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Int
 import Data.List
---import Data.Map (Map)
-import qualified Data.Map as Map
 import qualified Data.MessagePack as MP
 import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as LT
---import qualified Data.Text.Lazy.IO as LTI
---import qualified Data.Text.Lazy.Read as LTR
-import Debug.Trace
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
-import Safe
 import Liberty.Common.Messages
 import Liberty.Common.Messages.SiteDataService
 import Liberty.SiteDataService.DatabaseManager

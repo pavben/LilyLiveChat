@@ -40,6 +40,7 @@ instance MessageType SiteDataServiceMessageType where
   messageIdByType = Map.fromList $ map swap messageIdsAndTypes
   messageTypeToId = (Map.!) messageIdByType
 
+siteDataServiceConnectionData :: ServiceConnectionData
 siteDataServiceConnectionData = ServiceConnectionData "192.168.1.101" 9800
 
 data GSDResult = GSDSuccess (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text)

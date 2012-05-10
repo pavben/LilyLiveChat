@@ -3,6 +3,7 @@ module Main (
 ) where
 import Control.Concurrent
 import Control.Monad (forever)
+import Liberty.SiteLocatorService.ServiceDispatcher
 import Liberty.SiteLocatorService.SiteMap
 import Liberty.SiteLocatorService.WebDispatcher
 
@@ -12,6 +13,9 @@ main = do
 
   -- initialize the SiteMap
   siteMapTVar <- initializeSiteMap
+
+  -- run the service dispatcher
+  _ <- forkIO $ runServiceDispatcher siteMapTVar
 
   -- run the web dispatcher
   _ <- forkIO $ runWebDispatcher siteMapTVar

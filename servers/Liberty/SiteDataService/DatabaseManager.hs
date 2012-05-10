@@ -11,7 +11,6 @@ module Liberty.SiteDataService.DatabaseManager (
 import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Concurrent.STM.TChan
 import Control.Exception hiding (handle)
 import Control.Monad
 import Control.Monad.STM
@@ -118,8 +117,8 @@ runAction databaseHandleTVar action = do
 
 data GetSiteDataResult = GSDRSuccess SiteData | GSDRNotFound | GSDRNotAvailable
 getSiteDataFromDb :: SiteId -> DatabaseHandleTVar -> IO (GetSiteDataResult)
-getSiteDataFromDb siteId databaseHandleTVar = do
-  res <- runAction databaseHandleTVar (findOne (select ["siteId" =: (LT.unpack siteId)] "sites"))
+getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
+  res <- runAction databaseHandleTVar (findOne (select ["siteId" =: (LT.unpack siteIdToLookup)] "sites"))
   -- one layer of Maybe from runAction, and the other from findOne
   case res of
     Just maybeSiteDoc ->

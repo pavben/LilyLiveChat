@@ -2,34 +2,24 @@ module Liberty.Common.ServiceClient(
   ServiceConnectionData(..),
   serviceRequest
 ) where
-import Control.Concurrent
-import Control.Concurrent.STM.TVar
 import Control.Exception
 import Control.Monad
-import Control.Monad.STM
-import qualified Data.Aeson as J
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
-import Data.Map (Map)
-import qualified Data.Map as Map
 import qualified Data.MessagePack as MP
-import Data.Text.Lazy (Text)
-import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Liberty.Common.Messages
-import Liberty.Common.Timeouts
-import Debug.Trace
 
 -- TODO: Make it IPv6 instead
-data ServiceConnectionData a = ServiceConnectionData {
+data ServiceConnectionData = ServiceConnectionData {
   sdcHost :: String,
   sdcPort :: PortNumber
 }
 
 -- TODO: timeout
-serviceRequest :: (MessageType a, MP.Packable b) => ServiceConnectionData a -> a -> b -> IO (Maybe (a, ByteString))
+serviceRequest :: (MessageType a, MP.Packable b) => ServiceConnectionData -> a -> b -> IO (Maybe (a, ByteString))
 serviceRequest serviceConnectionData messageType messageParams = do
   maybeServiceSocket <- establishConnection (sdcHost serviceConnectionData) (sdcPort serviceConnectionData)
   case maybeServiceSocket of

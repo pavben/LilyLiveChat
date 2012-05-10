@@ -31,7 +31,7 @@ lookupServerForSite siteId siteMapTVar = do
             siteEntryTVar <- newTVar $ SiteEntry siteId serverId
             writeTVar siteMapTVar $ Map.insert siteId siteEntryTVar siteMap
             return $ Just serverId
-          Nothing -> return Nothing
+          Nothing -> return Nothing -- no servers available
 
 -- TODO: Server 'anivia' is hardcoded and considered to be always online
 chooseAvailableServer :: Maybe ServerId

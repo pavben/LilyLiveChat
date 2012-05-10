@@ -21,7 +21,7 @@ main :: IO ()
 main = do
   s <- socket AF_INET Stream 0
   hostAddr <- inet_addr "127.0.0.1"
-  connect s (SockAddrInet 9801 hostAddr)
+  connect s (SockAddrInet 9800 hostAddr)
   putStrLn "Connected"
   case createMessage (CustomerJoinMessage, [LE.decodeUtf8 (LC8.pack "1"), LE.decodeUtf8 (LC8.pack "Angry Bear"), LE.decodeUtf8 (LC8.pack "#111111"), LE.decodeUtf8 (LC8.pack "images/angry-bear.png")]) of
     Just x -> sendAll s x

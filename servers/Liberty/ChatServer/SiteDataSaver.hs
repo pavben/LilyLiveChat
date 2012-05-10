@@ -6,7 +6,6 @@ import Control.Concurrent
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Control.Monad.STM
-import Liberty.Common.Messages
 import Liberty.Common.Messages.SiteDataService
 import Liberty.ChatServer.Types
 

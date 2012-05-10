@@ -11,7 +11,6 @@ import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Data.ByteString.Lazy (ByteString)
 import Data.Text.Lazy (Text)
-import Network.Socket (Socket)
 
 -- Site
 type SiteId = Text
