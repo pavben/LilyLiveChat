@@ -45,20 +45,18 @@ data ChatServerMessageType = CustomerJoinMessage
                            | AdminOperatorReplaceInvalidIdMessage
                            | AdminSetSiteNameMessage
                            | AdminSetSiteNameSuccessMessage
-                           | SALoginRequestMessage
-                           | SASiteCreateMessage
-                           | SASiteDeleteMessage
-                           | SAGetSiteInfoMessage
-                           | SASetExpiryTimestampMessage
-                           | SALoginSuccessMessage
-                           | SALoginFailedMessage
-                           | SASiteCreateSuccessMessage
-                           | SASiteCreateFailedMessage
-                           | SASiteDeleteSuccessMessage
-                           | SASiteDeleteFailedMessage
-                           | SASiteInfoMessage
-                           | SASiteInfoFailedMessage
-                           | SASetExpiryTimestampSuccessMessage
+                           | CSSALoginRequestMessage
+                           | CSSASiteCreateMessage
+                           | CSSASiteDeleteMessage
+                           | CSSALoginSuccessMessage
+                           | CSSALoginFailedMessage
+                           | CSSASiteCreateSuccessMessage
+                           | CSSASiteCreateDuplicateIdMessage
+                           | CSSASiteDeleteSuccessMessage
+                           | CSSASiteDeleteFailedMessage
+                           | CSSASiteInfoMessage
+                           | CSSASiteInfoFailedMessage
+                           | CSSASiteCreateUnavailableMessage
                            | AdminSetAdminPasswordMessage
                            | AdminSetAdminPasswordSuccessMessage
                            | AdminOperatorDeleteSuccessMessage
@@ -107,20 +105,18 @@ messageIdsAndTypes = [
     (38, AdminSetSiteNameMessage),
     (39, AdminSetSiteNameSuccessMessage),
     (40, AdminOperatorReplaceInvalidIdMessage),
-    (41, SALoginRequestMessage),
-    (42, SASiteCreateMessage),
-    (43, SASiteDeleteMessage),
-    (44, SAGetSiteInfoMessage),
-    (45, SASetExpiryTimestampMessage),
-    (46, SALoginSuccessMessage),
-    (47, SALoginFailedMessage),
-    (48, SASiteCreateSuccessMessage),
-    (49, SASiteCreateFailedMessage),
-    (50, SASiteDeleteSuccessMessage),
-    (51, SASiteDeleteFailedMessage),
-    (52, SASiteInfoMessage),
-    (53, SASiteInfoFailedMessage),
-    (54, SASetExpiryTimestampSuccessMessage),
+    (41, CSSALoginRequestMessage),
+    (42, CSSASiteCreateMessage),
+    (43, CSSASiteDeleteMessage),
+    (46, CSSALoginSuccessMessage),
+    (47, CSSALoginFailedMessage),
+    (48, CSSASiteCreateSuccessMessage),
+    (49, CSSASiteCreateDuplicateIdMessage),
+    (50, CSSASiteDeleteSuccessMessage),
+    (51, CSSASiteDeleteFailedMessage),
+    (52, CSSASiteInfoMessage),
+    (53, CSSASiteInfoFailedMessage),
+    (54, CSSASiteCreateUnavailableMessage),
     (55, AdminSetAdminPasswordMessage),
     (56, AdminSetAdminPasswordSuccessMessage),
     (62, AdminOperatorDeleteSuccessMessage),

@@ -76,22 +76,21 @@ Server to Admin
 
 SA to Server
 ================================================================
-41 - SALoginRequestMessage
-42 - SASiteCreateMessage [siteId, name, adminUsername, adminPassword]
-43 - SASiteDeleteMessage [siteId]
-44 - SAGetSiteInfoMessage [siteId]
-45 - SASetExpiryTimestampMessage [siteId]
+41 - CSSALoginRequestMessage
+42 - CSSASiteCreateMessage [siteId, name, adminPassword]
+43 - CSSASiteDeleteMessage [siteId]
+-44 - SAGetSiteInfoMessage [siteId]
+-45 - SASetExpiryTimestampMessage [siteId]
 
 Server to SA
 ================================================================
-46 - SALoginSuccessMessage
-47 - SALoginFailedMessage
-48 - SASiteCreateSuccessMessage
-49 - SASiteCreateFailedMessage
-50 - SASiteDeleteSuccessMessage
-51 - SASiteDeleteFailedMessage
-52 - SASiteInfoMessage [siteId, name]
-53 - SASiteInfoFailedMessage
-54 - SASetExpiryTimestampSuccessMessage
-
+46 - CSSALoginSuccessMessage
+47 - CSSALoginFailedMessage
+48 - CSSASiteCreateSuccessMessage
+49 - CSSASiteCreateDuplicateIdMessage
+54 - CSSASiteCreateUnavailableMessage
+50 - CSSASiteDeleteSuccessMessage
+51 - CSSASiteDeleteFailedMessage
+52 - CSSASiteInfoMessage [siteId, name]
+53 - CSSASiteInfoFailedMessage
 

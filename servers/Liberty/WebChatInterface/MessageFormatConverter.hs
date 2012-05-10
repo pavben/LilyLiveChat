@@ -163,33 +163,6 @@ messageToJson AdminOperatorDeleteFailedMessage encodedParams =
 messageToJson AdminSetAdminPasswordSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminSetAdminPasswordSuccessMessage)]
 
-messageToJson SALoginSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SALoginSuccessMessage)]
-
-messageToJson SALoginFailedMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SALoginFailedMessage)]
-
-messageToJson SASiteCreateSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteCreateSuccessMessage)]
-
-messageToJson SASiteCreateFailedMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteCreateFailedMessage)]
-
-messageToJson SASiteDeleteSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteDeleteSuccessMessage)]
-
-messageToJson SASiteDeleteFailedMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteDeleteFailedMessage)]
-
-messageToJson SASiteInfoMessage encodedParams =
-  unpackAndHandle encodedParams $ \(siteId :: Text, name :: Text) -> [J.toJSON (messageTypeToId SASiteInfoMessage), J.toJSON siteId, J.toJSON name]
-
-messageToJson SASiteInfoFailedMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASiteInfoFailedMessage)]
-
-messageToJson SASetExpiryTimestampSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SASetExpiryTimestampSuccessMessage)]
-
 messageToJson _ _ = Nothing
 
 unpackAndHandle :: MP.Unpackable a => ByteString -> (a -> b) -> Maybe b

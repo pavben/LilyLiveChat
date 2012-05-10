@@ -5,6 +5,9 @@ import Data.Int
 maxAdminPasswordLength :: Int64
 maxAdminPasswordLength = 100
 
+maxSiteIdLength :: Int64
+maxSiteIdLength = 20
+
 maxSiteNameLength :: Int64
 maxSiteNameLength = 20
 

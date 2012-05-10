@@ -115,6 +115,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
         Nothing ->
           case messageType of
             UnregisteredSelectSiteMessage -> unpackAndHandle $ \siteId -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
+            CSSALoginRequestMessage -> unpackAndHandle $ \() -> handleCSSALoginRequestMessage clientDataTVar
             _ -> do
               putStrLn "Client (Unregistered) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
@@ -151,6 +152,12 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
+    OCDClientSuperAdminData _ ->
+      case messageType of
+        CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name,adminPassword) -> handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSaverChan siteMapTVar
+        _ -> do
+          putStrLn "Client (SuperAdmin) sent an unknown command"
+          atomically $ closeClientSocket clientDataTVar
   where
     unpackAndHandle handleFunction =
       case unpackMessage encodedParams of
@@ -174,6 +181,20 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
       createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
     Left SLENotFound -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
     Left SLENotAvailable -> createAndSendMessage SomethingWentWrongMessage () clientDataTVar -- TODO: Some kind of a "service currently unavailable" message?
+
+handleCSSALoginRequestMessage :: ClientDataTVar -> IO ()
+handleCSSALoginRequestMessage clientDataTVar =
+  atomically $ do
+    if True then do
+      -- login successful
+      -- update the client as logged in
+      clientData <- readTVar clientDataTVar
+      writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientSuperAdminData $ ClientSuperAdminData }
+      createAndSendMessage CSSALoginSuccessMessage () clientDataTVar
+    else do
+      -- login failed; currently not possible
+      createAndSendMessage CSSALoginFailedMessage () clientDataTVar
+      closeClientSocket clientDataTVar
 
 handleCustomerJoinMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVar =
@@ -557,6 +578,34 @@ handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
             )
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
 
+handleCSSASiteCreateMessage :: Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
+handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
+  ensureTextLengthLimitsIO [
+      (siteId, maxSiteIdLength),
+      (name, maxSiteNameLength),
+      (adminPassword, maxAdminPasswordLength)
+    ] clientDataTVar $ do
+    -- first, we do a complete site lookup (including querying SDS, if needed)
+    siteLookupResult <- lookupSite siteId siteMapTVar
+    atomically $ case siteLookupResult of
+      Left SLENotFound -> do
+        -- if the complete lookup returned "not found", we then perform another lookup, but this time it's inside atomically, preventing duplicate creates
+        maybeSiteDataTVar <- lookupSiteLocal siteId siteMapTVar
+        case maybeSiteDataTVar of
+          Nothing -> do
+            -- create the new site data
+            siteDataTVar <- newTVar $ SiteData siteId name 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
+
+            -- insert the site data to SiteMap and SDS
+            createSite siteDataTVar siteMapTVar siteDataSaverChan
+
+            createAndSendMessage CSSASiteCreateSuccessMessage () clientDataTVar
+          Just _ ->
+            -- this is a very rare case -- the first lookup must fail and then second must succeed; it's here to solve a race condition
+            createAndSendMessage CSSASiteCreateDuplicateIdMessage () clientDataTVar
+      Right _ -> createAndSendMessage CSSASiteCreateDuplicateIdMessage () clientDataTVar
+      Left SLENotAvailable -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
+
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
   -- read the site data
@@ -623,6 +672,7 @@ handleClientExitEvent clientDataTVar = do
         writeTVar siteDataTVar $ siteData {
           sdOnlineAdmins = filter (/= clientDataTVar) $ sdOnlineAdmins siteData
         }
+      OCDClientSuperAdminData _ -> return () -- nothing to cleanup
       OCDClientUnregistered _ -> return () -- nothing to cleanup
 
 waitingListUpdated :: SiteDataTVar -> STM ()
@@ -749,3 +799,11 @@ ensureTextLengthLimits pairs clientDataTVar f =
     createAndSendMessage SomethingWentWrongMessage () clientDataTVar
     closeClientSocket clientDataTVar
 
+ensureTextLengthLimitsIO :: [(Text, Int64)] -> ClientDataTVar -> IO () -> IO ()
+ensureTextLengthLimitsIO pairs clientDataTVar f =
+  if checkTextLengthLimits pairs == True then
+    f
+  else atomically $ do
+    -- if the client allowed them to send excessively long values, something is wrong
+    createAndSendMessage SomethingWentWrongMessage () clientDataTVar
+    closeClientSocket clientDataTVar

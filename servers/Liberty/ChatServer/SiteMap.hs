@@ -1,18 +1,20 @@
 module Liberty.ChatServer.SiteMap (
   SiteMapTVar,
   initializeSiteMap,
+  createSite,
   SiteLookupError(..),
-  lookupSite
+  lookupSite,
+  lookupSiteLocal
 ) where
-import Control.Concurrent
 import Control.Concurrent.STM.TMVar
 import Control.Concurrent.STM.TVar
-import Control.Monad
 import Control.Monad.STM
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import Liberty.Common.Messages.SiteDataService
+import Liberty.Common.Utils
+import Liberty.ChatServer.SiteDataSaver
 import Liberty.ChatServer.Types
 
 -- public data
@@ -22,6 +24,19 @@ type SiteMapEntryTMVar = TMVar (Either SiteLookupError SiteDataTVar)
 initializeSiteMap :: IO (SiteMapTVar)
 initializeSiteMap =
   atomically $ newTVar Map.empty
+
+createSite :: SiteDataTVar -> SiteMapTVar -> SiteDataSaverChan -> STM ()
+createSite siteDataTVar siteMapTVar siteDataSaverChan = do
+  -- get the siteId
+  siteData <- readTVar siteDataTVar
+  let siteId = sdSiteId siteData
+  -- create the site entry TMVar
+  siteMapEntryTMVar <- newTMVar $ Right siteDataTVar
+  -- insert it into the site map
+  siteMap <- readTVar siteMapTVar
+  writeTVar siteMapTVar $ Map.insert siteId siteMapEntryTMVar siteMap
+  -- save the new site to SDS
+  queueSaveSiteData siteDataTVar siteDataSaverChan
 
 data SiteLookupError = SLENotFound | SLENotAvailable
 lookupSite :: SiteId -> SiteMapTVar -> IO (Either SiteLookupError SiteDataTVar)
@@ -42,24 +57,31 @@ lookupSite siteId siteMapTVar = do
 
   -- if mustInitiateLookup, forkIO to do that
   if mustInitiateLookup then do
-    void $ forkIO $ do
-      -- if the map lookup failed, query SDS
-      siteDataGetResult <- getSiteDataFromSDS siteId
-      newSiteMapEntry <- atomically $ do
-        case siteDataGetResult of
-          GSDSuccess rawSiteData -> do
-            siteDataTVar <- newTVar $ getSiteDataFromRaw rawSiteData
-            return $ Right $ siteDataTVar
-          GSDNotFound -> return $ Left SLENotFound
-          GSDNotAvailable -> return $ Left SLENotAvailable
+    -- if the map lookup failed, query SDS
+    siteDataGetResult <- getSiteDataFromSDS siteId
+    atomically $ do
+      newSiteMapEntry <- case siteDataGetResult of
+        GSDSuccess rawSiteData -> do
+          siteDataTVar <- newTVar $ getSiteDataFromRaw rawSiteData
+          return $ Right $ siteDataTVar
+        GSDNotFound -> return $ Left SLENotFound
+        GSDNotAvailable -> return $ Left SLENotAvailable
+        -- TODO: handle the "you're not the authoritative server for this site" error
 
-      atomically $ putTMVar siteMapEntryTMVar $ newSiteMapEntry
+      putTMVar siteMapEntryTMVar $ newSiteMapEntry
   else
     return ()
 
   -- return the readTMVar value
   atomically (readTMVar siteMapEntryTMVar) >>= return
 
+-- STM version of the lookupSite that performs only the local lookup (since we can't do a service call inside STM)
+lookupSiteLocal :: SiteId -> SiteMapTVar -> STM (Maybe SiteDataTVar)
+lookupSiteLocal siteId siteMapTVar = do
+  siteMap <- readTVar siteMapTVar
+  case Map.lookup siteId siteMap of
+    Just siteMapEntryTMVar -> readTMVar siteMapEntryTMVar >>= (return . eitherToMaybe)
+    Nothing -> return Nothing
 
 getSiteDataFromRaw :: (SiteId, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> SiteData
 getSiteDataFromRaw (siteId, name, nextOperatorId, rawOperators, adminPasswordHash) =
