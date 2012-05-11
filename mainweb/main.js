@@ -1,3 +1,5 @@
+var siteCreateAttempted = false;
+
 $(window).bind('load', function() {
 	watchVideoTab = $('#watchvideo_tab');
 	learnMoreTab = $('#learnmore_tab');
@@ -12,6 +14,27 @@ $(window).bind('load', function() {
 	});
 
 	$('#menubutton_tryitout').click(function() {
+		if (!siteCreateAttempted) {
+			siteCreateAttempted = true;
+
+			$.ajax({
+				url: '/cmd/createsite',
+				dataType: 'json',
+				data: '',
+				timeout: 5000,
+				success: function(data, textStatus, jqXHR) {
+					var adminPanelUrl = 'https://sl.lilylivechat.net/' + data.siteId + '/admin';
+					$('#tryitout_adminpanel').empty().append(
+						$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
+					);
+					$('#tryitout_adminpassword').text(data.adminPassword);
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					$('#tryitout_tab').empty().append('We can\'t create your account right now. If you get this message after an hour, contact us and we\'ll see if we can help!');
+				}
+			});
+		}
+
 		changeTabTo(tryItOutTab);
 	});
 

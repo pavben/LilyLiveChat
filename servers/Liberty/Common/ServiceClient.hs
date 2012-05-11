@@ -1,6 +1,9 @@
 module Liberty.Common.ServiceClient(
   ServiceConnectionData(..),
-  serviceRequest
+  serviceRequest,
+  withServiceConnection,
+  createAndSendMessage,
+  receiveOneMessage
 ) where
 import Control.Exception
 import Control.Monad
@@ -18,6 +21,8 @@ data ServiceConnectionData = ServiceConnectionData {
   sdcPort :: PortNumber
 }
 
+type ServiceHandle = Socket
+
 -- TODO: timeout
 serviceRequest :: (MessageType a, MP.Packable b) => ServiceConnectionData -> a -> b -> IO (Maybe (a, ByteString))
 serviceRequest serviceConnectionData messageType messageParams = do
@@ -33,6 +38,22 @@ serviceRequest serviceConnectionData messageType messageParams = do
               receiveResult <- receiveOneMessage serviceSocket
               return receiveResult -- either Just (a, ByteString) or Nothing on failure
             False -> return Nothing
+        )
+        (sClose serviceSocket)
+    Nothing -> do
+      putStrLn "Could not establish service connection"
+      return Nothing
+
+withServiceConnection :: ServiceConnectionData -> (ServiceHandle -> IO a) -> IO (Maybe a)
+withServiceConnection serviceConnectionData f = do
+  maybeServiceSocket <- establishConnection (sdcHost serviceConnectionData) (sdcPort serviceConnectionData)
+  case maybeServiceSocket of
+    Just serviceSocket -> do
+      putStrLn "Conn established"
+      finally
+        (do
+          ret <- f serviceSocket
+          return $ Just ret
         )
         (sClose serviceSocket)
     Nothing -> do

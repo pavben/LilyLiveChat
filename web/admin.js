@@ -402,7 +402,7 @@ function handleMessage(message) {
 			});
 
 			// Auto-login
-			$('#login_btn_ok').click();
+			//$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen
@@ -485,6 +485,7 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminOperatorDetailsEndMessage:
 			if (operatorsCount === 0) {
+				// TODO: Make this text prettier... put it in a contentbox perhaps, and consider replacing the "Operators login at" until someone is added
 				$('#main_operators_listbox').append(
 					$('<div/>').text('This is where you manage your list of operators. People added here will be able to accept chats from your customers.')
 				).append(

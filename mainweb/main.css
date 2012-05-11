@@ -19,6 +19,7 @@ input {
 }
 .tab {
 	display:none;
+	color:#454545;
 }
 .fixedtable {
 	display:table;
@@ -73,6 +74,14 @@ input {
 }
 #skybgdiv {
 	background: #C2E8F1 url('images/skybg.png') repeat-x left top;
+}
+a:link, a:visited {
+	color:#006DA3;
+	text-decoration:none;
+}
+a:hover, a:active {
+	color:#006DA3;
+	text-decoration:underline;
 }
 
 /* main tab */
@@ -149,4 +158,16 @@ input {
 	border-radius:5px;
 }
 #watchvideo_tab {
+}
+#tryitout_tab p {
+	margin:2px 0px 11px 5px;
+}
+.tryitout_tablekey {
+	width:140px;
+	padding-bottom:6px;
+	text-align:right;
+}
+.tryitout_tablesep {
+	width:10px;
+	text-align:center;
 }
