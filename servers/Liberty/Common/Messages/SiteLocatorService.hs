@@ -30,8 +30,7 @@ instance MessageType SiteLocatorServiceMessageType where
 siteLocatorServiceConnectionData :: ServiceConnectionData
 siteLocatorServiceConnectionData = ServiceConnectionData "192.168.1.100" 9800
 
-data SLResult = SLSuccess Text
-              | SLNotFound
+data SLResult = SLSuccess Text -- this does not imply that the site exists, rather that if it existed, it would be on the given server
               | SLNotAvailable -- either SiteLocatorService is down or there are no servers available to assign the site to
 
 locateSite :: Text -> IO (SLResult)

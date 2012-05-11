@@ -1,9 +1,12 @@
 module Liberty.Common.Messages.ChatServer (
-  ChatServerMessageType(..)
+  ChatServerMessageType(..),
+  getServiceConnectionDataForChatServer
 ) where
 import qualified Data.Map as Map
+import Data.Text.Lazy (Text)
 import Data.Tuple
 import Liberty.Common.Messages
+import Liberty.Common.ServiceClient
 
 data ChatServerMessageType = CustomerJoinMessage
                            | CustomerInLinePositionMessage
@@ -128,4 +131,8 @@ instance MessageType ChatServerMessageType where
   messageIdToType = flip Map.lookup messageTypeById
   messageIdByType = Map.fromList $ map swap messageIdsAndTypes
   messageTypeToId = (Map.!) messageIdByType
+
+-- TODO: Implement this using DNS
+getServiceConnectionDataForChatServer :: Text -> IO (Maybe ServiceConnectionData)
+getServiceConnectionDataForChatServer _ = return $ Just $ ServiceConnectionData "192.168.1.102" 9800
 

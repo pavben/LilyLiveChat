@@ -5,7 +5,8 @@ module Liberty.Common.Utils (
   parseIntegral,
   fromIntegerCheckBounds,
   eitherToMaybe,
-  parseUriQueryString
+  parseUriQueryString,
+  runWithRetry
 ) where
 import Control.Arrow (second)
 import Data.ByteString.Lazy (ByteString)
@@ -56,4 +57,14 @@ parseUriQueryString uriQueryString =
         Nothing -> Nothing
   in
     mapM decodeValueMaybe encodedListOfPairs
+
+runWithRetry :: Integer -> IO Bool -> IO Bool
+runWithRetry numAttempts functionToRun = runWithRetry' numAttempts
+  where
+    runWithRetry' attemptsRemaining | attemptsRemaining == 0 = return False
+    runWithRetry' attemptsRemaining = do
+      runResult <- functionToRun
+      case runResult of
+        True -> return True
+        False -> runWithRetry' (attemptsRemaining - 1)
 
