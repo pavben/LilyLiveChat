@@ -6,6 +6,7 @@ var miscMessageTab = null;
 var generalSubtab = null;
 var operatorsSubtab = null;
 var editOperatorSubtab = null;
+var installSubtab = null;
 var adminPasswordSubtab = null;
 
 // Person object representing the operator
@@ -23,6 +24,7 @@ $(window).bind('load', function() {
 	generalSubtab = $('#main_rightcell_general');
 	operatorsSubtab = $('#main_rightcell_operators');
 	editOperatorSubtab = $('#main_rightcell_editoperator');
+	installSubtab = $('#main_rightcell_install');
 	adminPasswordSubtab = $('#main_rightcell_adminpassword');
 
 	replaceIconWith('/images/lock.png', $('#login_icon'));
@@ -47,6 +49,11 @@ $(window).bind('load', function() {
 	replaceIconWith('/images/admin_operators.png', $('#main_btn_operators'));
 	$('#main_btn_operators').click(function() {
 		changeSubtabTo(operatorsSubtab);
+	});
+
+	replaceIconWith('/images/admin_install.png', $('#main_btn_install'));
+	$('#main_btn_install').click(function() {
+		changeSubtabTo(installSubtab);
 	});
 
 	replaceIconWith('/images/admin_security.png', $('#main_btn_adminpassword'));
@@ -125,6 +132,21 @@ $(window).bind('load', function() {
 
 	onChangeToFieldValue($('#main_editoperator_title'), function() {
 		onNameOrTitleEdited('title');
+	});
+
+	// install subtab
+	$('#install_step1_advanced_link').click(function() {
+		$('#install_step1_simple').hide();
+		$('#install_step1_advanced').show();
+		onResize();
+		return false; // cancel the link's effect
+	});
+
+	$('#install_step2_advanced_link').click(function() {
+		$('#install_step2_simple').hide();
+		$('#install_step2_advanced').show();
+		onResize();
+		return false; // cancel the link's effect
 	});
 
 	// admin password subtab
@@ -402,7 +424,7 @@ function handleMessage(message) {
 			});
 
 			// Auto-login
-			//$('#login_btn_ok').click();
+			$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen

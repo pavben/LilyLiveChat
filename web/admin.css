@@ -107,6 +107,19 @@
 	color:#006DA3;
 	text-decoration:underline;
 }
+.main_contentbox h2 {
+	margin:0px 0px 7px 0px;
+	font-size:130%;
+	font-weight:normal;
+	color:#454545;
+}
+.main_contentbox p {
+	line-height:130%;
+	margin:0px 0px 7px 0px;
+}
+.main_contentbox p:last-child {
+	margin:0;
+}
 .main_settings_label {
 	display:table-cell;
 	text-align:center;
@@ -160,6 +173,20 @@
 	display:table-cell;
 	text-align:center;
 	font-size:80%;
+}
+#install_step1_advanced {
+	display:none;
+}
+#install_step2_advanced {
+	display:none;
+}
+.install_code {
+	width:433px;
+	margin:0px 0px 5px 0px;
+	padding:3px;
+	border:1px solid #BBBBBB;
+	font-size:90%;
+	background-color:#F4F4F4;
 }
 .smallbutton {
 	padding-top:1px;

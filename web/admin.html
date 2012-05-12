@@ -43,13 +43,15 @@
 								<div class="main_leftcell_vspacer"></div>
 								<div id="main_btn_operators" class="main_leftcell_button"></div>
 								<div class="main_leftcell_vspacer"></div>
+								<div id="main_btn_install" class="main_leftcell_button"></div>
+								<div class="main_leftcell_vspacer"></div>
 								<div id="main_btn_adminpassword" class="main_leftcell_button"></div>
 							</div>
 							<div class="main_hspacercell"></div>
 							<div class="vlinecell"></div>
 							<div id="main_rightcell">
 								<div id="main_rightcell_general" class="tab">
-									<div class="main_title">General info and settings</div>
+									<div class="main_title">General Info and Settings</div>
 									<div class="main_contentbox">
 										<div>Your site ID is <span id="main_general_siteid"></span></div>
 									</div>
@@ -192,12 +194,60 @@
 									<div class="main_rightcell_vspacer"></div>
 									<div id="main_editoperator_buttonsdiv"></div>
 								</div>
+								<div id="main_rightcell_install" class="tab">
+									<div class="main_title">Connecting Your Site to LilyLiveChat</div>
+									<div class="main_contentbox" style="text-align:left;">
+										<p>To set up LilyLiveChat, you need to have access to the source code for your website.</p>
+										<p>We've made the install as simple as possible, but it's still a confusing stage. If you'd like some clarification, we're here to help! Tip: This line disappears when we're not online to help. You can do this for your site too!</p>
+										<h2>Step 1: Linking the main code</h2>
+										<div id="install_step1_simple">
+											<p>Copy this code and paste it onto all pages of your website immediately before the closing &lt;/body&gt; tag. We also have <a id="install_step1_advanced_link" href="">advanced instructions</a> that give you more flexibility, if desired.</p>
+										</div>
+										<div id="install_step1_advanced">
+											<p>To take advantage of LilyLiveChat's visitor tracking features, the code snippet below must appear on:</p>
+											<ul>
+												<li>All pages that you wish to be notified about when a currently-chatting customer visits them; and</li>
+												<li>All pages that visitors can arrive to your site on. This really means all pages except popups, since other websites, including search engines, can bring visitors to any of your pages directly.</li>
+											</ul>
+											<p>Basically, put it on every page. If this is not practical for your business, you can still enjoy LilyLiveChat without the tracking features by placing the code snippet only on those pages that will have chat buttons from Step 2.</p>
+											<p>Copy this code and paste it onto the appropriate pages as described above immediately before the closing &lt;/body&gt; tag.</p>
+										</div>
+										<textarea rows="10" wrap="off" readonly="readonly" class="install_code">
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+										</textarea>
+										<h2>Step 2: Adding the launch button</h2>
+										<p>Lastly, we add the buttons which will open the chat window when your visitors click on them.</p>
+										<div id="install_step2_simple">
+											<p>LilyLiveChat offers a lot of flexibility in customizing these buttons in the <a id="install_step2_advanced_link" href="">advanced instructions</a>. Otherwise, we'll present you with some simple options to get you started. You can always try the advanced version later.</p>
+											<p>Choose a button you like best and the code below will change to reflect your choice.</p>
+											(some options here, possibly with radio buttons)
+											<p>Copy this code and paste it anywhere on your page that you'd like the button to appear:</p>
+											<textarea rows="6" wrap="off" readonly="readonly" class="install_code">
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
+											</textarea>
+											<p>Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, you've successfully installed LilyLiveChat!</p>
+										</div>
+										<div id="install_step2_advanced">
+											TODO
+										</div>
+									</div>
+								</div>
 								<div id="main_rightcell_adminpassword" class="tab">
 									<div class="main_title">Your Site Admin Password</div>
 									<ul>
 										<li>This is the password you use to login to this admin panel.</li>
 										<li>Choose a password that is secure enough for your needs.</li>
-										<li>Feel free to take as many as 100 characters (Unicode supported) to create the ultimate password.</li>
+										<li>Feel free to use as many as 100 characters (Unicode supported) to create the ultimate password.</li>
 										<li>When this password is changed, any other admins who are logged in will be kicked out. They will need the new password to regain access to the admin panel.</li>
 									</ul>
 									<div class="main_contentbox">
