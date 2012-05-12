@@ -1,8 +1,0 @@
-function lilyLiveChat_launch() {
-	var sid = 98323;
-	var wW = 659;
-	var wH = 659;
-	var wL = (window.screen.width - wW) / 2;
-	var wT = (window.screen.height - wH) / 3;
-	window.open('chat.html', '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
-}

@@ -23,7 +23,7 @@ $(window).bind('load', function() {
 				data: '',
 				timeout: 5000,
 				success: function(data, textStatus, jqXHR) {
-					var adminPanelUrl = 'https://sl.lilylivechat.net/' + data.siteId + '/admin';
+					var adminPanelUrl = 'http://lilylivechat.net/admin/' + data.siteId;
 					$('#tryitout_adminpanel').empty().append(
 						$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
 					);

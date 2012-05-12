@@ -425,7 +425,7 @@ function handleMessage(message) {
 
 			$('#main_general_siteid').text(siteId);
 			{
-				var operatorsLoginUrl = 'https://sl.lilylivechat.net/' + siteId + '/operator';
+				var operatorsLoginUrl = 'http://lilylivechat.net/operator/' + siteId;
 				$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
 			}
 			setFieldValue($('#main_general_sitename'), siteName);

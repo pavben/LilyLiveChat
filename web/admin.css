@@ -156,7 +156,7 @@
 .main_editoperator_title {
 	color:#7C7C7C;
 }
-#main_editoperator_passwordnote {
+.main_tablenote {
 	display:table-cell;
 	text-align:center;
 	font-size:80%;

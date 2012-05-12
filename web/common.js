@@ -1,7 +1,7 @@
 // communication protocol globals
 var siteId = null;
 {
-	var siteIdMatch = document.location.pathname.match(/^\/([\w\d]+)\//);
+	var siteIdMatch = document.location.pathname.match(/^\/[\w\d]+\/([\w\d]+)/);
 	if (siteIdMatch !== null && siteIdMatch[1] !== undefined) {
 		siteId = siteIdMatch[1];
 	}
