@@ -6,6 +6,8 @@ sudo ip addr add 192.168.1.101/32 dev lo
 sudo ip addr add 192.168.1.102/32 dev lo
 # Main Website
 sudo ip addr add 192.168.1.103/32 dev lo
+# Chat Status Service
+sudo ip addr add 192.168.1.104/32 dev lo
 
 # lily.pavelbennett.com test site
 sudo ip addr add 192.168.1.120/32 dev lo
