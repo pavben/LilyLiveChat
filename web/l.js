@@ -45,8 +45,8 @@
 	// BEGIN code to display the appropriate buttons by class name
 	// Parts adapted from jQuery
 
-	// set to true/false and call onChatStatusSet when the chat status is known
-	var chatOnline;
+	// set to true/false and call setChatStatus when the chat status is known
+	var g_chatStatus;
 
 	var domContentLoadedCallback;
 
@@ -67,7 +67,9 @@
 		};
 	}
 
-	function onChatStatusSet() {
+	function setChatStatus(chatStatus) {
+		g_chatStatus = chatStatus;
+
 		// Catch cases where $(document).ready() is called after the
 		// browser event has already occurred.
 		if (document.readyState === "complete") {
@@ -95,8 +97,7 @@
 	}
 
 	function displayChatElements() {
-		var elementsToDisplay = getElementsByClassName('lilylivechat_' + (chatOnline ? 'online' : 'offline'));
-		window.console.log(elementsToDisplay);
+		var elementsToDisplay = getElementsByClassName('lilylivechat_' + (g_chatStatus ? 'online' : 'offline'));
 		for (var i = 0; i < elementsToDisplay.length; i++) {
 			elementsToDisplay[i].style.display = 'block';
 		}
@@ -104,14 +105,32 @@
 
 	// END code to display the appropriate buttons by class name
 	
-	// BEGIN get site chat status and call onChatStatusSet
-	// TODO: ajax call to check status
-	//var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+	// BEGIN get site chat status and call setChatStatus
+	var visitorId = '';
+
+	// create the main XHR object
+	var xhr = window.XMLHttpRequest ? new window.XMLHttpRequest() : new window.ActiveXObject('Microsoft.XMLHTTP');
+	// set a timeout
+	var xhrTimeout = setTimeout(function() {
+		// on timeout, we consider the chat to be down and abort the request
+		setChatStatus(false);
+		xhr.abort();
+	}, 4000);
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState == 4) { // 4 is done
+			clearTimeout(xhrTimeout); // abort the timeout since the request has completed before timing out
+			if (xhr.status == 200) {
+				setChatStatus(xhr.responseText == '1');
+			} else {
+				setChatStatus(false); // if something failed, consider the chat to be offline
+			}
+		}
+	}
+
+	xhr.open('GET', 'http://sl.lilylivechat.net/chatstatus/' + lilyLiveChat_siteId + '/' + visitorId, true);;
+	xhr.send(null);
 	
-	chatOnline = true;
-	onChatStatusSet();
-	
-	// END get site chat status and call onChatStatusSet
+	// END get site chat status and call setChatStatus
 
 	// CONSIDER: can detect if the previously-opened window is now closed to avoid letting the user accidentally open 5 sessions, but be careful about stuff like popup blockers
 	function lilyLiveChat_launch() {
