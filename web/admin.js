@@ -139,14 +139,12 @@ $(window).bind('load', function() {
 		$('#install_step1_simple').hide();
 		$('#install_step1_advanced').show();
 		onResize();
-		return false; // cancel the link's effect
 	});
 
 	$('#install_step2_advanced_link').click(function() {
 		$('#install_step2_simple').hide();
 		$('#install_step2_advanced').show();
 		onResize();
-		return false; // cancel the link's effect
 	});
 
 	// admin password subtab

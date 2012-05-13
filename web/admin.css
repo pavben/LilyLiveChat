@@ -117,7 +117,7 @@
 	line-height:130%;
 	margin:0px 0px 7px 0px;
 }
-.main_contentbox p:last-child {
+.main_contentbox .lastp {
 	margin:0;
 }
 .main_settings_label {
