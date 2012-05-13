@@ -17,12 +17,10 @@ import Network.HTTP
 import Network.Socket
 import Network.URI
 import Prelude hiding (catch)
-import System.Random
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Messages.SiteLocatorService
 import Liberty.Common.ServiceClient
-import Liberty.Common.Utils
 
 runWebDispatcher :: IO ()
 runWebDispatcher = do
@@ -89,7 +87,7 @@ receiveHttpRequestLoop handleStream = do
     badRequestBody = C8.pack "You've followed an invalid link."
 
 handleChatStatusRequest :: Text -> Text -> HandleStream ByteString -> IO ()
-handleChatStatusRequest siteId visitorId handleStream = do
+handleChatStatusRequest siteId _ handleStream = do
   siteActive <- do
     -- locate the server that the site is on
     siteLocateResult <- locateSite siteId
