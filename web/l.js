@@ -1,3 +1,5 @@
+var lilyLiveChat_launch;
+
 (function() {
 	// BEGIN getElementsByClassName
 	var getElementsByClassName;
@@ -106,34 +108,59 @@
 	// END code to display the appropriate buttons by class name
 	
 	// BEGIN get site chat status and call setChatStatus
-	var visitorId = '';
+	var visitorId = 'none';
 
-	// create the main XHR object
-	var xhr = window.XMLHttpRequest ? new window.XMLHttpRequest() : new window.ActiveXObject('Microsoft.XMLHTTP');
-	// set a timeout
+	// set a timeout for the AJAX request
 	var xhrTimeout = setTimeout(function() {
 		// on timeout, we consider the chat to be down and abort the request
 		setChatStatus(false);
 		xhr.abort();
 	}, 4000);
-	xhr.onreadystatechange = function() {
-		if (xhr.readyState == 4) { // 4 is done
-			clearTimeout(xhrTimeout); // abort the timeout since the request has completed before timing out
-			if (xhr.status == 200) {
-				setChatStatus(xhr.responseText == '1');
-			} else {
-				setChatStatus(false); // if something failed, consider the chat to be offline
+
+	function onXhrSuccess(text) {
+		clearTimeout(xhrTimeout); // abort the timeout since the request has completed before timing out
+		setChatStatus(xhr.responseText == '1');
+	}
+
+	function onXhrFailure() {
+		clearTimeout(xhrTimeout);
+		setChatStatus(false);
+	}
+
+	// create the main XHR object
+	var xhr;
+	if (!window.XDomainRequest)
+	{
+		// standard XHR for normal browsers
+		xhr = window.XMLHttpRequest ? new window.XMLHttpRequest() : new window.ActiveXObject('Microsoft.XMLHTTP');
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState == 4) { // 4 is done
+				if (xhr.status == 200) {
+					onXhrSuccess(xhr.responseText);
+				} else {
+					onXhrFailure();
+				}
 			}
+		}
+	} else {
+		// XDR for IE9
+		xhr = new window.XDomainRequest();
+		xhr.onload = function() {
+			onXhrSuccess(xhr.responseText);
+		}
+		xhr.onerror = function() {
+			onXhrFailure();
 		}
 	}
 
-	xhr.open('GET', 'http://sl.lilylivechat.net/chatstatus/' + lilyLiveChat_siteId + '/' + visitorId, true);;
+	// we use POST instead of GET to avoid caching
+	xhr.open('POST', document.location.protocol + '//sl.lilylivechat.net/chatstatus/' + lilyLiveChat_siteId + '/' + visitorId, true);;
 	xhr.send(null);
 	
 	// END get site chat status and call setChatStatus
 
 	// CONSIDER: can detect if the previously-opened window is now closed to avoid letting the user accidentally open 5 sessions, but be careful about stuff like popup blockers
-	function lilyLiveChat_launch() {
+	lilyLiveChat_launch = function() {
 		var wW = 659;
 		var wH = 659;
 		var wL = (window.screen.width - wW) / 2;
