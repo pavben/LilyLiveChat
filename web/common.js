@@ -160,7 +160,7 @@ function ajaxJsonLongPoll() {
 function ajaxJson(messageObject, successFunction, errorFunction, timeout) {
 	$.ajaxSetup({ scriptCharset: "utf-8", contentType: "application/x-www-form-urlencoded; charset=UTF-8" });
 	$.ajax({
-		type: "POST",
+		type: 'POST',
 		url: '/c',
 		data: JSON.stringify(messageObject),
 		contentType: 'application/json; charset=utf-8',
@@ -170,7 +170,7 @@ function ajaxJson(messageObject, successFunction, errorFunction, timeout) {
 			successFunction(data);
 		},
 		error: function(request, textStatus, errorThrown) {
-			if (errorThrown != "timeout") {
+			if (errorThrown != 'timeout') {
 				log("Error is: " + errorThrown);
 			}
 			errorFunction(errorThrown);
