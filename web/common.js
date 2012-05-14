@@ -420,20 +420,27 @@ function replaceIconWith(iconUrl, icon) {
 		fadeOutTime = 0;
 	}
 
-	icon.fadeTo(fadeOutTime, 0, function() {
-		// when faded to 0, clear the old image
-		icon.css('background-image', 'none');
+	if (document.addEventListener) {
+		// modern browsers that support addEventListener
+		icon.fadeTo(fadeOutTime, 0, function() {
+			// when faded to 0, clear the old image
+			icon.css('background-image', 'none');
 
-		var iconCache = new Image();
-		iconCache.addEventListener('load', function() {
-			icon.css('background-image', 'url(\'' + iconUrl + '\')');
-			icon.fadeTo(500, 1);
+			var iconCache = new Image();
+			iconCache.addEventListener('load', function() {
+				icon.css('background-image', 'url(\'' + iconUrl + '\')');
+				icon.fadeTo(500, 1);
+			});
+			iconCache.addEventListener('error', function() {
+				icon.fadeTo(500, 1);
+			});
+			iconCache.src = iconUrl;
 		});
-		iconCache.addEventListener('error', function() {
-			icon.fadeTo(500, 1);
-		});
-		iconCache.src = iconUrl;
-	});
+	} else {
+		// all other browsers
+		icon.css('background-image', 'url(\'' + iconUrl + '\')');
+		icon.fadeTo(500, 1);
+	}
 }
 
 var ChunkType = {
