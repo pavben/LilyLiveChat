@@ -642,15 +642,15 @@ function showMiscMessageTab(title, content, buttons) {
 
 // icons and suffixes table
 
-var iconsAndSuffixes = [
-	['/images/cc/batty.png', 'Bat'],
-	['/images/cc/bird.png', 'Bird'],
-	['/images/cc/dog.png', 'Dog'],
-	['/images/cc/froggy.png', 'Frog'],
-	['/images/cc/kitty.png', 'Cat'],
-	['/images/cc/lion.png', 'Lion'],
-	['/images/cc/panda.png', 'Panda'],
-	['/images/cc/penguin.png', 'Penguin']
+var stockIcons = [
+	['/images/cc/batty.png'],
+	['/images/cc/bird.png'],
+	['/images/cc/dog.png'],
+	['/images/cc/froggy.png'],
+	['/images/cc/kitty.png'],
+	['/images/cc/lion.png'],
+	['/images/cc/panda.png'],
+	['/images/cc/penguin.png']
 ];
 
 function generatePersonColor() {

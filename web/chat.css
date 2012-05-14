@@ -1,59 +1,16 @@
-/* welcome tab */
-
-#welcome_tab {
-	min-width:659px;
-}
-#welcome_top {
-	height:0px;
-	background-color:#76cfe4;
-}
-#welcome_bottom {
-	height:0px;
-	background-color:#68bd4d;
-}
-#welcome_middle {
-	/* BEGIN browser-specific crap */
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#76cfe4', endColorstr='#68bd4d'); /* IE6 & IE7 */
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#76cfe4', endColorstr='#68bd4d')"; /* IE8+ */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #76cfe4), color-stop(100%, #68bd4d)); /* Safari 4+, Chrome 2+ */
-	background: -moz-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* FF 3.6+ */
-	background: -ms-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* IE10 */
-	background: -o-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* Opera 11.10 */
-	background: -webkit-linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%); /* Safari 5.1+, Chrome 10+ */
-	/* END browser-specific crap */
-	background: linear-gradient(top, #76cfe4 0%, #b9e5ef 50%, #cdecf3 65%, #68bd4d 100%);
-}
-#welcome_bg {
-	width:659px;
-	height:659px;
-	margin-left:auto;
-	margin-right:auto;
-	background-image: url('/images/welcomebg.png');
-}
-#welcome_loginbox {
-	width:320px;
-	margin-left:auto;
-	margin-right:auto;
-	padding:9px 9px 9px 9px;
-	background-color:#E3E3E3;
-	border:1px solid #BBBBBB;
-	border-radius:5px;
-}
-#welcome_chooseanamelabel {
-	height:30px;
-	padding-top:5px;
-	text-align:center;
-}
-#welcome_card .inputboxwrapper {
-	margin-bottom:9px;
-}
-
 /* chat tab */
 
 #chat_tab {
 	min-width:641px;
 	padding:9px 9px 9px 9px;
 	background-color:#E3E3E3;
+}
+#chat_logo {
+	width:320px;
+	height:98px;
+	background-color:#ECECEC;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
 }
 #chat_inlineinfocell {
 	width:100px;

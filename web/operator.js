@@ -122,7 +122,8 @@ function checkRingtoneStateLoop() {
 		if (!ringtoneActive) {
 			ringtoneActive = true;
 
-			jPlayerRingtone.jPlayer('play');
+			// TODO: enable
+			//jPlayerRingtone.jPlayer('play');
 		}
 	} else if (ringtoneActive) {
 		// either we have active chats or there isn't anyone in line

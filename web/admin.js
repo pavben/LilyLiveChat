@@ -106,11 +106,11 @@ $(window).bind('load', function() {
 	});
 
 	$('#main_editoperator_btn_nexticon').click(function() {
-		var nextIcon = iconsAndSuffixes[0][0]; // default to the first
+		var nextIcon = stockIcons[0]; // default to the first
 		var foundCurrentIcon = false;
 
-		for (var i = 0; i < iconsAndSuffixes.length; i++) {
-			var thisIcon = iconsAndSuffixes[i][0];
+		for (var i = 0; i < stockIcons.length; i++) {
+			var thisIcon = stockIcons[i];
 
 			if (foundCurrentIcon) {
 				nextIcon = thisIcon;
@@ -231,7 +231,7 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 		editOperatorCurrentIcon = iconUrl;
 	} else {
 		// start off with a random icon
-		editOperatorCurrentIcon = iconsAndSuffixes[Math.floor(Math.random() * iconsAndSuffixes.length)][0];
+		editOperatorCurrentIcon = stockIcons[Math.floor(Math.random() * stockIcons.length)];
 	}
 
 	replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));

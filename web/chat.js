@@ -1,95 +1,10 @@
 // these will be set onload
-var welcomeTab = null;
 var chatTab = null;
 var miscMessageTab = null;
 
-var myName = null;
 var myColor = null;
-var myIcon = null;
 
 var chatSessionEnded = false;
-
-function randomizeNameAndIcon() {
-	var descriptives = [
-		"Mystical",
-		"Scholarly",
-		"Dramatic",
-		"Objective",
-		"Esoteric",
-		"Subjective",
-		"Symbolic",
-		"Humanistic",
-		"Pragmatic",
-		"Utilitarian",
-		"Humorous",
-		"Profound",
-		"Radical",
-		"Exquisite",
-		"Pretty",
-		"Adept",
-		"Fair",
-		"Ravishing",
-		"Fascinating",
-		"Robust",
-		"Agile",
-		"Graceful",
-		"Skillful",
-		"Handsome",
-		"Spirited",
-		"Hardy",
-		"Charming",
-		"Immaculate",
-		"Lively",
-		"Strong",
-		"Delicate",
-		"Muscular",
-		"Dexterous",
-		"Vivacious",
-		"Elegant",
-		"Nimble",
-		"Winsome",
-		"Astute",
-		"Observant",
-		"Capable",
-		"Precocious",
-		"Clever",
-		"Prudent",
-		"Competent",
-		"Rational",
-		"Crafty",
-		"Reasonable",
-		"Cunning",
-		"Educated",
-		"Sensible",
-		"Gifted",
-		"Shrewd",
-		"Ingenious",
-		"Subtle",
-		"Intellectual",
-		"Intelligent",
-		"Inventive",
-		"Wise",
-		"Affable",
-		"Amiable",
-		"Amicable",
-		"Cheerful",
-		"Cordial",
-		"Courteous",
-		"Elegant",
-		"Gracious",
-		"Jolly",
-		"Jovial",
-		"Sociable",
-		"Suave",
-		"Tactful",
-		"Benevolent"
-	];
-
-	var iconAndSuffix = iconsAndSuffixes[Math.floor(Math.random() * iconsAndSuffixes.length)];
-	var descriptive = descriptives[Math.floor(Math.random() * descriptives.length)];
-
-	return [descriptive + ' ' + iconAndSuffix[1], iconAndSuffix[0]];
-}
 
 function handleMessage(message) {
 	messageTypeId = message.shift();
@@ -101,11 +16,17 @@ function handleMessage(message) {
 			var isActive = message[1];
 
 			if (isActive === true) {
-				changeTabTo(welcomeTab);
-				$('#welcome_btn_ok').click();
-				setTimeout(function() {
-					$('#welcome_btn_ok').click();
-				}, 300);
+				var referrer = $.cookie(siteId + '.referrer');
+				if (referrer === null) {
+					referrer = '';
+				}
+
+				queueAjaxCommand([Messages.CustomerJoinMessage, 'Customer', myColor, '', referrer]);
+
+				changeTabTo(chatTab);
+
+				writeWelcomeTextToChatlog();
+				writeSoundsStatusToChatlog();
 			} else {
 				showInactiveSiteScreen();
 			}
@@ -116,15 +37,7 @@ function handleMessage(message) {
 
 			break;
 		case Messages.CustomerInLinePositionMessage:
-			if (getCurrentTabOrTarget() == welcomeTab) {
-				replaceMeWith(new Person(myName, myColor, 'Customer', myIcon));
-				changeTabTo(chatTab);
-
-				writeWelcomeTextToChatlog();
-				writeSoundsStatusToChatlog();
-			}
 			updatePositionInLine(parseInt(message[0]));
-
 			break;
 		case Messages.CustomerNowTalkingToMessage:
 			var name = message[0];
@@ -180,13 +93,10 @@ function handleSessionEnded() {
 	}
 }
 
-var me = null;
 var they = null;
 
 function replaceMeWith(person) {
 	me = person;
-	replaceIconWith(person.iconUrl, $('#chat_myicon'));
-	replaceCardTextWith(person, $('#chat_mycardcell'), $('#chat_myname'), $('#chat_mytitle'));
 }
 
 function replaceThemWith(person) {
@@ -263,9 +173,7 @@ function updatePositionInLine(position) {
 }
 
 function onResize() {
-	if (currentTab == welcomeTab) {
-		onBasicVCenterResize('welcome', 641);
-	} else if (currentTab == chatTab) {
+	if (currentTab == chatTab) {
 		onChatTabResize();
 	} else if (currentTab == miscMessageTab) {
 		onBasicVCenterResize('miscmessage', 530);
@@ -299,32 +207,6 @@ function onChatTabResize() {
 	instantScrollChatlogToBottom(chatlogDiv);
 
 	$('#chat_chatbox').focus();
-}
-
-var welcomeTabOkActive = false;
-
-function welcomeTabOkHandler() {
-	if (!welcomeTabOkActive) {
-		welcomeTabOkActive = true;
-
-		// myName is global
-		myName = $.trim($('#welcome_myname').val());
-		// if no valid name was entered, randomize instead of logging in -- next click will login
-		// this allows the customer to see their profile before it's used
-		if (myName.length == 0) {
-			$('#welcome_btn_randomize').click();
-			welcomeTabOkActive = false;
-			return;
-		}
-		var referrer = $.cookie(siteId + '.referrer');
-		if (referrer === null) {
-			referrer = '';
-		}
-		
-		queueAjaxCommand([Messages.CustomerJoinMessage, myName, myColor, myIcon, referrer]);
-
-		// on success, don't re-enable the OK button to avoid a double-send if the user double-clicks
-	}
 }
 
 function showInactiveSiteScreen() {
@@ -583,14 +465,11 @@ function writeNowTalkingToTextToChatlog(name, color) {
 }
 
 $(window).bind('load', function() {
-	welcomeTab = $('#welcome_tab');
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
 	// initially, these are invisible
-	$('#welcome_icon').fadeTo(0, 0);
-	$('#chat_mycardcell').fadeTo(0, 0);
-	$('#chat_myicon').fadeTo(0, 0);
+	$('#chat_logo').fadeTo(0, 0);
 	$('#chat_theiricon').fadeTo(0, 0);
 	// and these are hidden
 	$('#chat_theircardcell').hide();
@@ -598,48 +477,9 @@ $(window).bind('load', function() {
 
 	// generate an initial color and set it
 	myColor = generatePersonColor();
-	$('#welcome_myname').css('color', myColor);
-
-	// also pick a random icon to start with
-	myIcon = randomizeNameAndIcon()[1];
-	replaceIconWith(myIcon, $('#welcome_icon'));
 
 	// set the waiting clock icon
 	replaceIconWith('/images/waiting_clock.png', $('#chat_waiticon'));
-
-	// welcome tab handlers
-	var nameEdited = false;
-	onChangeToFieldValue($('#welcome_myname'), function() {
-		nameEdited = true;
-	});
-	$('#welcome_btn_randomize').click(function(e) {
-		$('#welcome_myname').fadeTo(100, 0, function() {
-			var nameAndIcon = randomizeNameAndIcon();
-			// name
-			// only set the random name if the user hasn't edited the name field
-			if (nameEdited === false || $.trim($('#welcome_myname').val()) === '') {
-				setFieldValue($('#welcome_myname'), nameAndIcon[0]);
-				nameEdited = false;
-			}
-			// color
-			myColor = generatePersonColor();
-			$('#welcome_myname').css('color', myColor);
-			// icon
-			myIcon = nameAndIcon[1];
-			replaceIconWith(myIcon, $('#welcome_icon'));
-			// and fade the name back to 1
-			$('#welcome_myname').fadeTo(100, 1);
-		});
-	});
-
-	// clicking the OK button
-	$('#welcome_btn_ok').click(welcomeTabOkHandler);
-	// or pressing Enter inside the name box
-	$('#welcome_myname').keypress(function(e) {
-		if (e.which == 13) { // enter
-			welcomeTabOkHandler();
-		}
-	});
 
 	// chat tab handlers
 	var chatBox = $('#chat_chatbox');
@@ -648,7 +488,7 @@ $(window).bind('load', function() {
 			if (!chatSessionEnded) {
 				if ($.trim(chatBox.val()).length > 0) {
 					queueAjaxCommand([Messages.CustomerSendChatMessage, chatBox.val()]);
-					writeMessageToChatlog(me.name, me.color, chatBox.val(), $('#chat_chatlog'));
+					writeMessageToChatlog('Me', myColor, chatBox.val(), $('#chat_chatlog'));
 				}
 			} else {
 				writeInfoTextToChatlog('This chat session is no longer active.', $('#chat_chatlog'));
@@ -669,13 +509,6 @@ $(window).bind('load', function() {
 	// initialize the auto-growing chatbox and append the shadow div to the chatboxwrapper
 	initializeAutoGrowingTextArea($('#chat_chatbox'), $('#chat_chatboxwrapper'));
 
-	// we start on welcometab
-	//changeTabTo(welcomeTab);
-	// DEBUG
-	//changeTabTo(chatTab);
-	//updatePositionInLine(5);
-	// END OF DEBUG
-	
 	initializeJplayers();
 	
 	$(window).resize(onResize);
@@ -685,10 +518,6 @@ $(window).bind('load', function() {
 		ajaxJsonGetSessionId(
 			function() {
 				queueAjaxCommand([Messages.UnregisteredSelectSiteMessage, siteId]);
-
-				// TEMP: remove this
-				//$('#welcome_btn_ok').click();
-				//setTimeout(function() { $('#welcome_btn_ok').click(); }, 800);
 			},
 			function() {
 				resetSession();

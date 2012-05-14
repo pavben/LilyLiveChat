@@ -67,9 +67,6 @@ input {
 	border-radius:5px;
 	vertical-align:top;
 }
-.cardtextwrappercell {
-	display:table-cell;
-}
 .leftcardtexttight {
 	padding:0px 0px 0px 8px;
 	height:100%;
