@@ -38,10 +38,12 @@
 #chat_maincell {
 	display:table-cell;
 	width:641px;
-	height:400px;
 	min-width:641px;
 	padding:9px 9px 9px 9px;
 	background-color:#E3E3E3;
+}
+.chat_buttonswrapper {
+	margin-top:6px;
 }
 #chat_rightcell {
 	display:table-cell;
@@ -157,4 +159,9 @@
 }
 .chat_sessionlistsep {
 	height:7px;
+}
+
+/* extensions from common */
+.chatboxwrapper {
+	margin-top:6px;
 }

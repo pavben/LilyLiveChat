@@ -415,59 +415,17 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// create the chat session tab
 	$('#chat_maincell').append(
 		$('<div/>').attr('id', 'chat_maincell_' + chatSessionId).addClass('tab').append(
-			$('<div/>').addClass('fixedtable').append(
-				$('<div/>').addClass('tablerow').append(
-					$('<div/>').attr('id', 'chat_mycardcell_' + chatSessionId).addClass('cell').append(
-						$('<div/>').addClass('fixedtable').append(
-							$('<div/>').addClass('tablerow').append(
-								$('<div/>').addClass('iconcell').append(
-									$('<div/>').attr('id', 'chat_myicon_' + chatSessionId).addClass('framedicon')
-								)
-							).append(
-								$('<div/>').addClass('cardtextwrappercell').append(
-									$('<div/>').addClass('leftcardtext').append(
-										$('<div/>').attr('id', 'chat_myname_' + chatSessionId).addClass('personname')
-									).append(
-										$('<div/>').attr('id', 'chat_mytitle_' + chatSessionId).addClass('persontitle')
-									)
-								)
-							)
-						)
-					)
+			$('<div/>').attr('id', 'chat_chatlog_' + chatSessionId).addClass('chatlogfixed')
+		).append(
+			$('<div/>').attr('id', 'chat_buttonswrapper_' + chatSessionId).addClass('chat_buttonswrapper').append(
+				$('<div/>').addClass('fixedtable').append(
+					$('<div/>').addClass('cell')
 				).append(
-					$('<div/>').addClass('vlinecell')
-				).append(
-					$('<div/>').attr('id', 'chat_theircardcell_' + chatSessionId).addClass('cell').append(
-						$('<div/>').addClass('fixedtable').append(
-							$('<div/>').addClass('tablerow').append(
-								$('<div/>').addClass('cardtextwrappercell').append(
-									$('<div/>').addClass('rightcardtext').append(
-										$('<div/>').attr('id', 'chat_theirname_' + chatSessionId).addClass('personname')
-									).append(
-										$('<div/>').attr('id', 'chat_theirtitle_' + chatSessionId).addClass('persontitle')
-									).append(
-										$('<div/>').addClass('personmenuwrapper').append(
-											$('<div/>').addClass('fixedtable').append(
-												$('<div/>').addClass('cell')
-											).append(
-												$('<div/>').addClass('cell').css('width', '84px').append(
-													$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
-												)
-											)
-										)
-									)
-								)
-							).append(
-								$('<div/>').addClass('iconcell').append(
-									$('<div/>').attr('id', 'chat_theiricon_' + chatSessionId).addClass('framedicon')
-								)
-							)
-						)
+					$('<div/>').addClass('cell').css('width', '84px').append(
+						$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')
 					)
 				)
 			)
-		).append(
-			$('<div/>').attr('id', 'chat_chatlog_' + chatSessionId).addClass('chatlogfixed')
 		).append(
 			$('<div/>').attr('id', 'chat_chatboxwrapper_' + chatSessionId).addClass('chatboxwrapper').append(
 				$('<textarea/>').attr('id', 'chat_chatbox_' + chatSessionId).addClass('chatbox')
@@ -475,13 +433,8 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 		)
 	);
 
-	replaceIconWith(me.iconUrl, $('#chat_myicon_' + chatSessionId));
-	replaceCardTextWith(me, $('#chat_mycardcell_' + chatSessionId), $('#chat_myname_' + chatSessionId), $('#chat_mytitle_' + chatSessionId));
-
-	var they = (getChatSessionData(chatSessionId).they = new Person(name, color, 'Customer', iconUrl));
-
-	replaceIconWith(they.iconUrl, $('#chat_theiricon_' + chatSessionId));
-	replaceCardTextWith(they, $('#chat_theircardcell_' + chatSessionId), $('#chat_theirname_' + chatSessionId), $('#chat_theirtitle_' + chatSessionId));
+	// TODO: decide what data to store here
+	var they = (getChatSessionData(chatSessionId).they = new Person(name, color, 'Customer', ''));
 
 	// mark the chat session as open; this is set to false when the session is beginning its 'Close' fade-out
 	getChatSessionData(chatSessionId).isOpen = true;
@@ -490,7 +443,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	getChatSessionData(chatSessionId).buttonIndicatorState = ButtonIndicatorStates.Normal;
 
 	// close handler
-	$('#chat_btn_endchat_' + chatSessionId).click(function() {
+	chatSessionIdToObject('#chat_btn_endchat_', chatSessionId).click(function() {
 		// setVisibleChatSessionId to another chat session, if any
 		var openChatSessionIds = getOpenChatSessionIds().filter(function(x) { return (x !== chatSessionId.toString()); });
 		var targetSessionId = (openChatSessionIds.length > 0) ? openChatSessionIds[0] : null;
@@ -833,6 +786,11 @@ function testSetVisibleChatSessionId(sessions) {
 function followVisibleChatSessionIdTarget() {
 	if (visibleChatSessionIdTarget !== undefined) {
 		var initialCell = chatSessionIdToObject('#chat_maincell_', visibleChatSessionId);
+
+		// set the indicator to Normal
+		// to be correct, it should be done after the chat session is loaded, but resetting the indicator instantly yields a better user experience
+		setChatSessionIndicator(visibleChatSessionIdTarget, ButtonIndicatorStates.Normal);
+
 		// NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
 		initialCell.fadeTo(100, 0, function() {
 			initialCell.hide();
@@ -847,9 +805,6 @@ function followVisibleChatSessionIdTarget() {
 					if (visibleChatSessionId === visibleChatSessionIdTarget) {
 						// if the target hasn't changed during the fade-in, we're done
 						visibleChatSessionIdTarget = undefined;
-
-						// set the indicator to Normal
-						setChatSessionIndicator(visibleChatSessionId, ButtonIndicatorStates.Normal);
 					} else {
 						// otherwise, transition to the new target
 						setTimeout(followVisibleChatSessionIdTarget, 0);
@@ -970,6 +925,7 @@ function updateChatlogHeight(chatSessionId) {
 	$('body').css('overflow-y', 'hidden');
 
 	var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', chatSessionId);
+	var buttonsWrapper = chatSessionIdToObject('#chat_buttonswrapper_', chatSessionId);
 	var chatboxWrapper = chatSessionIdToObject('#chat_chatboxwrapper_', chatSessionId);
 	var chatMaincellDiv = $('#chat_maincell');
 	var newChatlogHeight = $(window).height()
@@ -978,6 +934,8 @@ function updateChatlogHeight(chatSessionId) {
 		- stripPx(chatlogDiv.css('padding-bottom'))
 		- stripPx(chatlogDiv.css('border-top-width')) // same for border
 		- stripPx(chatlogDiv.css('border-bottom-width'))
+		- stripPx(buttonsWrapper.css('margin-top')) // remove the height of the spacer above the buttons wrapper
+		- buttonsWrapper.outerHeight() // remove the height of the buttons wrapper
 		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
 		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
 		- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox

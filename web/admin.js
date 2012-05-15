@@ -484,7 +484,7 @@ function handleMessage(message) {
 								$('<div/>').attr('id', 'main_operators_' + operatorId + '_icon').addClass('framedicon')
 							)
 						).append(
-							$('<div/>').addClass('cardtextwrappercell').append(
+							$('<div/>').addClass('cell').append(
 								$('<div/>').addClass('leftcardtext').append(
 									$('<div/>').addClass('personname').css('color', color).text(name)
 								).append(

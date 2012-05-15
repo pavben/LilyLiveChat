@@ -43,3 +43,7 @@
 	vertical-align:bottom;
 }
 
+/* extensions from common */
+.chatboxwrapper {
+	margin-top:9px;
+}
