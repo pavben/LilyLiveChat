@@ -181,23 +181,20 @@ function handleMessage(message) {
 			showLoginFailedScreen();
 			break;
 		case Messages.OperatorLineStatusDetailsMessage:
-			var name = message[0];
-			var color = message[1];
-			var lineLength = parseInt(message[2]);
+			var nextCustomerColor = message[0];
+			var lineLength = parseInt(message[1]);
 
-			setLineStatus(name, color, lineLength);
+			setLineStatus(nextCustomerColor, lineLength);
 
 			break;
 		case Messages.OperatorLineStatusEmptyMessage:
-			setLineStatus(null, null, 0);
+			setLineStatus(null, 0);
 			break;
 		case Messages.OperatorNowTalkingToMessage:
 			var chatSessionId = message[0];
-			var name = message[1];
-			var color = message[2];
-			var iconUrl = message[3];
-			var referrer = message[4];
-			addActiveChatSession(chatSessionId, name, color, iconUrl, referrer);
+			var color = message[1];
+			var referrer = message[2];
+			addActiveChatSession(chatSessionId, color, referrer);
 			break;
 		case Messages.OperatorReceiveChatMessage:
 			var chatSessionId = message[0];
@@ -390,7 +387,7 @@ function updateActiveChatsLabel() {
 	});
 }
 
-function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
+function addActiveChatSession(chatSessionId, color, referrer) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
 		$('<div/>').attr('id', 'chat_sessionlistbuttonwrapper_' + chatSessionId).append(
@@ -403,7 +400,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 							$('<div/>').attr('id', 'chat_sessionlistbutton_ind_' + chatSessionId).fadeTo(0, 0)
 						)
 					).append(
-						$('<div/>').addClass('chat_sessionlistbutton_open_text').addClass('cell').css('color', color).text(name)
+						$('<div/>').addClass('chat_sessionlistbutton_open_text').addClass('cell').css('color', color).text('Customer')
 					)
 				)
 			)
@@ -434,7 +431,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	);
 
 	// TODO: decide what data to store here
-	var they = (getChatSessionData(chatSessionId).they = new Person(name, color, 'Customer', ''));
+	var they = (getChatSessionData(chatSessionId).they = new Person('Customer', color, '', ''));
 
 	// mark the chat session as open; this is set to false when the session is beginning its 'Close' fade-out
 	getChatSessionData(chatSessionId).isOpen = true;
@@ -627,9 +624,9 @@ var currentDisplayedLineLength = 0; // the value reflecting what is displayed to
 var currentDisplayedNextInLine = null; // name and color; reflecting what is displayed to the user
 var numCustomersInLine = 0; // used for ringtone playback control
 
-function setLineStatus(name, color, lineLength) {
+function setLineStatus(nextCustomerColor, lineLength) {
 	numCustomersInLine = lineLength;
-	latestLineStatus = [name, color, lineLength];
+	latestLineStatus = [nextCustomerColor, lineLength];
 	checkLineStatus();
 }
 
@@ -637,12 +634,11 @@ function checkLineStatus() {
 	if (!lineStatusBusy && latestLineStatus) {
 		lineStatusBusy = true;
 
-		var name = latestLineStatus[0];
-		var color = latestLineStatus[1];
-		var lineLength = latestLineStatus[2];
+		var nextCustomerColor = latestLineStatus[0];
+		var lineLength = latestLineStatus[1];
 
 		if (lineLength > 0) {
-			updateNextInLine(name, color, lineLength);
+			updateNextInLine(nextCustomerColor, lineLength);
 		} else {
 			emptyNextInLine();
 		}
@@ -656,13 +652,15 @@ function lineStatusFinished() {
 	setTimeout(checkLineStatus, 0);
 }
 
-function updateNextInLine(name, color, lineLength) {
+function updateNextInLine(color, lineLength) {
 	var nextInLineButtonText = $('#chat_nextinlinebutton_text');
 	var nextInLineButtonWrapper = $('#chat_nextinlinebuttonwrapper');
 	var nextInLineHeader = $('#chat_nextinlineheader');
 	var nextInLineHeaderText = $('#chat_nextinlineheadertext');
 
 	var effectsActivated = false;
+
+	var nextInLineHeaderTextTarget = lineLength + ' customer' + (lineLength > 1 ? 's' : '') + ' waiting';
 
 	if (!currentDisplayedNextInLine) {
 		// if the next in line button currently isn't showing
@@ -672,10 +670,10 @@ function updateNextInLine(name, color, lineLength) {
 			// then fade the text
 			nextInLineHeaderText.delay(100).fadeTo(250, 0, function() {
 				// show the text
-				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
+				nextInLineHeaderText.text(nextInLineHeaderTextTarget);
 				nextInLineHeaderText.fadeTo(500, 1);
 
-				nextInLineButtonText.text(name);
+				nextInLineButtonText.text('Next Customer');
 				nextInLineButtonText.css('color', color);
 				nextInLineButtonWrapper.fadeTo(500, 1);
 
@@ -689,7 +687,7 @@ function updateNextInLine(name, color, lineLength) {
 		if (lineLength != currentDisplayedLineLength) {
 			// fade out the text
 			nextInLineHeaderText.fadeTo(250, 0, function() {
-				nextInLineHeaderText.text('Next in line (' + lineLength + ' waiting)');
+				nextInLineHeaderText.text(nextInLineHeaderTextTarget);
 				nextInLineHeaderText.fadeTo(500, 1);
 
 				lineStatusFinished();
@@ -697,9 +695,9 @@ function updateNextInLine(name, color, lineLength) {
 
 			effectsActivated = true;
 		}
-		if (currentDisplayedNextInLine[0] != name || currentDisplayedNextInLine[1] != color) {
+		if (currentDisplayedNextInLine[0] != color) {
 			nextInLineButtonWrapper.fadeTo(250, 0, function() {
-				nextInLineButtonText.text(name);
+				nextInLineButtonText.text('Next Customer');
 				nextInLineButtonText.css('color', color);
 				nextInLineButtonWrapper.fadeTo(500, 1);
 
@@ -710,7 +708,7 @@ function updateNextInLine(name, color, lineLength) {
 		}
 	}
 
-	currentDisplayedNextInLine = [name, color];
+	currentDisplayedNextInLine = [color];
 	currentDisplayedLineLength = lineLength;
 
 	// if no effects to activate, signal that we're done

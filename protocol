@@ -9,7 +9,7 @@ Server to Unregistered
 
 Customer to Server
 ================================================================
-1  - CustomerJoinMessage [name, color, iconUrl, referrer]
+1  - CustomerJoinMessage [color, referrer]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
 
@@ -33,9 +33,9 @@ Server to Operator
 ================================================================
 9  - OperatorLoginSuccessMessage [name, color, title, iconUrl]
 10 - OperatorLoginFailedMessage
-11 - OperatorLineStatusDetailsMessage [nextCustomerName, theirColor, i:numberOfWaiters]
+11 - OperatorLineStatusDetailsMessage [nextCustomerColor, i:numberOfWaiters]
 12 - OperatorLineStatusEmptyMessage
-14 - OperatorNowTalkingToMessage [sessionId, name, color, iconUrl, referrer]
+14 - OperatorNowTalkingToMessage [sessionId, color, referrer]
 15 - OperatorReceiveChatMessage [sessionId, text]
 18 - OperatorChatEndedMessage [sessionId]
 

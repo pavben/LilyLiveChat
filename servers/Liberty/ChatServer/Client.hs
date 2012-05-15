@@ -121,7 +121,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
           case messageType of
-            CustomerJoinMessage -> unpackAndHandle $ \(name, color, icon, referrer) -> handleCustomerJoinMessage name color icon referrer clientDataTVar siteDataTVar
+            CustomerJoinMessage -> unpackAndHandle $ \(color, referrer) -> handleCustomerJoinMessage color referrer clientDataTVar siteDataTVar
             OperatorLoginRequestMessage -> unpackAndHandle $ \(username, password) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
             AdminLoginRequestMessage -> unpackAndHandle $ \password -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
             _ -> do
@@ -196,13 +196,11 @@ handleCSSALoginRequestMessage clientDataTVar =
       createAndSendMessage CSSALoginFailedMessage () clientDataTVar
       closeClientSocket clientDataTVar
 
-handleCustomerJoinMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVar =
+handleCustomerJoinMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleCustomerJoinMessage color referrer clientDataTVar siteDataTVar =
   atomically $ do
     ensureTextLengthLimits [
-        (name, maxPersonNameLength),
-        (color, maxColorLength),
-        (iconUrl, maxIconUrlLength)
+       (color, maxColorLength)
       ] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
       siteData <- readTVar siteDataTVar
@@ -210,7 +208,7 @@ handleCustomerJoinMessage name color iconUrl referrer clientDataTVar siteDataTVa
         let thisChatSessionId = sdNextSessionId siteData
         -- create a new chat session with this client as the customer and no operator
         chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
-        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData name color iconUrl referrer siteDataTVar chatSessionTVar }
+        writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData color referrer siteDataTVar chatSessionTVar }
 
         -- add the newly-created chat session to the site data's waiting list
         let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
@@ -339,9 +337,9 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
             -- read additional data that will be needed below
             updatedChatSession <- readTVar chatSessionTVar
             customerClientData <- readTVar (csCustomerClientDataTVar updatedChatSession)
-            (customerName, customerColor, customerIconUrl, customerReferrer) <- case cdOtherData customerClientData of
-              OCDClientCustomerData clientCustomerData -> return (ccdName clientCustomerData, ccdColor clientCustomerData, ccdIconUrl clientCustomerData, ccdReferrer clientCustomerData)
-              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty, LT.empty, LT.empty)
+            (customerColor, customerReferrer) <- case cdOtherData customerClientData of
+              OCDClientCustomerData clientCustomerData -> return (ccdColor clientCustomerData, ccdReferrer clientCustomerData)
+              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty)
             -- update the operators with 'next in line' and waiting customers with their new position
             waitingListUpdated siteDataTVar
           
@@ -359,9 +357,7 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
             createAndSendMessage OperatorNowTalkingToMessage
               (
                 fromIntegral $ csId updatedChatSession :: Int,
-                customerName,
                 customerColor,
-                customerIconUrl,
                 customerReferrer
               )
               clientDataTVar
@@ -723,7 +719,7 @@ onlineOperatorsListUpdated siteDataTVar = do
   else
     return ()
 
-data LineStatusInfo = LineStatusInfo (Maybe (Text, Text)) Int
+data LineStatusInfo = LineStatusInfo (Maybe (Text)) Int
 
 getLineStatusInfo :: SiteDataTVar -> STM LineStatusInfo
 getLineStatusInfo siteDataTVar = do
@@ -734,7 +730,7 @@ getLineStatusInfo siteDataTVar = do
       nextChatSession <- readTVar $ nextChatSessionTVar
       nextChatSessionClientData <- readTVar $ csCustomerClientDataTVar nextChatSession
       case cdOtherData nextChatSessionClientData of
-        OCDClientCustomerData clientCustomerData -> return $ Just (ccdName clientCustomerData, ccdColor clientCustomerData)
+        OCDClientCustomerData clientCustomerData -> return $ Just (ccdColor clientCustomerData)
         _ -> return Nothing
     _ -> return Nothing
   return $ LineStatusInfo maybeNextCustomerInfo (length sessionsWaiting)
@@ -742,7 +738,7 @@ getLineStatusInfo siteDataTVar = do
 sendLineStatusInfoToOperator :: LineStatusInfo -> ClientDataTVar -> STM ()
 sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersInLine) clientDataTVar =
   case maybeNextCustomerInfo of
-    Just (nextCustomerName, nextCustomerColor) -> createAndSendMessage OperatorLineStatusDetailsMessage (nextCustomerName, nextCustomerColor, numCustomersInLine) clientDataTVar
+    Just (nextCustomerColor) -> createAndSendMessage OperatorLineStatusDetailsMessage (nextCustomerColor, numCustomersInLine) clientDataTVar
     Nothing -> createAndSendMessage OperatorLineStatusEmptyMessage () clientDataTVar
 
 endChatSession :: ChatSessionTVar -> STM ()

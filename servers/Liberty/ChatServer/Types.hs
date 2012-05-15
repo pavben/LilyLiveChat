@@ -41,9 +41,7 @@ data ClientData = ClientData {
 data OtherClientData = OCDClientUnregistered (Maybe SiteDataTVar) | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData | OCDClientAdminData ClientAdminData | OCDClientSuperAdminData ClientSuperAdminData
   deriving (Show)
 data ClientCustomerData = ClientCustomerData {
-  ccdName :: Text,
   ccdColor :: Text,
-  ccdIconUrl :: Text,
   ccdReferrer :: Text,
   ccdSiteDataTVar :: SiteDataTVar,
   ccdChatSessionTVar :: ChatSessionTVar

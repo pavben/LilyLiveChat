@@ -29,8 +29,8 @@ jsonToMP :: ChatServerMessageType -> [J.Value] -> Maybe ByteString
 jsonToMP UnregisteredSelectSiteMessage [J.String siteId] =
   createMessage UnregisteredSelectSiteMessage (siteId)
 
-jsonToMP CustomerJoinMessage [J.String name, J.String color, J.String iconUrl, J.String referrer] =
-  createMessage CustomerJoinMessage (name, color, iconUrl, referrer)
+jsonToMP CustomerJoinMessage [J.String color, J.String referrer] =
+  createMessage CustomerJoinMessage (color, referrer)
 
 jsonToMP CustomerSendChatMessage [J.String text] =
   createMessage CustomerSendChatMessage (text)
@@ -104,13 +104,13 @@ messageToJson OperatorLoginFailedMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId OperatorLoginFailedMessage)]
 
 messageToJson OperatorLineStatusDetailsMessage encodedParams =
-  unpackAndHandle encodedParams $ \(nextCustomerName :: Text, theirColor :: Text, numberOfWaiters :: Int) -> [J.toJSON (messageTypeToId OperatorLineStatusDetailsMessage), J.toJSON nextCustomerName, J.toJSON theirColor, J.toJSON numberOfWaiters]
+  unpackAndHandle encodedParams $ \(nextCustomerColor :: Text, numberOfWaiters :: Int) -> [J.toJSON (messageTypeToId OperatorLineStatusDetailsMessage), J.toJSON nextCustomerColor, J.toJSON numberOfWaiters]
 
 messageToJson OperatorLineStatusEmptyMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId OperatorLineStatusEmptyMessage)]
 
 messageToJson OperatorNowTalkingToMessage encodedParams =
-  unpackAndHandle encodedParams $ \(sessionId :: Int, name :: Text, color :: Text, iconUrl :: Text, referrer :: Text) -> [J.toJSON (messageTypeToId OperatorNowTalkingToMessage), J.toJSON sessionId, J.toJSON name, J.toJSON color, J.toJSON iconUrl, J.toJSON referrer]
+  unpackAndHandle encodedParams $ \(sessionId :: Int, color :: Text, referrer :: Text) -> [J.toJSON (messageTypeToId OperatorNowTalkingToMessage), J.toJSON sessionId, J.toJSON color, J.toJSON referrer]
 
 messageToJson OperatorReceiveChatMessage encodedParams =
   unpackAndHandle encodedParams $ \(sessionId :: Int, text :: Text) -> [J.toJSON (messageTypeToId OperatorReceiveChatMessage), J.toJSON sessionId, J.toJSON text]
@@ -169,5 +169,6 @@ unpackAndHandle :: MP.Unpackable a => ByteString -> (a -> b) -> Maybe b
 unpackAndHandle encodedParams handleFunction =
   case unpackMessage encodedParams of
     Just params -> Just $ handleFunction params
+    -- TODO: remove the trace
     Nothing -> trace "unpackMessage failed" Nothing -- either the encoded params were invalid or they did not match the params we expect
 

@@ -21,7 +21,7 @@ function handleMessage(message) {
 					referrer = '';
 				}
 
-				queueAjaxCommand([Messages.CustomerJoinMessage, 'Customer', myColor, '', referrer]);
+				queueAjaxCommand([Messages.CustomerJoinMessage, myColor, referrer]);
 
 				changeTabTo(chatTab);
 
