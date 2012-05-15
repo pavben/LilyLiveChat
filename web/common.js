@@ -415,6 +415,7 @@ function replaceCardTextWith(person, card, name, title) {
 
 function replaceIconWith(iconUrl, icon) {
 	var fadeOutTime = 100;
+	var fadeInTime = 500;
 
 	if (icon.css('background-image') == 'none') {
 		fadeOutTime = 0;
@@ -429,17 +430,19 @@ function replaceIconWith(iconUrl, icon) {
 			var iconCache = new Image();
 			iconCache.addEventListener('load', function() {
 				icon.css('background-image', 'url(\'' + iconUrl + '\')');
-				icon.fadeTo(500, 1);
+				icon.fadeTo(fadeInTime, 1);
 			});
 			iconCache.addEventListener('error', function() {
-				icon.fadeTo(500, 1);
+				icon.fadeTo(fadeInTime, 1);
 			});
 			iconCache.src = iconUrl;
 		});
 	} else {
 		// all other browsers
-		icon.css('background-image', 'url(\'' + iconUrl + '\')');
-		icon.fadeTo(500, 1);
+		icon.fadeTo(fadeOutTime, 0, function() {
+			icon.css('background-image', 'url(\'' + iconUrl + '\')');
+			icon.fadeTo(fadeInTime, 1);
+		});
 	}
 }
 
@@ -606,6 +609,7 @@ function chatlogWritten(chatlogDiv) {
 }
 
 function instantScrollChatlogToBottom(chatlogDiv) {
+	// stop the current scroll animation, if any
 	chatlogDiv.stop('scroll', true, false)
 	.stop(true, false)
 	
@@ -613,11 +617,6 @@ function instantScrollChatlogToBottom(chatlogDiv) {
 }
 
 function getScrollTopTarget(theDiv) {
-	if (!theDiv) {
-		// BUG: When clicking on the next in line icon as operator: SCRIPT5007: Unable to get value of the property 'scrollHeight': object is null or undefined 
-		alert('getScrollTopTarget scrollHeight bug still present');
-		return 0;
-	}
 	// scrollHeight of 0 means the div is out of view, so we check for that case to avoid returning a negative
 	if (theDiv[0].scrollHeight > 0) {
 		return theDiv[0].scrollHeight // start with the total scroll height

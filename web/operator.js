@@ -205,7 +205,7 @@ function handleMessage(message) {
 
 			var they = getChatSessionData(chatSessionId).they;
 
-			writeMessageToChatlog(they.name, they.color, text, $('#chat_chatlog_' + chatSessionId));
+			writeMessageToChatlog(they.name, they.color, text, chatSessionIdToObject('#chat_chatlog_', chatSessionId));
 			if (visibleChatSessionId !== chatSessionId) {
 				setChatSessionIndicator(chatSessionId, ButtonIndicatorStates.Active);
 			}
@@ -503,8 +503,9 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 		setVisibleChatSessionId(targetSessionId);
 
 		// disable the session button click handler
-		$('chat_sessionlistbutton_' + chatSessionId).off('click');
-		var buttonWrapper = $('#chat_sessionlistbuttonwrapper_' + chatSessionId);
+		chatSessionIdToObject('chat_sessionlistbutton_', chatSessionId).off('click');
+		var buttonWrapper = chatSessionIdToObject('#chat_sessionlistbuttonwrapper_', chatSessionId);
+		// NOTE: when increasing the slideUp time here, make sure that setVisibleChatSessionId initialCell.fadeTo time is lower
 		buttonWrapper.slideUp(300, function() {
 			// when the slide is finished, remove the button wrapper and everything inside
 			buttonWrapper.remove();
@@ -515,13 +516,13 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 			}
 
 			// by now, setVisibleChatSessionId should have finished, so also remove chat_maincell_X
-			$('#chat_maincell_' + chatSessionId).remove();
+			chatSessionIdToObject('#chat_maincell_', chatSessionId).remove();
 		});
 	});
 
 	// send handler
-	var chatbox = $('#chat_chatbox_' + chatSessionId);
-	var chatlog = $('#chat_chatlog_' + chatSessionId);
+	var chatbox = chatSessionIdToObject('#chat_chatbox_', chatSessionId);
+	var chatlog = chatSessionIdToObject('#chat_chatlog_', chatSessionId);
 
 	chatbox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
@@ -543,9 +544,7 @@ function addActiveChatSession(chatSessionId, name, color, iconUrl, referrer) {
 	// process the 'referrer' parameter we got in the OperatorNowTalkingToMessage -- this is the URL the customer came from to arrive at the operator's site
 	processReferrer(referrer, chatSessionId);
 
-	setTimeout(function() {
-		setVisibleChatSessionId(chatSessionId);
-	}, 0);
+	setVisibleChatSessionId(chatSessionId);
 
 	// increase the count and update the header
 	increaseNumActiveChats();
@@ -863,7 +862,7 @@ function followVisibleChatSessionIdTarget() {
 
 function chatSessionIdToObject(prefix, chatSessionId) {
 	var divId = prefix;
-	if (chatSessionId) {
+	if (chatSessionId !== null) {
 		divId += chatSessionId;
 	} else {
 		divId += 'none';
@@ -950,7 +949,7 @@ function onResize() {
 function onChatTabResize() {
 	var chatMaincellDiv = $('#chat_maincell');
 	if (visibleChatSessionId !== null) {
-		updateChatlogHeight();
+		updateChatlogHeight(visibleChatSessionId);
 		chatMaincellDiv.css('height', 'auto');
 	} else {
 		// disable scrolling as it causes scrollbar flickering
@@ -966,35 +965,33 @@ function onChatTabResize() {
 }
 
 // only called by onChatTabResize
-function updateChatlogHeight() {
-	if (visibleChatSessionId) {
-		// disable scrolling as it causes scrollbar flickering
-		$('body').css('overflow-y', 'hidden');
+function updateChatlogHeight(chatSessionId) {
+	// disable scrolling as it causes scrollbar flickering
+	$('body').css('overflow-y', 'hidden');
 
-		var chatlogDiv = $('#chat_chatlog_' + visibleChatSessionId);
-		var chatboxWrapper = $('#chat_chatboxwrapper_' + visibleChatSessionId);
-		var chatMaincellDiv = $('#chat_maincell');
-		var newChatlogHeight = $(window).height()
-			- chatlogDiv.offset().top // remove the space from the start of maincell to the start of chatlog
-			- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
-			- stripPx(chatlogDiv.css('padding-bottom'))
-			- stripPx(chatlogDiv.css('border-top-width')) // same for border
-			- stripPx(chatlogDiv.css('border-bottom-width'))
-			- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
-			- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
-			- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
+	var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', chatSessionId);
+	var chatboxWrapper = chatSessionIdToObject('#chat_chatboxwrapper_', chatSessionId);
+	var chatMaincellDiv = $('#chat_maincell');
+	var newChatlogHeight = $(window).height()
+		- chatlogDiv.offset().top // remove the space from the start of maincell to the start of chatlog
+		- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
+		- stripPx(chatlogDiv.css('padding-bottom'))
+		- stripPx(chatlogDiv.css('border-top-width')) // same for border
+		- stripPx(chatlogDiv.css('border-bottom-width'))
+		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
+		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
+		- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
 
-		if (newChatlogHeight < 200) {
-			newChatlogHeight = 200;
-			// if the scrollbars are needed, enable them
-			$('body').css('overflow-y', 'auto');
-		}
-		chatlogDiv.css('height', newChatlogHeight);
-
-		// scroll the chatlog to the bottom, if possible
-		instantScrollChatlogToBottom(chatlogDiv);
-
-		$('#chat_chatbox_' + visibleChatSessionId).focus();
+	if (newChatlogHeight < 200) {
+		newChatlogHeight = 200;
+		// if the scrollbars are needed, enable them
+		$('body').css('overflow-y', 'auto');
 	}
+	chatlogDiv.css('height', newChatlogHeight);
+
+	// scroll the chatlog to the bottom, if possible
+	instantScrollChatlogToBottom(chatlogDiv);
+
+	chatSessionIdToObject('#chat_chatbox_', chatSessionId).focus();
 }
 
