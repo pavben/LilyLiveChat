@@ -249,20 +249,26 @@ function processReferrer(url, chatSessionId) {
 	var chatlog = $('#chat_chatlog_' + chatSessionId);
 
 	function getSearchEngineAndKeywords(hostAndPort, queryString) {
-		var googleDomain = hostAndPort.match(/google\.\w{2,4}$/i);
-		if (googleDomain !== null) {
+		function formatSearchEngineDomainNameAndQueryString(domainName, queryString) {
+			// Domain name: Capitalize the first letter, lowercase the rest
+			// Query string: Replace '+' with ' ' if not null
+			return [domainName.charAt(0).toUpperCase() + domainName.slice(1).toLowerCase(), (queryString !== null) ? queryString.replace(/\+/g, ' ') : null];
+		}
+
+		var googleDomainMatch = hostAndPort.match(/google\.\w{2,4}$/i);
+		if (googleDomainMatch !== null) {
 			// NOTE: Google no longer passes along the keywords for any users that are logged in to their Google account
-			return [googleDomain, getUrlParameter('q', queryString)];
+			return formatSearchEngineDomainNameAndQueryString(googleDomainMatch[0], getUrlParameter('q', queryString));
 		}
 
-		var bingDomain = hostAndPort.match(/bing\.com$/i);
-		if (bingDomain !== null) {
-			return [bingDomain, $.trim(getUrlParameter('q', queryString).replace(/\+/g, ' '))];
+		var bingDomainMatch = hostAndPort.match(/bing\.com$/i);
+		if (bingDomainMatch !== null) {
+			return formatSearchEngineDomainNameAndQueryString(bingDomainMatch[0], getUrlParameter('q', queryString));
 		}
 
-		var yahooDomain = hostAndPort.match(/yahoo\.com$/i);
-		if (yahooDomain !== null) {
-			return [yahooDomain, $.trim(getUrlParameter('p', queryString).replace(/\+/g, ' '))];
+		var yahooDomainMatch = hostAndPort.match(/yahoo\.com$/i);
+		if (yahooDomainMatch !== null) {
+			return formatSearchEngineDomainNameAndQueryString(yahooDomainMatch[0], getUrlParameter('p', queryString));
 		}
 
 		// by default, no search engine and no keywords
@@ -270,30 +276,28 @@ function processReferrer(url, chatSessionId) {
 	}
 
 	function writeSearchEngineReferrerToChatlog(searchEngine, searchKeywords) {
-		var theDiv = $('<div/>').addClass('chatinfotext');
-		chatlog.append(
-			theDiv.append(
-				$('<span/>').css('color', they.color).text(they.name)
-			)
-		);
-
 		if (searchKeywords !== null) {
-			theDiv.append(
-				$('<span/>').text(' searched for ')
-			).append(
-				$('<span/>').css('color', '#454545').text(searchKeywords)
-			).append(
-				$('<span/>').text(' on ')
-			).append(
-				$('<span/>').text(searchEngine)
+			chatlog.append(
+				// TODO: Format this better... the dash is very basic. Should be fine for launch though.
+				$('<div/>').addClass('chatinfotext').append(
+					$('<span/>').text('- Searched for ')
+				).append(
+					$('<span/>').css('color', '#454545').text(searchKeywords)
+				).append(
+					$('<span/>').text(' on ')
+				).append(
+					$('<span/>').text(searchEngine)
+				)
 			);
 		} else {
-			theDiv.append(
-				$('<span/>').text(' arrived from ')
-			).append(
-				$('<span/>').css('color', '#454545').text(searchEngine)
-			).append(
-				$('<span/>').text(', but the search keywords are hidden.')
+			chatlog.append(
+				$('<div/>').addClass('chatinfotext').append(
+					$('<span/>').text('- Arrived from ')
+				).append(
+					$('<span/>').css('color', '#454545').text(searchEngine)
+				).append(
+					$('<span/>').text(', but the search keywords are hidden.')
+				)
 			);
 		}
 
@@ -303,9 +307,7 @@ function processReferrer(url, chatSessionId) {
 	function writeRegularReferrerToChatlog(referrerUrl, referrerUrlWithoutProtocol) {
 		chatlog.append(
 			$('<div/>').addClass('chatinfotext ellipsis').append(
-				$('<span/>').css('color', they.color).text(they.name)
-			).append(
-				$('<span/>').text(' arrived from ')
+				$('<span/>').text('- Arrived from ')
 			).append(
 				$('<a/>').attr('href', referrerUrl).attr('target', '_blank').text(referrerUrlWithoutProtocol)
 			)
