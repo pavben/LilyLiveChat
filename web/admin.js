@@ -550,6 +550,21 @@ function handleSessionEnded() {
 	}
 }
 
+function generatePersonColor() {
+	var lowOffset = 50;
+	var highOffset = 100;
+
+	return ('#' + getRandomComponent() + getRandomComponent() + getRandomComponent());
+
+	function getRandomComponent() {
+		return (0x100 +
+			(
+				Math.floor(lowOffset + Math.random() * (256 - lowOffset - highOffset)) / 256 * 0xff
+			)
+		).toString(16).substr(1,2);
+	}
+}
+
 function showLoginFailedScreen() {
 	showMiscMessageTab('No match...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(

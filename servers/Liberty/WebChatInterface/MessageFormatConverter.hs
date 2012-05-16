@@ -29,8 +29,8 @@ jsonToMP :: ChatServerMessageType -> [J.Value] -> Maybe ByteString
 jsonToMP UnregisteredSelectSiteMessage [J.String siteId] =
   createMessage UnregisteredSelectSiteMessage (siteId)
 
-jsonToMP CustomerJoinMessage [J.String color, J.String referrer] =
-  createMessage CustomerJoinMessage (color, referrer)
+jsonToMP CustomerJoinMessage [J.String referrer] =
+  createMessage CustomerJoinMessage (referrer)
 
 jsonToMP CustomerSendChatMessage [J.String text] =
   createMessage CustomerSendChatMessage (text)
@@ -78,6 +78,9 @@ messageToJson UnregisteredSiteSelectedMessage encodedParams =
 
 messageToJson UnregisteredSiteInvalidMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId UnregisteredSiteInvalidMessage)]
+
+messageToJson CustomerJoinSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \(color :: Text) -> [J.toJSON (messageTypeToId CustomerJoinSuccessMessage), J.toJSON color]
 
 messageToJson CustomerInLinePositionMessage encodedParams =
   unpackAndHandle encodedParams $ \(position :: Int) -> [J.toJSON (messageTypeToId CustomerInLinePositionMessage), J.toJSON position]

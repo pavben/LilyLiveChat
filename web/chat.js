@@ -2,7 +2,7 @@
 var chatTab = null;
 var miscMessageTab = null;
 
-var myColor = null;
+var g_myColor;
 
 var chatSessionEnded = false;
 
@@ -21,12 +21,7 @@ function handleMessage(message) {
 					referrer = '';
 				}
 
-				queueAjaxCommand([Messages.CustomerJoinMessage, myColor, referrer]);
-
-				changeTabTo(chatTab);
-
-				writeWelcomeTextToChatlog();
-				writeSoundsStatusToChatlog();
+				queueAjaxCommand([Messages.CustomerJoinMessage, referrer]);
 			} else {
 				showInactiveSiteScreen();
 			}
@@ -34,6 +29,19 @@ function handleMessage(message) {
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen
 			showInvalidSiteScreen();
+
+			break;
+		case Messages.CustomerJoinSuccessMessage:
+			var color = message[0];
+
+			g_myColor = color;
+
+			changeTabTo(chatTab);
+
+			replaceIconWith('/images/chat_logo1.png', $('#chat_logo'));
+
+			writeWelcomeTextToChatlog();
+			writeSoundsStatusToChatlog();
 
 			break;
 		case Messages.CustomerInLinePositionMessage:
@@ -475,9 +483,6 @@ $(window).bind('load', function() {
 	$('#chat_theircardcell').hide();
 	$('#chat_inlinecell').hide();
 
-	// generate an initial color and set it
-	myColor = generatePersonColor();
-
 	// set the waiting clock icon
 	replaceIconWith('/images/waiting_clock.png', $('#chat_waiticon'));
 
@@ -488,7 +493,7 @@ $(window).bind('load', function() {
 			if (!chatSessionEnded) {
 				if ($.trim(chatBox.val()).length > 0) {
 					queueAjaxCommand([Messages.CustomerSendChatMessage, chatBox.val()]);
-					writeMessageToChatlog('Me', myColor, chatBox.val(), $('#chat_chatlog'));
+					writeMessageToChatlog('Me', g_myColor, chatBox.val(), $('#chat_chatlog'));
 				}
 			} else {
 				writeInfoTextToChatlog('This chat session is no longer active.', $('#chat_chatlog'));

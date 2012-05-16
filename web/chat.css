@@ -6,9 +6,10 @@
 	background-color:#E3E3E3;
 }
 #chat_logo {
-	width:320px;
+	width:318px;
 	height:98px;
 	background-color:#ECECEC;
+	background-repeat:no-repeat;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 }

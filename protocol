@@ -9,12 +9,13 @@ Server to Unregistered
 
 Customer to Server
 ================================================================
-1  - CustomerJoinMessage [color, referrer]
+1  - CustomerJoinMessage [referrer]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
 
 Server to Customer
 ================================================================
+57 - CustomerJoinSuccessMessage [color]
 2  - CustomerInLinePositionMessage [i:position]
 3  - CustomerNowTalkingToMessage [name, color, iconUrl]
 5  - CustomerReceiveChatMessage [text]
@@ -47,8 +48,6 @@ Admin to Server
 27 - AdminOperatorDeleteMessage [i:operatorId]
 38 - AdminSetSiteNameMessage [name]
 55 - AdminSetAdminPasswordMessage [password]
--56 - AdminAdminReplaceMessage [adminId, password]
--57 - AdminAdminDeleteMessage [adminId]
 
 Server to Admin
 ================================================================
