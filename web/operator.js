@@ -80,6 +80,10 @@ function initializeJplayerRingtone() {
 		ended: function() {
 			jPlayerDiv.jPlayer('play');
 		},
+		error: function(e) {
+			log('Disabling sounds due to a player error');
+			$('#chat_notes_ringtone').text('Normally, you would also hear a ringtone, but it looks like your browser doesn\'t support HTML5 Audio. To enable this feature, update your web browser.');
+		},
 		swfPath: '/audio',
 		solution: 'flash, html',
 		supplied: 'oga, mp3',
