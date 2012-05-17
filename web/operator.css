@@ -50,10 +50,25 @@
 	width:200px;
 	vertical-align:top;
 }
-.chat_namecell {
+#chat_namecell {
 	display:table-cell;
 	background-image:url('images/gtile29.png');
 	vertical-align:middle;
+}
+#chat_namecell_tooltip {
+	position:absolute;
+	width:300px;
+	padding:9px 9px 9px 9px;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	background-color:#E3E3E3;
+}
+.chat_namecell_tooltip_centertext {
+	color:#656565;
+	text-align:center;
+}
+.chat_namecell_tooltip_vspacer {
+	margin:9px 0px 9px 0px;
 }
 .chat_namelabelwidthlimiter {
 	width:180px;

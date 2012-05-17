@@ -3,8 +3,8 @@ var loginTab = null;
 var chatTab = null;
 var miscMessageTab = null;
 
-// Person object representing the operator
-var me = null;
+var g_myName;
+var g_myColor;
 
 $(window).bind('load', function() {
 	loginTab = $('#login_tab');
@@ -33,6 +33,27 @@ $(window).bind('load', function() {
 	});
 
 	// chat tab handlers
+	
+	// namecell tooltip
+	var tooltip = $('#chat_namecell_tooltip');
+	tooltip.hide();
+	$('#chat_namecell').mouseenter(function() {
+		tooltip.fadeIn(100);
+	}).mousemove(function(e) {
+		var maxRight = $(window).width() - 9;
+		var right = e.pageX + tooltip.outerWidth() / 2;
+		if (right > maxRight) {
+			right = maxRight;
+		}
+		var newLeft = right - tooltip.outerWidth();
+		tooltip.css({
+			left: newLeft,
+			top: e.pageY + 10
+		});
+	}).mouseleave(function() {
+		tooltip.fadeOut(200);
+	});
+
 	$('#chat_nextinlinebutton').click(function() {
 		queueAjaxCommand([Messages.OperatorAcceptNextChatSessionMessage]);
 	});
@@ -174,7 +195,14 @@ function handleMessage(message) {
 				var color = message[1];
 				var title = message[2];
 				var iconUrl = message[3];
-				me = new Person(name, color, title, iconUrl);
+
+				g_myName = name;
+				g_myColor = color;
+
+				$('#chat_myname').css('color', color).text(name);
+				$('#chat_mytitle').text(title);
+				replaceIconWith(iconUrl, $('#chat_myicon'));
+
 				changeTabTo(chatTab);
 			}
 			log("Login successful");
@@ -485,7 +513,7 @@ function addActiveChatSession(chatSessionId, color, referrer) {
 			if (!getChatSessionData(chatSessionId).chatSessionEnded) {
 				if ($.trim(chatbox.val()).length > 0) {
 					queueAjaxCommand([Messages.OperatorSendChatMessage, chatSessionId, chatbox.val()]);
-					writeMessageToChatlog(me.name, me.color, chatbox.val(), chatlog);
+					writeMessageToChatlog(g_myName, g_myColor, chatbox.val(), chatlog);
 				}
 			} else {
 				writeInfoTextToChatlog('This chat session is no longer active.', chatlog);

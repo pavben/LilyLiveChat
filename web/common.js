@@ -391,6 +391,7 @@ function onBasicVCenterResizeMinPadding(tabName, minPaddingHeight) {
 
 // other
 
+// TODO: Person and replaceCardTextWith should be moved to chat... Person object is probably not needed any more
 function Person(name, color, title, iconUrl) {
 	this.name = name;
 	this.color = color;
@@ -414,6 +415,7 @@ function replaceCardTextWith(person, card, name, title) {
 	}
 }
 
+// TODO: rename to replaceImageWith
 function replaceIconWith(iconUrl, icon) {
 	var fadeOutTime = 100;
 	var fadeInTime = 500;
