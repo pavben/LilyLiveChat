@@ -805,6 +805,9 @@ function followVisibleChatSessionIdTarget() {
 					if (visibleChatSessionId === visibleChatSessionIdTarget) {
 						// if the target hasn't changed during the fade-in, we're done
 						visibleChatSessionIdTarget = undefined;
+
+						// and once again set the indicator to Normal (this covers the case where a message comes in while we're fading-in the new chat session)
+						setChatSessionIndicator(visibleChatSessionId, ButtonIndicatorStates.Normal);
 					} else {
 						// otherwise, transition to the new target
 						setTimeout(followVisibleChatSessionIdTarget, 0);
