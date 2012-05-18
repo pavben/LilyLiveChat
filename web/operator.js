@@ -187,7 +187,9 @@ function handleMessage(message) {
 
 			break;
 		case Messages.SomethingWentWrongMessage:
-			log('Something went wrong...');
+		case Messages.CSUnavailableMessage:
+			// TODO PR: Show more appropriate screens for these
+			showDisconnectedScreen();
 			break;
 		case Messages.OperatorLoginSuccessMessage:
 			if (currentTab == loginTab) {

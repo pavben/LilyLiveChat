@@ -62,6 +62,9 @@ function handleMessage(message) {
 			writeMessageToChatlog(they.name, they.color, text, $('#chat_chatlog'));
 			break;
 		case Messages.SomethingWentWrongMessage:
+		case Messages.CSUnavailableMessage:
+			// TODO PR: Show more appropriate screens for these
+			showDisconnectedScreen();
 			break;
 		case Messages.CustomerChatEndedMessage:
 			if (chatSessionEnded) {

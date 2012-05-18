@@ -180,7 +180,7 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
       let isActive = not $ null $ sdOnlineOperators siteData
       createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
     Left SLENotFound -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
-    Left SLENotAvailable -> createAndSendMessage SomethingWentWrongMessage () clientDataTVar -- TODO: Some kind of a "service currently unavailable" message?
+    Left SLENotAvailable -> createAndSendMessage CSUnavailableMessage () clientDataTVar
 
 handleCSSALoginRequestMessage :: ClientDataTVar -> IO ()
 handleCSSALoginRequestMessage clientDataTVar =

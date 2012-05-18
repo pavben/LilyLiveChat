@@ -100,6 +100,9 @@ messageToJson CustomerChatEndedMessage encodedParams =
 messageToJson CustomerNoOperatorsAvailableMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CustomerNoOperatorsAvailableMessage)]
 
+messageToJson CSUnavailableMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSUnavailableMessage)]
+
 messageToJson OperatorLoginSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \(name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId OperatorLoginSuccessMessage), J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
 
