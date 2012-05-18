@@ -70,7 +70,7 @@ data SSDResult = SSDSuccess | SSDNotAvailable
 
 saveSiteDataToSDS :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> IO (SSDResult)
 saveSiteDataToSDS currentSiteId siteData = do
-  serviceRequestResult <- serviceRequest siteDataServiceConnectionData SaveSiteDataMessage (currentSiteId, siteData)
+  serviceRequestResult <- serviceRequest siteDataServiceConnectionData SaveSiteDataMessage (currentSiteId, siteData, LT.pack "anivia")
   case serviceRequestResult of
     Just (responseMessageType, _) ->
       case responseMessageType of

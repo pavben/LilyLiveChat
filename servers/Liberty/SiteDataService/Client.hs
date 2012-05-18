@@ -19,6 +19,7 @@ import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Liberty.Common.Messages
 import Liberty.Common.Messages.SiteDataService
+import Liberty.Common.Messages.SiteLocatorService
 import Liberty.SiteDataService.DatabaseManager
 import Liberty.SiteDataService.Types
 
@@ -93,7 +94,7 @@ handleMessage :: SiteDataServiceMessageType -> ByteString -> ClientSendChan -> D
 handleMessage messageType encodedParams clientSendChan databaseHandleTVar = do
   case messageType of
     GetSiteDataMessage -> unpackAndHandle $ \(siteId, requesterServerId) -> handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleTVar
-    SaveSiteDataMessage -> unpackAndHandle $ \(currentSiteId, siteDataParam) -> handleSaveSiteDataMessage currentSiteId siteDataParam clientSendChan databaseHandleTVar
+    SaveSiteDataMessage -> unpackAndHandle $ \(currentSiteId, siteDataParam, requesterServerId) -> handleSaveSiteDataMessage currentSiteId siteDataParam requesterServerId clientSendChan databaseHandleTVar
     _ -> do
       putStrLn "Client sent an unknown command"
       atomically $ closeClientSocket clientSendChan
@@ -107,51 +108,61 @@ handleMessage messageType encodedParams clientSendChan databaseHandleTVar = do
 
 handleGetSiteDataMessage :: SiteId -> Text -> ClientSendChan -> DatabaseHandleTVar -> IO ()
 handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleTVar = do
-  -- TODO: Ask SL if requesterServerId is authoritative for siteId and respond with NonAuthoritativeServerMessage
-  getResult <- getSiteDataFromDb siteId databaseHandleTVar
-  case getResult of
-    GSDRSuccess siteData ->
-      atomically $ createAndSendMessage SiteDataFoundMessage (siteDataToMessage siteData) clientSendChan
-    GSDRNotFound ->
-      atomically $ createAndSendMessage SiteNotFoundMessage () clientSendChan
-    GSDRNotAvailable ->
-      atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
-  where
-    siteDataToMessage siteData = (
-      sdSiteId siteData,
-      sdName siteData,
-      (fromInteger $ sdNextOperatorId siteData :: Int),
-      map operatorToMessage (sdOperators siteData),
-      sdAdminPasswordHash siteData)
-    operatorToMessage siteOperatorData = (
-      (fromInteger $ sodOperatorId siteOperatorData :: Int),
-      sodUsername siteOperatorData,
-      sodPasswordHash siteOperatorData,
-      sodName siteOperatorData,
-      sodColor siteOperatorData,
-      sodTitle siteOperatorData,
-      sodIconUrl siteOperatorData)
+  -- Make sure requesterServerId is authoritative for siteId
+  siteLocateResult <- locateSite siteId
+  case siteLocateResult of
+    SLSuccess authoritativeServerId | requesterServerId == authoritativeServerId -> do
+      getResult <- getSiteDataFromDb siteId databaseHandleTVar
+      case getResult of
+        GSDRSuccess siteData ->
+          atomically $ createAndSendMessage SiteDataFoundMessage (siteDataToMessage siteData) clientSendChan
+        GSDRNotFound ->
+          atomically $ createAndSendMessage SiteNotFoundMessage () clientSendChan
+        GSDRNotAvailable ->
+          atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
+      where
+        siteDataToMessage siteData = (
+          sdSiteId siteData,
+          sdName siteData,
+          (fromInteger $ sdNextOperatorId siteData :: Int),
+          map operatorToMessage (sdOperators siteData),
+          sdAdminPasswordHash siteData)
+        operatorToMessage siteOperatorData = (
+          (fromInteger $ sodOperatorId siteOperatorData :: Int),
+          sodUsername siteOperatorData,
+          sodPasswordHash siteOperatorData,
+          sodName siteOperatorData,
+          sodColor siteOperatorData,
+          sodTitle siteOperatorData,
+          sodIconUrl siteOperatorData)
+    SLSuccess _ -> atomically $ createAndSendMessage NonAuthoritativeServerMessage () clientSendChan
+    SLNotAvailable -> atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
 
-handleSaveSiteDataMessage :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> ClientSendChan -> DatabaseHandleTVar -> IO ()
-handleSaveSiteDataMessage currentSiteId (siteId, name, nextOperatorId, operators, adminPasswordHash) clientSendChan databaseHandleTVar = do
-  -- TODO: Ask SL if requesterServerId is authoritative for siteId and respond with NonAuthoritativeServerMessage
-  saveResult <- saveSiteDataToDb currentSiteId siteData databaseHandleTVar
-  case saveResult of
-    True -> atomically $ createAndSendMessage SiteDataSavedMessage () clientSendChan
-    False -> atomically $ createAndSendMessage SiteDataSaveFailedMessage () clientSendChan
+handleSaveSiteDataMessage :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> Text -> ClientSendChan -> DatabaseHandleTVar -> IO ()
+handleSaveSiteDataMessage currentSiteId (siteId, name, nextOperatorId, operators, adminPasswordHash) requesterServerId clientSendChan databaseHandleTVar = do
+  -- Make sure requesterServerId is authoritative for siteId
+  siteLocateResult <- locateSite siteId
+  case siteLocateResult of
+    SLSuccess authoritativeServerId | requesterServerId == authoritativeServerId -> do
+      saveResult <- saveSiteDataToDb currentSiteId siteData databaseHandleTVar
+      case saveResult of
+        True -> atomically $ createAndSendMessage SiteDataSavedMessage () clientSendChan
+        False -> atomically $ createAndSendMessage SiteDataSaveFailedMessage () clientSendChan
 
-  where
-    siteData = SiteData siteId name (toInteger nextOperatorId) operatorsToSiteData adminPasswordHash
-    operatorsToSiteData = flip map operators $ \(
-      operatorId,
-      operatorUsername,
-      operatorPasswordHash,
-      operatorName,
-      operatorColor,
-      operatorTitle,
-      operatorIconUrl
-      ) ->
-      SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash operatorName operatorColor operatorTitle operatorIconUrl
+      where
+        siteData = SiteData siteId name (toInteger nextOperatorId) operatorsToSiteData adminPasswordHash
+        operatorsToSiteData = flip map operators $ \(
+          operatorId,
+          operatorUsername,
+          operatorPasswordHash,
+          operatorName,
+          operatorColor,
+          operatorTitle,
+          operatorIconUrl
+          ) ->
+          SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash operatorName operatorColor operatorTitle operatorIconUrl
+    SLSuccess _ -> atomically $ createAndSendMessage NonAuthoritativeServerMessage () clientSendChan
+    SLNotAvailable -> atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
 
 createAndSendMessage :: (MessageType a, MP.Packable b) => a -> b -> ClientSendChan -> STM ()
 createAndSendMessage messageType params clientSendChan =
