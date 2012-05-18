@@ -180,6 +180,7 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
       let isActive = not $ null $ sdOnlineOperators siteData
       createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
     Left SLENotFound -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
+    Left SLENotAuthoritative -> createAndSendMessage SomethingWentWrongMessage () clientDataTVar -- TODO PL: A special "not authoritative" message
     Left SLENotAvailable -> createAndSendMessage CSUnavailableMessage () clientDataTVar
 
 handleCSSALoginRequestMessage :: ClientDataTVar -> IO ()
@@ -602,6 +603,7 @@ handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSav
             -- this is a very rare case -- the first lookup must fail and then second must succeed; it's here to solve a race condition
             createAndSendMessage CSSASiteCreateDuplicateIdMessage () clientDataTVar
       Right _ -> createAndSendMessage CSSASiteCreateDuplicateIdMessage () clientDataTVar
+      Left SLENotAuthoritative -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
       Left SLENotAvailable -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()

@@ -34,6 +34,10 @@ siteDataSaverWorker siteDataSaverChan maybeRetrySiteData = do
         SSDSuccess ->
           -- recurse to read the next message
           siteDataSaverWorker siteDataSaverChan Nothing
+        SSDNotAuthoritative ->
+          -- if we are no longer the authority for this site, drop the change and continue to the next site
+          -- TODO: also remove the site from our cache
+          siteDataSaverWorker siteDataSaverChan Nothing
         SSDNotAvailable -> do
           putStrLn $ "Error saving site: " ++ show siteData ++ ". Retrying in 5 seconds..."
           threadDelay (5 * 1000 * 1000)

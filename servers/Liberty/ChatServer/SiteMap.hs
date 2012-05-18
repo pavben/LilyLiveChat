@@ -38,7 +38,7 @@ createSite siteDataTVar siteMapTVar siteDataSaverChan = do
   -- save the new site to SDS
   queueSaveSiteData siteDataTVar siteDataSaverChan
 
-data SiteLookupError = SLENotFound | SLENotAvailable
+data SiteLookupError = SLENotFound | SLENotAuthoritative | SLENotAvailable
 lookupSite :: SiteId -> SiteMapTVar -> IO (Either SiteLookupError SiteDataTVar)
 lookupSite siteId siteMapTVar = do
   (siteMapEntryTMVar, mustInitiateLookup) <- atomically $ do
@@ -65,8 +65,8 @@ lookupSite siteId siteMapTVar = do
           siteDataTVar <- newTVar $ getSiteDataFromRaw rawSiteData
           return $ Right $ siteDataTVar
         GSDNotFound -> return $ Left SLENotFound
+        GSDNotAuthoritative -> return $ Left $ SLENotAuthoritative
         GSDNotAvailable -> return $ Left SLENotAvailable
-        -- TODO: handle the "you're not the authoritative server for this site" error
 
       putTMVar siteMapEntryTMVar $ newSiteMapEntry
   else

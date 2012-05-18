@@ -45,6 +45,7 @@ siteDataServiceConnectionData = ServiceConnectionData "192.168.1.101" 9800
 
 data GSDResult = GSDSuccess (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text)
                | GSDNotFound
+               | GSDNotAuthoritative
                | GSDNotAvailable
 
 getSiteDataFromSDS :: Text -> IO (GSDResult)
@@ -61,12 +62,13 @@ getSiteDataFromSDS siteId = do
               return GSDNotAvailable
         SiteNotFoundMessage -> return GSDNotFound
         DataNotAvailableMessage -> return GSDNotAvailable
+        NonAuthoritativeServerMessage -> return GSDNotAuthoritative
         _ -> do
           putStrLn $ "ASSERT: getSiteDataFromSDS got unknown message type: " ++ show responseMessageType
           return GSDNotAvailable
     Nothing -> return GSDNotAvailable -- connection/read failure
 
-data SSDResult = SSDSuccess | SSDNotAvailable
+data SSDResult = SSDSuccess | SSDNotAuthoritative | SSDNotAvailable
 
 saveSiteDataToSDS :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> IO (SSDResult)
 saveSiteDataToSDS currentSiteId siteData = do
@@ -76,6 +78,7 @@ saveSiteDataToSDS currentSiteId siteData = do
       case responseMessageType of
         SiteDataSavedMessage -> return SSDSuccess
         SiteDataSaveFailedMessage -> return SSDNotAvailable
+        NonAuthoritativeServerMessage -> return SSDNotAuthoritative
         _ -> do
           putStrLn $ "ASSERT: saveSiteDataToSDS got unknown message type: " ++ show responseMessageType
           return SSDNotAvailable
