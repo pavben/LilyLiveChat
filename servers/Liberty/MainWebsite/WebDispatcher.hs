@@ -7,6 +7,7 @@ module Liberty.MainWebsite.WebDispatcher (
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class
 import qualified Data.Aeson as J
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
@@ -113,44 +114,37 @@ handleCreateSiteCommand handleStream = do
           Just chatServerConnectionData -> do
             serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
               -- login as super admin
-              loginSendRet <- createAndSendMessage CSSALoginRequestMessage () serviceHandle
-              if loginSendRet then do
-                loginResponse <- receiveOneMessage serviceHandle
-                case loginResponse of
-                  Just (CSSALoginSuccessMessage,_) -> do
-                    -- execute the create site command
-                    -- TODO: generate a password
-                    createSendRet <- createAndSendMessage CSSASiteCreateMessage (
-                      siteId,
-                      LT.append "Site " siteId,
-                      adminPassword) serviceHandle
-                    if createSendRet then do
-                      createResponse <- receiveOneMessage serviceHandle
-                      case createResponse of
-                        Just (CSSASiteCreateSuccessMessage,_) -> do
-                          sendJsonResponse handleStream $ J.object [
-                            ("siteId", J.toJSON siteId),
-                            ("adminPassword", J.toJSON adminPassword)
-                            ]
-                          return True
-                        Just (CSSASiteCreateDuplicateIdMessage,_) -> do
-                          putStrLn "Generated site id is not unique. Retry."
-                          return False
-                        Just (CSSASiteCreateUnavailableMessage,_) -> do
-                          putStrLn "Chat Server cannot process the site creation at this time"
-                          return True
-                        _ -> do
-                          putStrLn "Unknown message received from Chat Server"
-                          return True
-                    else
-                      -- failed to send message
+              sendMessageToService CSSALoginRequestMessage () serviceHandle
+
+              loginResponse <- receiveMessageFromService serviceHandle
+              case loginResponse of
+                (CSSALoginSuccessMessage,_) -> do
+                  -- execute the create site command
+                  sendMessageToService CSSASiteCreateMessage (
+                    siteId,
+                    LT.append "Site " siteId,
+                    adminPassword) serviceHandle
+
+                  createResponse <- receiveMessageFromService serviceHandle
+                  case createResponse of
+                    (CSSASiteCreateSuccessMessage,_) -> do
+                      liftIO $ sendJsonResponse handleStream $ J.object [
+                        ("siteId", J.toJSON siteId),
+                        ("adminPassword", J.toJSON adminPassword)
+                        ]
                       return True
-                  _ ->
-                    -- anything else is a failure
-                    return True
-              else
-                -- failed to send message
-                return True
+                    (CSSASiteCreateDuplicateIdMessage,_) -> do
+                      liftIO $ putStrLn "Generated site id is not unique. Retry."
+                      return False
+                    (CSSASiteCreateUnavailableMessage,_) -> do
+                      liftIO $ putStrLn "Chat Server cannot process the site creation at this time"
+                      return True
+                    _ -> do
+                      liftIO $ putStrLn "Unknown message received from Chat Server"
+                      return True
+                _ ->
+                  -- anything else is a failure
+                  return True
 
             case serviceCallResult of
               Just ret -> return ret

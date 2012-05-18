@@ -1,14 +1,18 @@
 module Liberty.Common.ServiceClient(
   ServiceConnectionData(..),
+  ServiceTask(..),
+  runServiceTask,
   serviceRequest,
   withServiceConnection,
-  createAndSendMessage,
-  receiveOneMessage
+  sendMessageToService,
+  receiveMessageFromService
 ) where
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
+import Data.Maybe
 import qualified Data.MessagePack as MP
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
@@ -21,109 +25,108 @@ data ServiceConnectionData = ServiceConnectionData {
   sdcPort :: PortNumber
 }
 
+data ServiceTask a = ServiceTask (IO (Maybe a))
+
+instance Monad ServiceTask where
+  -- >>= :: ServiceTask x -> (x -> ServiceTask y) -> ServiceTask y
+  -- a :: IO (Maybe x)
+  -- b :: x -> ServiceTask y
+  -- the 'case' statement is :: IO (Maybe y)
+  ServiceTask a >>= b = ServiceTask $ a >>= \maybeX -> case maybeX of
+    Just x -> runServiceTask (b x)
+    Nothing -> return Nothing
+
+  return a = ServiceTask (return (Just a))
+  fail _ = ServiceTask (return Nothing)
+
+instance MonadIO ServiceTask where
+  -- ioA :: IO a
+  liftIO ioA = ServiceTask $ ioA >>= \a -> return $ Just a
+
+runServiceTask :: ServiceTask a -> IO (Maybe a)
+runServiceTask (ServiceTask ioMaybeA) = ioMaybeA
+
+catchST :: Exception e => ServiceTask a -> (e -> ServiceTask a) -> ServiceTask a
+catchST tryThis handleError = ServiceTask $ liftIO $ catch (runServiceTask tryThis) (\e -> runServiceTask $ handleError e)
+
+finallyST :: ServiceTask a -> ServiceTask b -> ServiceTask a
+finallyST a b = ServiceTask $ liftIO $ finally (runServiceTask a) (runServiceTask b)
+
 type ServiceHandle = Socket
 
 -- TODO: timeout
 serviceRequest :: (MessageType a, MP.Packable b) => ServiceConnectionData -> a -> b -> IO (Maybe (a, ByteString))
-serviceRequest serviceConnectionData messageType messageParams = do
-  maybeServiceSocket <- establishConnection (sdcHost serviceConnectionData) (sdcPort serviceConnectionData)
-  case maybeServiceSocket of
-    Just serviceSocket -> do
-      putStrLn "Conn established"
-      finally
-        (do
-          sendResult <- createAndSendMessage messageType messageParams serviceSocket
-          case sendResult of
-            True -> do
-              receiveResult <- receiveOneMessage serviceSocket
-              return receiveResult -- either Just (a, ByteString) or Nothing on failure
-            False -> return Nothing
-        )
-        (sClose serviceSocket)
-    Nothing -> do
-      putStrLn "Could not establish service connection"
-      return Nothing
+serviceRequest serviceConnectionData messageType messageParams =
+  withServiceConnection serviceConnectionData $ \serviceHandle -> do
+    sendMessageToService messageType messageParams serviceHandle
 
-withServiceConnection :: ServiceConnectionData -> (ServiceHandle -> IO a) -> IO (Maybe a)
-withServiceConnection serviceConnectionData f = do
-  maybeServiceSocket <- establishConnection (sdcHost serviceConnectionData) (sdcPort serviceConnectionData)
-  case maybeServiceSocket of
-    Just serviceSocket -> do
-      putStrLn "Conn established"
-      finally
-        (do
-          ret <- f serviceSocket
-          return $ Just ret
-        )
-        (sClose serviceSocket)
-    Nothing -> do
-      putStrLn "Could not establish service connection"
-      return Nothing
+    receiveResult <- receiveMessageFromService serviceHandle
+    return receiveResult -- either Just (a, ByteString) or Nothing on failure
 
-establishConnection :: String -> PortNumber -> IO (Maybe Socket)
+withServiceConnection :: ServiceConnectionData -> (ServiceHandle -> ServiceTask a) -> IO (Maybe a)
+withServiceConnection serviceConnectionData f = runServiceTask $ do
+  serviceSocket <- establishConnection (sdcHost serviceConnectionData) (sdcPort serviceConnectionData)
+  liftIO $ putStrLn "Conn established"
+  finallyST
+    (f serviceSocket)
+    (liftIO $ sClose serviceSocket)
+
+establishConnection :: String -> PortNumber -> ServiceTask Socket
 establishConnection host port = do
-  socketInitResult <- try (socket AF_INET Stream 0)
+  socketInitResult <- liftIO $ try (socket AF_INET Stream 0)
   case socketInitResult of
     Right serviceSocket ->
-      catch
+      catchST
         (do
-          hostAddress <- inet_addr host
-          connect serviceSocket (SockAddrInet port hostAddress)
-          return $ Just serviceSocket
+          hostAddress <- liftIO $ inet_addr host
+          liftIO $ connect serviceSocket (SockAddrInet port hostAddress)
+          return serviceSocket
         )
         (\(SomeException ex) -> do
-          putStrLn $ "Connect exception: " ++ show ex
-          return Nothing)
-    Left (SomeException _) -> return Nothing
+          liftIO $ putStrLn $ "Connect exception: " ++ show ex
+          fail ""
+        )
+    Left (SomeException _) -> fail ""
 
-createAndSendMessage :: (MessageType a, MP.Packable b) => a -> b -> Socket -> IO Bool
-createAndSendMessage messageType messageParams serviceSocket =
+sendMessageToService :: (MessageType a, MP.Packable b) => a -> b -> Socket -> ServiceTask ()
+sendMessageToService messageType messageParams serviceSocket =
   case createMessage messageType messageParams of
     Just encodedMessage -> do
-      catch
+      catchST
         (do
-          putStrLn $ "Encoded msg: " ++ show encodedMessage
-          sendAll serviceSocket encodedMessage
-          return True
+          liftIO $ putStrLn $ "Encoded msg: " ++ show encodedMessage
+          liftIO $ sendAll serviceSocket encodedMessage
         )
         (\(SomeException ex) -> do
-          putStrLn $ "Exception on sendAll: " ++ show ex
-          return False
+          fail $ "Exception on sendAll: " ++ show ex
         )
-    Nothing -> return False
+    Nothing -> fail "createMessage failed"
 
-receiveOneMessage :: MessageType a => Socket -> IO (Maybe (a, ByteString))
-receiveOneMessage serviceSocket =
+receiveMessageFromService :: MessageType a => Socket -> ServiceTask (a, ByteString)
+receiveMessageFromService serviceSocket =
   let
     readLoop buffer =
       case parseMessage buffer of
         Just (maybeMessage, newBuffer) ->
           case maybeMessage of
-            Just message -> do
-              --putStrLn $ "Msg: " ++ show message
-              return $ Just message
+            Just message -> return message
             Nothing -> do
-              putStrLn "No valid message in current buffer yet"
-              maybeReceivedData <- catch (do
-                recvResult <- recv serviceSocket 2048
-                if not $ LBS.null recvResult then do
-                  return $ Just recvResult
-                else do
-                  return Nothing
+              catchST
+                (do
+                  recvResult <- liftIO $ recv serviceSocket 2048
+                  if not $ LBS.null recvResult then do
+                    -- now that we've received some data, loop around and try parsing it
+                    readLoop (LBS.append newBuffer recvResult)
+                  else
+                    fail "recv returned nothing"
                 )
                 (\(SomeException ex) -> do
-                  putStrLn $ "receiveOneMessage failing due to exception: " ++ show ex
-                  return Nothing
+                  liftIO $ putStrLn $ "receiveMessageFromService failing due to exception: " ++ show ex
+                  fail ""
                 )
-
-              case maybeReceivedData of
-                Just receivedData ->
-                  -- now that we've received some data, loop around and try parsing it
-                  readLoop (LBS.append newBuffer receivedData)
-                Nothing -> return Nothing -- failed to receive
         Nothing -> do
-          putStrLn "receiveOneMessage failing due to a protocol violation"
-          return Nothing
+          liftIO $ putStrLn "receiveMessageFromService failing due to a protocol violation"
+          fail ""
   in
     readLoop LBS.empty
 

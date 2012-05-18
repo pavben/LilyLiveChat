@@ -100,20 +100,16 @@ handleChatStatusRequest siteId _ handleStream = do
           Just chatServerConnectionData -> do
             serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
               -- select the site
-              selectSiteSendRet <- createAndSendMessage UnregisteredSelectSiteMessage (siteId) serviceHandle
-              if selectSiteSendRet then do
-                selectSiteResponse <- receiveOneMessage serviceHandle
-                print selectSiteResponse
-                case selectSiteResponse of
-                  Just (UnregisteredSiteSelectedMessage, unpackMessage -> Just (_ :: Text, True)) -> do
-                    -- site is active
-                    return True
-                  _ ->
-                    -- either invalid message format, invalid site id, unexpected message, or site not active
-                    return False
-              else
-                -- failed to send message
-                return False
+              sendMessageToService UnregisteredSelectSiteMessage (siteId) serviceHandle
+
+              selectSiteResponse <- receiveMessageFromService serviceHandle
+              case selectSiteResponse of
+                (UnregisteredSiteSelectedMessage, unpackMessage -> Just (_ :: Text, True)) -> do
+                  -- site is active
+                  return True
+                _ ->
+                  -- either invalid message format, invalid site id, unexpected message, or site not active
+                  return False
             
             case serviceCallResult of
               Just True -> return True
