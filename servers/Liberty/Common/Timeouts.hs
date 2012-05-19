@@ -11,7 +11,7 @@ setTimeout :: Int -> TVar Bool -> IO () -> IO ()
 setTimeout seconds abortTVar timeoutAction = do
   timeoutTVar <- atomically $ newTVar False
   -- timeout notification thread
-  -- TODO: possibly add killThread to terminate the wait if abortTriggered becomes true before timeoutTriggered
+  -- TODO PL: possibly add killThread to terminate the wait if abortTriggered becomes true before timeoutTriggered
   _ <- forkIO $ do
     -- wait the requested number of seconds
     threadDelay $ seconds * 1000 * 1000

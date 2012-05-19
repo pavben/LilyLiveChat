@@ -97,10 +97,9 @@ handleCreateSiteCommand handleStream = do
   adminPassword <- liftM (LT.pack . show) $ randomRIO (10 ^ (6 :: Int) :: Integer, 10 ^ (10 :: Int))
   -- the retry is only for the case where we generate a site id that is already in use
   -- all other cases will not retry
-  -- TODO: test retry with low range of ids
   runResult <- runWithRetry 5 $ do
     -- generate a site id
-    --siteId <- liftM (LT.pack . show) $ randomRIO (0 :: Integer, 3)
+    --siteId <- liftM (LT.pack . show) $ randomRIO (0 :: Integer, 5)
     siteId <- liftM (LT.pack . show) $ randomRIO (0 :: Integer, 2 ^ (16 :: Int))
 
     -- locate the server that the site should be currently placed on
@@ -134,7 +133,7 @@ handleCreateSiteCommand handleStream = do
                         ]
                       return True
                     (CSSASiteCreateDuplicateIdMessage,_) -> do
-                      liftIO $ putStrLn "Generated site id is not unique. Retry."
+                      liftIO $ putStrLn "Generated site id is not unique."
                       return False
                     (CSSASiteCreateUnavailableMessage,_) -> do
                       liftIO $ putStrLn "Chat Server cannot process the site creation at this time"

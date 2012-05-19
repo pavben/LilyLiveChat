@@ -11,11 +11,12 @@ module Liberty.SiteLocatorService.Types (
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Data.ByteString.Lazy (ByteString)
+import Data.Text.Lazy (Text)
 import Data.Map (Map)
 
 -- Site
-type SiteId = ByteString
-type ServerId = ByteString
+type SiteId = Text
+type ServerId = Text
 data SiteEntry = SiteEntry {
   seSiteId :: SiteId,
   seServerId :: ServerId

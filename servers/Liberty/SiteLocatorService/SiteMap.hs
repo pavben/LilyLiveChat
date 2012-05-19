@@ -5,7 +5,7 @@ module Liberty.SiteLocatorService.SiteMap (
 ) where
 import Control.Concurrent.STM.TVar
 import Control.Monad.STM
-import qualified Data.ByteString.Lazy.Char8 as C8
+import qualified Data.Text.Lazy as LT
 import qualified Data.Map as Map
 import Liberty.SiteLocatorService.Types
 
@@ -35,5 +35,5 @@ lookupServerForSite siteId siteMapTVar = do
 
 -- TODO: Server 'anivia' is hardcoded and considered to be always online
 chooseAvailableServer :: Maybe ServerId
-chooseAvailableServer = Just $ C8.pack "anivia"
+chooseAvailableServer = Just $ LT.pack "anivia"
 

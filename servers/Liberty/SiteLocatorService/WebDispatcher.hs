@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Liberty.SiteLocatorService.WebDispatcher (
   runWebDispatcher
 ) where
@@ -6,6 +8,7 @@ import Control.Exception
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
+import qualified Data.Text.Lazy as LT
 import Network.HTTP
 import Network.Socket
 import Network.URI
@@ -67,13 +70,12 @@ receiveHttpRequestLoop handleStream siteMapTVar = do
       print request
       let requestUriPath = C8.pack $ uriPath $ rqURI request
       case headMay $ filter (not . LBS.null) $ C8.split '/' $ requestUriPath of
-        Just siteId -> do
-          -- TODO: convert the siteId to lowercase
+        Just (LT.pack . C8.unpack -> siteId) -> do
           maybeServerId <- lookupServerForSite siteId siteMapTVar
           case maybeServerId of
             Just serverId -> do
               let requestUriQuery = C8.pack (uriQuery (rqURI request))
-              let targetUrl = LBS.concat [C8.pack "http://", serverId, C8.pack ".lilylivechat.net", requestUriPath, requestUriQuery]
+              let targetUrl = LBS.concat [C8.pack "http://", C8.pack $ LT.unpack serverId, C8.pack ".lilylivechat.net", requestUriPath, requestUriQuery]
               respondHTTP handleStream (Response (3,0,2) "Found" [mkHeader HdrLocation $ C8.unpack targetUrl] $ redirectBody targetUrl)
             Nothing -> do
               putStrLn "No servers available"
