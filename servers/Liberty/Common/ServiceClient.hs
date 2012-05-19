@@ -1,5 +1,6 @@
 module Liberty.Common.ServiceClient(
   ServiceConnectionData(..),
+  getLocalServiceConnectionData,
   ServiceTask(..),
   runServiceTask,
   serviceRequest,
@@ -14,6 +15,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
 import qualified Data.MessagePack as MP
+import Network.BSD (getHostByName, hostAddress)
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
@@ -24,6 +26,13 @@ data ServiceConnectionData = ServiceConnectionData {
   sdcHost :: String,
   sdcPort :: PortNumber
 }
+
+getLocalServiceConnectionData :: String -> ServiceConnectionData
+getLocalServiceConnectionData serviceName =
+  let
+    hostName = serviceName ++ ".local.lilylivechat.net"
+  in
+    ServiceConnectionData hostName 9800
 
 data ServiceTask a = ServiceTask (IO (Maybe a))
 
@@ -78,12 +87,13 @@ establishConnection host port = do
     Right serviceSocket ->
       catchST
         (do
-          hostAddress <- liftIO $ inet_addr host
-          liftIO $ connect serviceSocket (SockAddrInet port hostAddress)
+          hostEntry <- liftIO $ getHostByName host
+          -- TODO: is port needed, or is it always 9800? should be the latter, I believe
+          liftIO $ connect serviceSocket (SockAddrInet port (hostAddress hostEntry))
           return serviceSocket
         )
         (\(SomeException ex) -> do
-          liftIO $ putStrLn $ "Connect exception: " ++ show ex
+          liftIO $ putStrLn $ "Resolve/Connect exception: " ++ show ex
           fail ""
         )
     Left (SomeException _) -> fail ""

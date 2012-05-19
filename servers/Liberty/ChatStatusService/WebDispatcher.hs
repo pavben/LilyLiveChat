@@ -95,28 +95,23 @@ handleChatStatusRequest siteId _ handleStream = do
       SLSuccess serverId -> do
         putStrLn $ "Site located on server: " ++ LT.unpack serverId
         -- get ServiceConnectionData from the server name
-        maybeChatServerConnectionData <- getServiceConnectionDataForChatServer serverId
-        case maybeChatServerConnectionData of
-          Just chatServerConnectionData -> do
-            serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
-              -- select the site
-              sendMessageToService UnregisteredSelectSiteMessage (siteId) serviceHandle
+        let chatServerConnectionData = getServiceConnectionDataForChatServer serverId
+        serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
+          -- select the site
+          sendMessageToService UnregisteredSelectSiteMessage (siteId) serviceHandle
 
-              selectSiteResponse <- receiveMessageFromService serviceHandle
-              case selectSiteResponse of
-                (UnregisteredSiteSelectedMessage, unpackMessage -> Just (_ :: Text, True)) -> do
-                  -- site is active
-                  return True
-                _ ->
-                  -- either invalid message format, invalid site id, unexpected message, or site not active
-                  return False
-            
-            case serviceCallResult of
-              Just True -> return True
-              _ -> return False
-          Nothing -> do
-            putStrLn "Unable to resolve chat server IP"
-            return False
+          selectSiteResponse <- receiveMessageFromService serviceHandle
+          case selectSiteResponse of
+            (UnregisteredSiteSelectedMessage, unpackMessage -> Just (_ :: Text, True)) -> do
+              -- site is active
+              return True
+            _ ->
+              -- either invalid message format, invalid site id, unexpected message, or site not active
+              return False
+        
+        case serviceCallResult of
+          Just True -> return True
+          _ -> return False
       SLNotAvailable -> do
         putStrLn "Site Locator Service not available"
         return False

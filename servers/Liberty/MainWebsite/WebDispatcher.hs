@@ -12,7 +12,6 @@ import qualified Data.Aeson as J
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
-import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Network.HTTP
 import Network.Socket
@@ -97,7 +96,8 @@ handleCreateSiteCommand handleStream = do
   adminPassword <- liftM (LT.pack . show) $ randomRIO (10 ^ (6 :: Int) :: Integer, 10 ^ (10 :: Int))
   -- the retry is only for the case where we generate a site id that is already in use
   -- all other cases will not retry
-  runResult <- runWithRetry 5 $ do
+  -- TODO PL: should still return a response, even if this fails
+  _ <- runWithRetry 5 $ do
     -- generate a site id
     --siteId <- liftM (LT.pack . show) $ randomRIO (0 :: Integer, 5)
     siteId <- liftM (LT.pack . show) $ randomRIO (0 :: Integer, 2 ^ (16 :: Int))
@@ -108,49 +108,44 @@ handleCreateSiteCommand handleStream = do
       SLSuccess serverId -> do
         putStrLn $ "Site located on server: " ++ LT.unpack serverId
         -- get ServiceConnectionData from the server name
-        maybeChatServerConnectionData <- getServiceConnectionDataForChatServer serverId
-        case maybeChatServerConnectionData of
-          Just chatServerConnectionData -> do
-            serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
-              -- login as super admin
-              sendMessageToService CSSALoginRequestMessage () serviceHandle
+        let chatServerConnectionData = getServiceConnectionDataForChatServer serverId
+        serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
+          -- login as super admin
+          sendMessageToService CSSALoginRequestMessage () serviceHandle
 
-              loginResponse <- receiveMessageFromService serviceHandle
-              case loginResponse of
-                (CSSALoginSuccessMessage,_) -> do
-                  -- execute the create site command
-                  sendMessageToService CSSASiteCreateMessage (
-                    siteId,
-                    LT.append "Site " siteId,
-                    adminPassword) serviceHandle
+          loginResponse <- receiveMessageFromService serviceHandle
+          case loginResponse of
+            (CSSALoginSuccessMessage,_) -> do
+              -- execute the create site command
+              sendMessageToService CSSASiteCreateMessage (
+                siteId,
+                LT.append "Site " siteId,
+                adminPassword) serviceHandle
 
-                  createResponse <- receiveMessageFromService serviceHandle
-                  case createResponse of
-                    (CSSASiteCreateSuccessMessage,_) -> do
-                      liftIO $ sendJsonResponse handleStream $ J.object [
-                        ("siteId", J.toJSON siteId),
-                        ("adminPassword", J.toJSON adminPassword)
-                        ]
-                      return True
-                    (CSSASiteCreateDuplicateIdMessage,_) -> do
-                      liftIO $ putStrLn "Generated site id is not unique."
-                      return False
-                    (CSSASiteCreateUnavailableMessage,_) -> do
-                      liftIO $ putStrLn "Chat Server cannot process the site creation at this time"
-                      return True
-                    _ -> do
-                      liftIO $ putStrLn "Unknown message received from Chat Server"
-                      return True
-                _ ->
-                  -- anything else is a failure
+              createResponse <- receiveMessageFromService serviceHandle
+              case createResponse of
+                (CSSASiteCreateSuccessMessage,_) -> do
+                  liftIO $ sendJsonResponse handleStream $ J.object [
+                    ("siteId", J.toJSON siteId),
+                    ("adminPassword", J.toJSON adminPassword)
+                    ]
                   return True
+                (CSSASiteCreateDuplicateIdMessage,_) -> do
+                  liftIO $ putStrLn "Generated site id is not unique."
+                  return False
+                (CSSASiteCreateUnavailableMessage,_) -> do
+                  liftIO $ putStrLn "Chat Server cannot process the site creation at this time"
+                  return True
+                _ -> do
+                  liftIO $ putStrLn "Unknown message received from Chat Server"
+                  return True
+            _ ->
+              -- anything else is a failure
+              return True
 
-            case serviceCallResult of
-              Just ret -> return ret
-              Nothing -> return True
-          Nothing -> do
-            putStrLn "Unable to resolve chat server IP"
-            return True
+        case serviceCallResult of
+          Just ret -> return ret
+          Nothing -> return True
       SLNotAvailable -> do
         putStrLn "Site Locator Service not available"
         return True

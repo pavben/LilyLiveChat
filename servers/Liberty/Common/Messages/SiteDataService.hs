@@ -41,7 +41,7 @@ instance MessageType SiteDataServiceMessageType where
   messageTypeToId = (Map.!) messageIdByType
 
 siteDataServiceConnectionData :: ServiceConnectionData
-siteDataServiceConnectionData = ServiceConnectionData "192.168.1.101" 9800
+siteDataServiceConnectionData = getLocalServiceConnectionData "sds"
 
 data GSDResult = GSDSuccess (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text)
                | GSDNotFound
