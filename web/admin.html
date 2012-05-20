@@ -198,12 +198,10 @@
 									<div class="main_title">Connecting Your Site to LilyLiveChat</div>
 									<div class="main_contentbox" style="text-align:left;">
 										<p>To set up LilyLiveChat, you need to have access to the source code for your website.</p>
-										<p>We've made the install as simple as possible, but it still has to be the hardest part. If you'd like some clarification, we're here to help! Advanced Tip: This line disappears if we're not available. You can do this for your site too!</p>
-										<h2>Step 1: Linking the main code</h2>
-										<div id="install_step1_simple">
-											<p>Copy this code and paste it onto all pages of your website immediately before the closing &lt;/body&gt; tag. We also have <a id="install_step1_advanced_link" href="javascript:void(0)">advanced instructions</a> that give you more flexibility if preferred.</p>
-										</div>
-										<div id="install_step1_advanced">
+										<h2>Linking the main code</h2>
+										<p>Add this code to your site's main template immediately before the closing &lt;/body&gt; tag. For accurate visitor tracking, verify that it's loaded onto all pages.</p>
+										<!--
+										<div id="install_step1_moreinfo">
 											<p>To take advantage of LilyLiveChat's visitor tracking features, the code snippet below must appear on:</p>
 											<ul>
 												<li>All pages that you wish to be notified about when a currently-chatting customer visits them; and</li>
@@ -212,34 +210,57 @@
 											<p>Basically, put it on every page. If this is not practical for your business, you can still enjoy LilyLiveChat without the tracking features by placing the code snippet only on those pages that will have chat buttons from Step 2.</p>
 											<p>Copy this code and paste it onto the appropriate pages as described above immediately before the closing &lt;/body&gt; tag.</p>
 										</div>
+										-->
+										<textarea rows="9" wrap="off" readonly="readonly" class="install_code">
+<!-- BEGIN LilyLiveChat main code -->
+<script type="text/javascript">
+var lilyLiveChat_siteId = 'virtivia';
+(function() {
+	var l = document.createElement('script'); l.type = 'text/javascript'; l.async = true; l.src = document.location.protocol + '//sl.lilylivechat.net/lilycode/virtivia';
+	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(l, s);
+})();
+</script>
+<!-- END LilyLiveChat main code --></textarea>
+										<div class="align_right">
+											<a id="install_next_link" href="javascript:void(0)">Proceed to: Adding a chat button</a>
+										</div>
+									</div>
+								</div>
+								<div id="main_rightcell_install_button" class="tab">
+									<div class="main_title">Connecting Your Site to LilyLiveChat</div>
+									<div class="main_contentbox" style="text-align:left;">
+										<h2>Adding a chat button</h2>
+										<p>You're almost done! We just need to add a button that your customers can click to talk to your operators.</p>
+										<p>Simple install buttons come in two flavors:</p>
+										<div class="install_chatbuttontable normaltable">
+											<div class="tablerow">
+												<div class="install_chatbuttoncell">
+													<img src="http://web.lilylivechat.net/images/chatbutton2_on.png" alt="" />
+												</div>
+												<div class="install_chatbuttoncell">
+													<img src="http://web.lilylivechat.net/images/chatbutton1_on.png" alt="" />
+												</div>
+											</div>
+										</div>
+										<p>If you're a pro web developer, you're probably eager to roll your own buttons. We've got <a id="install_button_advanced_link" href="javascript:void(0)">advanced info</a> for you.</p>
+										<div id="install_button_advanced">
+											<p>You'll notice that the code below contains two sections: online and offline. Initially, both are hidden (CSS display: none) and are selectively made visible (CSS display: block) based on the availability of your operators.</p>
+											<p>Anything inside the provided &lt;a&gt;...&lt;/a&gt; tag will open the chat window if clicked. Depending on how your website is designed, it might make sense to put some information outside the link so that it's not clickable, and only link the chat button/text.</p>
+											<p>For the offline section, consider mentioning the hours that you are usually online.</p>
+										</div>
+										<p>Copy this code and paste it anywhere on your page that you'd like the button to appear:</p>
 										<textarea rows="10" wrap="off" readonly="readonly" class="install_code">
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-										</textarea>
-										<h2>Step 2: Adding the launch buttons</h2>
-										<p>Lastly, we add the buttons which will open the chat window when your visitors click on them.</p>
-										<div id="install_step2_simple">
-											<p>LilyLiveChat offers a lot of flexibility in customizing these buttons in the <a id="install_step2_advanced_link" href="javascript:void(0)">advanced instructions</a>. Otherwise, we'll present you with some simple options to get you started. You can always try the advanced stuff later.</p>
-											<p>Which button would you like to use?</p>
-											(some options here, possibly with radio buttons)
-											<p>Copy this code and paste it anywhere on your page that you'd like the button to appear:</p>
-											<textarea rows="6" wrap="off" readonly="readonly" class="install_code">
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-TODO code 1212121221212121212121212121212121212121212121212121212211212121212121212
-											</textarea>
-											<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, you've successfully installed LilyLiveChat!</p>
-										</div>
-										<div id="install_step2_advanced">
-											TODO
-										</div>
+<!-- BEGIN LilyLiveChat button code -->
+<div class="lilylivechat_online" style="display:none;">
+	<a href="http://www.lilylivechat.net" title="Live Chat" onclick="try { lilyLiveChat_launch(); } catch(e) { alert('LilyLiveChat main code not linked!'); } finally { return false; }">
+		<img src="http://web.lilylivechat.net/images/chatbutton1_on.png" alt="Live Chat" />
+	</a>
+</div>
+<div class="lilylivechat_offline" style="display:none;">
+	We're not available to chat at this time.
+</div>
+<!-- END LilyLiveChat button code --></textarea>
+										<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, you've successfully installed LilyLiveChat!</p>
 									</div>
 								</div>
 								<div id="main_rightcell_adminpassword" class="tab">

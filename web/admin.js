@@ -7,6 +7,7 @@ var generalSubtab = null;
 var operatorsSubtab = null;
 var editOperatorSubtab = null;
 var installSubtab = null;
+var installButtonSubtab = null;
 var adminPasswordSubtab = null;
 
 // Person object representing the operator
@@ -25,6 +26,7 @@ $(window).bind('load', function() {
 	operatorsSubtab = $('#main_rightcell_operators');
 	editOperatorSubtab = $('#main_rightcell_editoperator');
 	installSubtab = $('#main_rightcell_install');
+	installButtonSubtab = $('#main_rightcell_install_button');
 	adminPasswordSubtab = $('#main_rightcell_adminpassword');
 
 	replaceIconWith('/images/lock.png', $('#login_icon'));
@@ -135,16 +137,12 @@ $(window).bind('load', function() {
 	});
 
 	// install subtab
-	$('#install_step1_advanced_link').click(function() {
-		$('#install_step1_simple').hide();
-		$('#install_step1_advanced').show();
-		onResize();
+	$('#install_next_link').click(function() {
+		changeSubtabTo(installButtonSubtab);
 	});
 
-	$('#install_step2_advanced_link').click(function() {
-		$('#install_step2_simple').hide();
-		$('#install_step2_advanced').show();
-		onResize();
+	$('#install_button_advanced_link').click(function() {
+		$('#install_button_advanced').slideToggle(300, onResize);
 	});
 
 	// admin password subtab
