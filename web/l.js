@@ -1,6 +1,11 @@
 var lilyLiveChat_launch;
 
 (function() {
+	// if the main code was loaded multiple times on the same page, ignore the second time
+	if (lilyLiveChat_launch !== undefined) {
+		return;
+	}
+
 	// BEGIN getElementsByClassName
 	var getElementsByClassName;
 	if (document.getElementsByClassName) {
@@ -166,5 +171,5 @@ var lilyLiveChat_launch;
 		var wL = (window.screen.width - wW) / 2;
 		var wT = (window.screen.height - wH) / 3;
 		window.open('http://sl.lilylivechat.net/launchchat/' + lilyLiveChat_siteId + (originalReferrer ? '?originalReferrer=' + encodeURIComponent(originalReferrer) : ''), '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
-	}
+	};
 })();

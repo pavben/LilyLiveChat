@@ -394,7 +394,6 @@ function updateInstallCodeButton(buttonName) {
 '	</a>',
 '</div>',
 '<div class="lilylivechat_offline" style="display:none;">',
-'	We\'re not available to chat at this time.',
 '</div>',
 '<!-- END LilyLiveChat button code -->'
 		].join('\n')
