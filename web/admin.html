@@ -200,27 +200,8 @@
 										<p>To set up LilyLiveChat, you need to have access to the source code for your website.</p>
 										<h2>Linking the main code</h2>
 										<p>Add this code to your site's main template immediately before the closing &lt;/body&gt; tag. For accurate visitor tracking, verify that it's loaded onto all pages.</p>
-										<!--
-										<div id="install_step1_moreinfo">
-											<p>To take advantage of LilyLiveChat's visitor tracking features, the code snippet below must appear on:</p>
-											<ul>
-												<li>All pages that you wish to be notified about when a currently-chatting customer visits them; and</li>
-												<li>All pages that visitors can arrive to your site on. This really means all pages except popups, since other websites, including search engines, can bring visitors to any of your pages directly.</li>
-											</ul>
-											<p>Basically, put it on every page. If this is not practical for your business, you can still enjoy LilyLiveChat without the tracking features by placing the code snippet only on those pages that will have chat buttons from Step 2.</p>
-											<p>Copy this code and paste it onto the appropriate pages as described above immediately before the closing &lt;/body&gt; tag.</p>
-										</div>
-										-->
-										<textarea rows="9" wrap="off" readonly="readonly" class="install_code">
-<!-- BEGIN LilyLiveChat main code -->
-<script type="text/javascript">
-var lilyLiveChat_siteId = 'virtivia';
-(function() {
-	var l = document.createElement('script'); l.type = 'text/javascript'; l.async = true; l.src = document.location.protocol + '//sl.lilylivechat.net/lilycode/virtivia';
-	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(l, s);
-})();
-</script>
-<!-- END LilyLiveChat main code --></textarea>
+										<textarea id="install_code_main" rows="9" wrap="off" readonly="readonly" class="install_code">
+										</textarea>
 										<div class="align_right">
 											<a id="install_next_link" href="javascript:void(0)">Proceed to: Adding a chat button</a>
 										</div>
@@ -235,10 +216,14 @@ var lilyLiveChat_siteId = 'virtivia';
 										<div class="install_chatbuttontable normaltable">
 											<div class="tablerow">
 												<div class="install_chatbuttoncell">
-													<img src="http://web.lilylivechat.net/images/chatbutton2_on.png" alt="" />
+													<a id="install_button_chatbutton2" href="javascript:void(0)">
+														<img src="http://web.lilylivechat.net/images/chatbutton2_on.png" alt="" />
+													</a>
 												</div>
 												<div class="install_chatbuttoncell">
-													<img src="http://web.lilylivechat.net/images/chatbutton1_on.png" alt="" />
+													<a id="install_button_chatbutton1" href="javascript:void(0)">
+														<img src="http://web.lilylivechat.net/images/chatbutton1_on.png" alt="" />
+													</a>
 												</div>
 											</div>
 										</div>
@@ -249,18 +234,10 @@ var lilyLiveChat_siteId = 'virtivia';
 											<p>For the offline section, consider mentioning the hours that you are usually online.</p>
 										</div>
 										<p>Copy this code and paste it anywhere on your page that you'd like the button to appear:</p>
-										<textarea rows="10" wrap="off" readonly="readonly" class="install_code">
-<!-- BEGIN LilyLiveChat button code -->
-<div class="lilylivechat_online" style="display:none;">
-	<a href="http://www.lilylivechat.net" title="Live Chat" onclick="try { lilyLiveChat_launch(); } catch(e) { alert('LilyLiveChat main code not linked!'); } finally { return false; }">
-		<img src="http://web.lilylivechat.net/images/chatbutton1_on.png" alt="Live Chat" />
-	</a>
-</div>
-<div class="lilylivechat_offline" style="display:none;">
-	We're not available to chat at this time.
-</div>
-<!-- END LilyLiveChat button code --></textarea>
-										<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, you've successfully installed LilyLiveChat!</p>
+										<textarea id="install_code_button" rows="10" wrap="off" readonly="readonly" class="install_code">
+
+										</textarea>
+										<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, congratulations!</p>
 									</div>
 								</div>
 								<div id="main_rightcell_adminpassword" class="tab">

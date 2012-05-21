@@ -145,6 +145,37 @@ $(window).bind('load', function() {
 		$('#install_button_advanced').slideToggle(300, onResize);
 	});
 
+	/*
+	// Auto-select all content in the code textareas on click
+	$('.install_code').focus(function() {
+		textarea = $(this);
+		textarea.select();
+
+		textarea.mouseup(function() {
+			// Prevent further mouseup intervention
+			textarea.unbind("mouseup");
+			// Prevent the click from canceling the selection
+			return false;
+		});
+	});
+	*/
+
+	updateInstallCodeMain(siteId);
+
+	$('#install_button_chatbutton1').click(function() {
+		$('#install_code_button').fadeTo(100, 0, function() {
+			updateInstallCodeButton('chatbutton1');
+			$('#install_code_button').fadeTo(300, 1);
+		})
+	}).click();
+
+	$('#install_button_chatbutton2').click(function() {
+		$('#install_code_button').fadeTo(100, 0, function() {
+			updateInstallCodeButton('chatbutton2');
+			$('#install_code_button').fadeTo(300, 1);
+		})
+	});
+
 	// admin password subtab
 	// admin password field
 	{
@@ -333,6 +364,41 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 
 function onNameOrTitleEdited(nameOrTitleStr) {
 	$('#main_editoperator_' + nameOrTitleStr + '_preview').text($('#main_editoperator_' + nameOrTitleStr).val());
+}
+
+// install subtab functions
+
+function updateInstallCodeMain(siteId) {
+	$('#install_code_main').text(
+		[
+'<!-- BEGIN LilyLiveChat main code -->',
+'<script type="text/javascript">',
+'var lilyLiveChat_siteId = \'' + siteId + '\';',
+'(function() {',
+'	var l = document.createElement(\'script\'); l.type = \'text/javascript\'; l.async = true; l.src = document.location.protocol + \'//sl.lilylivechat.net/lilycode/' + siteId + '\';',
+'	var s = document.getElementsByTagName(\'script\')[0]; s.parentNode.insertBefore(l, s);',
+'})();',
+'</script>',
+'<!-- END LilyLiveChat main code -->'
+		].join('\n')
+	);
+}
+
+function updateInstallCodeButton(buttonName) {
+	$('#install_code_button').text(
+		[
+'<!-- BEGIN LilyLiveChat button code -->',
+'<div class="lilylivechat_online" style="display:none;">',
+'	<a href="http://www.lilylivechat.net" title="Live Chat" onclick="try { lilyLiveChat_launch(); } catch(e) { alert(\'LilyLiveChat main code not linked!\'); } finally { return false; }">',
+'		<img src="http://web.lilylivechat.net/images/' + buttonName + '.png" alt="Live Chat" />',
+'	</a>',
+'</div>',
+'<div class="lilylivechat_offline" style="display:none;">',
+'	We\'re not available to chat at this time.',
+'</div>',
+'<!-- END LilyLiveChat button code -->'
+		].join('\n')
+	);
 }
 
 // main tab's subtabs
