@@ -54,7 +54,8 @@ $(window).bind('load', function() {
 	// enable top spacer height transition
 	$('#main_top').addClass('main_top_heighttrans');
 
-	changeTabTo(watchVideoTab);
+	//changeTabTo(watchVideoTab);
+	changeTabTo(learnMoreTab);
 });
 
 function onResize() {

@@ -21,6 +21,13 @@ input {
 	display:none;
 	color:#454545;
 }
+.tab ul {
+	margin:0px 10px 7px 0px;
+}
+.tab li {
+	line-height:20px;
+	padding-bottom:5px;
+}
 .fixedtable {
 	display:table;
 	table-layout:fixed;
@@ -158,6 +165,25 @@ a:hover, a:active {
 	border-radius:5px;
 }
 #watchvideo_tab {
+}
+#learnmore_tab {
+	padding:0px 2px 0px 2px;
+}
+#learnmore_tab h1 {
+	margin:0px 0px 9px 0px;
+	font-size:140%;
+	font-weight:normal;
+	color:#454545;
+}
+#learnmore_tab h2 {
+	margin:0px 0px 9px 0px;
+	font-size:110%;
+	font-weight:normal;
+	color:#454545;
+}
+#learnmore_tab p {
+	line-height:145%;
+	margin:0px 0px 9px 0px;
 }
 #tryitout_tab p {
 	margin:0;
