@@ -65,6 +65,7 @@ data ChatServerMessageType = CustomerJoinMessage
                            | AdminSetAdminPasswordSuccessMessage
                            | CustomerJoinSuccessMessage
                            | CSUnavailableMessage
+                           | CSMTVisitorOnPage
                            | AdminOperatorDeleteSuccessMessage
                            | AdminOperatorDeleteFailedMessage
   deriving (Show, Eq, Ord)
@@ -127,6 +128,7 @@ messageIdsAndTypes = [
     (56, AdminSetAdminPasswordSuccessMessage),
     (57, CustomerJoinSuccessMessage),
     (58, CSUnavailableMessage),
+    (59, CSMTVisitorOnPage),
     (62, AdminOperatorDeleteSuccessMessage),
     (63, AdminOperatorDeleteFailedMessage)
   ]

@@ -28,26 +28,50 @@ var lilyLiveChat_launch;
 	}
 	// END getElementsByClassName
 	
-	// BEGIN originalReferrer cookie code
-	var cookieNameAndEq = lilyLiveChat_siteId + '.referrer=';
-
-	var originalReferrer = null;
-	{
+	// BEGIN cookie get/set code
+	var cookiePrefix = 'lily.' + lilyLiveChat_siteId + '.';
+	function readPrefixedCookie(name) {
+		var cookieNameAndEq = cookiePrefix + name + '=';
 		var cookieKeyValues = document.cookie.split('; ');
 		for(var i in cookieKeyValues) {
 			if(cookieKeyValues[i].indexOf(cookieNameAndEq) == 0) {
-				originalReferrer = decodeURIComponent(cookieKeyValues[i].substring(cookieNameAndEq.length));
+				return decodeURIComponent(cookieKeyValues[i].substring(cookieNameAndEq.length));
 				break;
 			}
 		}
-	}
 
-	if(originalReferrer === null) {
+		// cookie with that name was not found
+		return null;
+	}
+	function setPrefixedCookie(name, val) {
 		var d = new Date();
 		d.setTime(d.getTime() + 24 * 60 * 60 * 1000);
-		document.cookie = cookieNameAndEq + encodeURIComponent(document.referrer) + '; expires=' + d.toGMTString() + '; path=/';
+		document.cookie = cookiePrefix + name + '=' + encodeURIComponent(val) + '; expires=' + d.toGMTString() + '; path=/';
+	}
+	// END cookie get/set code
+	
+	// BEGIN originalReferrer cookie code
+	var originalReferrer = readPrefixedCookie('referrer');
+
+	// if this is their first landing on this site, store the referrer
+	if (originalReferrer === null) {
+		originalReferrer = document.referrer;
+		setPrefixedCookie('referrer', originalReferrer);
 	}
 	// END originalReferrer cookie code
+	
+	// BEGIN visitorId
+	function randomVisitorId() {
+		return '123aAbBcC';
+	}
+
+	var visitorId = readPrefixedCookie('visitorId');
+
+	if (visitorId === null) {
+		visitorId = randomVisitorId();
+		setPrefixedCookie('visitorId', visitorId);
+	}
+	// END visitorId
 	
 	// BEGIN code to display the appropriate buttons by class name
 	// Parts adapted from jQuery
@@ -113,7 +137,6 @@ var lilyLiveChat_launch;
 	// END code to display the appropriate buttons by class name
 	
 	// BEGIN get site chat status and call setChatStatus
-	var visitorId = 'none';
 
 	// set a timeout for the AJAX request
 	var xhrTimeout = setTimeout(function() {
@@ -170,6 +193,6 @@ var lilyLiveChat_launch;
 		var wH = 659;
 		var wL = (window.screen.width - wW) / 2;
 		var wT = (window.screen.height - wH) / 3;
-		window.open('http://sl.lilylivechat.net/launchchat/' + lilyLiveChat_siteId + (originalReferrer ? '?originalReferrer=' + encodeURIComponent(originalReferrer) : ''), '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
+		window.open('http://sl.lilylivechat.net/launchchat/' + lilyLiveChat_siteId + '?visitorId=' + visitorId + (originalReferrer ? '&originalReferrer=' + encodeURIComponent(originalReferrer) : ''), '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
 	};
 })();

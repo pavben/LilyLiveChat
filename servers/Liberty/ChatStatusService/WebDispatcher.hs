@@ -75,8 +75,9 @@ receiveHttpRequestLoop handleStream = do
       putStrLn "Request:"
       print request
       let requestUriPath = C8.pack $ uriPath $ rqURI request
+      let maybeCurrentPage = fmap LT.pack $ lookupHeader HdrReferer (rqHeaders request)
       case filter (not . LBS.null) $ C8.split '/' $ requestUriPath of
-        [C8.unpack -> "chatstatus", LT.pack . C8.unpack -> siteId, LT.pack . C8.unpack -> visitorId] -> handleChatStatusRequest siteId visitorId handleStream
+        [C8.unpack -> "chatstatus", LT.pack . C8.unpack -> siteId, LT.pack . C8.unpack -> visitorId] -> handleChatStatusRequest siteId visitorId maybeCurrentPage handleStream
         _ -> do
           putStrLn "Invalid request"
           respondHTTP handleStream (Response (4,0,0) "Bad Request" [] badRequestBody)
@@ -86,8 +87,8 @@ receiveHttpRequestLoop handleStream = do
   where
     badRequestBody = C8.pack "You've followed an invalid link."
 
-handleChatStatusRequest :: Text -> Text -> HandleStream ByteString -> IO ()
-handleChatStatusRequest siteId _ handleStream = do
+handleChatStatusRequest :: Text -> Text -> Maybe Text -> HandleStream ByteString -> IO ()
+handleChatStatusRequest siteId visitorId maybeCurrentPage handleStream = do
   siteActive <- do
     -- locate the server that the site is on
     siteLocateResult <- locateSite siteId
@@ -97,6 +98,11 @@ handleChatStatusRequest siteId _ handleStream = do
         -- get ServiceConnectionData from the server name
         let chatServerConnectionData = getServiceConnectionDataForChatServer serverId
         serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
+          -- before checking the status, notify the chat server about this visitor navigating to the new page
+          case maybeCurrentPage of
+            Just currentPage -> sendMessageToService CSMTVisitorOnPage (visitorId, currentPage) serviceHandle
+            Nothing -> return ()
+
           -- select the site
           sendMessageToService UnregisteredSelectSiteMessage (siteId) serviceHandle
 

@@ -16,12 +16,17 @@ function handleMessage(message) {
 			var isActive = message[1];
 
 			if (isActive === true) {
+				var visitorId = $.cookie(siteId + '.visitorId');
+				if (visitorId === null) {
+					visitorId = '';
+				}
+
 				var referrer = $.cookie(siteId + '.referrer');
 				if (referrer === null) {
 					referrer = '';
 				}
 
-				queueAjaxCommand([Messages.CustomerJoinMessage, referrer]);
+				queueAjaxCommand([Messages.CustomerJoinMessage, visitorId, referrer]);
 			} else {
 				showInactiveSiteScreen();
 			}

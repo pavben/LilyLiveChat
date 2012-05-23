@@ -116,12 +116,13 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
           case messageType of
             UnregisteredSelectSiteMessage -> unpackAndHandle $ \siteId -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
             CSSALoginRequestMessage -> unpackAndHandle $ \() -> handleCSSALoginRequestMessage clientDataTVar
+            CSMTVisitorOnPage -> unpackAndHandle $ \(visitorId, currentPage) -> handleCSMTVisitorOnPage visitorId currentPage
             _ -> do
               putStrLn "Client (Unregistered) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
           case messageType of
-            CustomerJoinMessage -> unpackAndHandle $ \(referrer) -> handleCustomerJoinMessage referrer clientDataTVar siteDataTVar
+            CustomerJoinMessage -> unpackAndHandle $ \(visitorId, referrer) -> handleCustomerJoinMessage visitorId referrer clientDataTVar siteDataTVar
             OperatorLoginRequestMessage -> unpackAndHandle $ \(username, password) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
             AdminLoginRequestMessage -> unpackAndHandle $ \password -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
             _ -> do
@@ -197,8 +198,12 @@ handleCSSALoginRequestMessage clientDataTVar =
       createAndSendMessage CSSALoginFailedMessage () clientDataTVar
       closeClientSocket clientDataTVar
 
-handleCustomerJoinMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleCustomerJoinMessage referrer clientDataTVar siteDataTVar = do
+handleCSMTVisitorOnPage :: Text -> Text -> IO ()
+handleCSMTVisitorOnPage visitorId currentPage =
+  putStrLn $ "Visitor " ++ LT.unpack visitorId ++ " is now on page: " ++ LT.unpack currentPage
+
+handleCustomerJoinMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleCustomerJoinMessage visitorId referrer clientDataTVar siteDataTVar = do
   -- generate a color for this customer (we do it out here since it's IO)
   customerColor <- getRandomPersonColorHex
   atomically $ do
@@ -208,7 +213,7 @@ handleCustomerJoinMessage referrer clientDataTVar siteDataTVar = do
       let thisChatSessionId = sdNextSessionId siteData
       -- create a new chat session with this client as the customer and no operator
       chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
-      writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData customerColor referrer siteDataTVar chatSessionTVar }
+      writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData customerColor visitorId referrer siteDataTVar chatSessionTVar }
 
       -- add the newly-created chat session to the site data's waiting list
       let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]

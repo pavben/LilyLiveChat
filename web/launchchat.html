@@ -8,18 +8,25 @@
 </head>
 <body>
 <script type="text/javascript">
-	{
-		var originalReferrer = getUrlParameter('originalReferrer');
+	var visitorId = getUrlParameter('visitorId');
 
-		if (originalReferrer !== null) {
-			$.cookie(siteId + '.referrer', originalReferrer, { expires: 1, path: '/', domain: 'lilylivechat.net' });
-		} else {
-			// if no original referrer given, clear the cookie
-			$.cookie(siteId + '.referrer', null);
-		}
-
-		window.location.pathname = window.location.pathname.replace(/^\/launchchat\//, '/chat/');
+	if (visitorId !== null) {
+		$.cookie(siteId + '.visitorId', visitorId, { expires: 1, path: '/', domain: 'lilylivechat.net' });
+	} else {
+		// if no visitorId given, clear the cookie
+		$.cookie(siteId + '.visitorId', null);
 	}
+
+	var originalReferrer = getUrlParameter('originalReferrer');
+
+	if (originalReferrer !== null) {
+		$.cookie(siteId + '.referrer', originalReferrer, { expires: 1, path: '/', domain: 'lilylivechat.net' });
+	} else {
+		// if no original referrer given, clear the cookie
+		$.cookie(siteId + '.referrer', null);
+	}
+
+	window.location.pathname = window.location.pathname.replace(/^\/launchchat\//, '/chat/');
 </script>
 </body>
 </html>

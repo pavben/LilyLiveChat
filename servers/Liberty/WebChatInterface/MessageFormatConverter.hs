@@ -29,8 +29,8 @@ jsonToMP :: ChatServerMessageType -> [J.Value] -> Maybe ByteString
 jsonToMP UnregisteredSelectSiteMessage [J.String siteId] =
   createMessage UnregisteredSelectSiteMessage (siteId)
 
-jsonToMP CustomerJoinMessage [J.String referrer] =
-  createMessage CustomerJoinMessage (referrer)
+jsonToMP CustomerJoinMessage [J.String visitorId, J.String referrer] =
+  createMessage CustomerJoinMessage (visitorId, referrer)
 
 jsonToMP CustomerSendChatMessage [J.String text] =
   createMessage CustomerSendChatMessage (text)

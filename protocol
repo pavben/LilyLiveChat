@@ -9,7 +9,7 @@ Server to Unregistered
 
 Customer to Server
 ================================================================
-1  - CustomerJoinMessage [referrer]
+1  - CustomerJoinMessage [visitorId, referrer]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
 
@@ -67,7 +67,6 @@ Server to Admin
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
 56 - AdminSetAdminPasswordSuccessMessage
--59 - AdminAdminCreateFailedMessage
 -60 - AdminAdminReplaceSuccessMessage
 -61 - AdminAdminReplaceFailedMessage
 -64 - AdminAdminDeleteSuccessMessage
@@ -78,6 +77,7 @@ SA to Server
 41 - CSSALoginRequestMessage
 42 - CSSASiteCreateMessage [siteId, name, adminPassword]
 43 - CSSASiteDeleteMessage [siteId]
+59 - CSMTVisitorOnPage [visitorId, url]
 -44 - SAGetSiteInfoMessage [siteId]
 -45 - SASetExpiryTimestampMessage [siteId]
 
