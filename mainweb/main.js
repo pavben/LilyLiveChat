@@ -1,9 +1,10 @@
-var siteCreateAttempted = false;
+var accountCreated = false;
 
 $(window).bind('load', function() {
 	watchVideoTab = $('#watchvideo_tab');
 	learnMoreTab = $('#learnmore_tab');
 	tryItOutTab = $('#tryitout_tab');
+	newAccountTab = $('#newaccount_tab');
 
 	$('#menubutton_watchvideo').click(function() {
 		changeTabTo(watchVideoTab);
@@ -14,28 +15,34 @@ $(window).bind('load', function() {
 	});
 
 	$('#menubutton_tryitout').click(function() {
-		if (!siteCreateAttempted) {
-			siteCreateAttempted = true;
-
-			$.ajax({
-				url: '/cmd/createsite',
-				dataType: 'json',
-				data: '',
-				timeout: 5000,
-				success: function(data, textStatus, jqXHR) {
-					var adminPanelUrl = 'http://lilylivechat.net/admin/' + data.siteId;
-					$('#tryitout_adminpanel').empty().append(
-						$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
-					);
-					$('#tryitout_adminpassword').text(data.adminPassword);
-				},
-				error: function(jqXHR, textStatus, errorThrown) {
-					$('#tryitout_tab').empty().append('We can\'t create your account right now. If you get this message after an hour, contact us and we\'ll see if we can help!');
-				}
-			});
+		if (!accountCreated) {
+			changeTabTo(tryItOutTab);
+		} else {
+			changeTabTo(newAccountTab);
 		}
+	});
 
-		changeTabTo(tryItOutTab);
+	$('#tryitout_btn_newaccount').click(function() {
+		$.ajax({
+			url: '/cmd/createsite',
+			dataType: 'json',
+			data: '',
+			timeout: 5000,
+			success: function(data, textStatus, jqXHR) {
+				var adminPanelUrl = 'http://lilylivechat.net/admin/' + data.siteId;
+				$('#newaccount_adminpanel').empty().append(
+					$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
+				);
+				$('#newaccount_adminpassword').text(data.adminPassword);
+
+				accountCreated = true;
+			},
+			error: function(jqXHR, textStatus, errorThrown) {
+				$('#newaccount_tab').empty().append('We can\'t create your account right now. If you get this message after an hour, contact us and we\'ll see if we can help!');
+			}
+		});
+
+		changeTabTo(newAccountTab);
 	});
 
 	$(window).resize(onResize);

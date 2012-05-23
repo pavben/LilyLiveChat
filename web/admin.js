@@ -369,7 +369,7 @@ function onNameOrTitleEdited(nameOrTitleStr) {
 // install subtab functions
 
 function updateInstallCodeMain(siteId) {
-	$('#install_code_main').text(
+	$('#install_code_main').val(
 		[
 '<!-- BEGIN LilyLiveChat main code -->',
 '<script type="text/javascript">',
@@ -385,7 +385,7 @@ function updateInstallCodeMain(siteId) {
 }
 
 function updateInstallCodeButton(buttonName) {
-	$('#install_code_button').text(
+	$('#install_code_button').val(
 		[
 '<!-- BEGIN LilyLiveChat button code -->',
 '<div class="lilylivechat_online" style="display:none;">',

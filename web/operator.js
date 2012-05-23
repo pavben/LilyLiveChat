@@ -946,7 +946,9 @@ function onChatTabResize() {
 	} else {
 		// disable scrolling as it causes scrollbar flickering
 		$('body').css('overflow-y', 'hidden');
-		var newChatMaincellHeight = $(window).height() - chatMaincellDiv.offset().top;
+		var newChatMaincellHeight = $(window).height()
+			- stripPx(chatMaincellDiv.css('padding-top'))
+			- stripPx(chatMaincellDiv.css('padding-bottom'));
 		if (newChatMaincellHeight < 500) {
 			newChatMaincellHeight = 500;
 			// if the scrollbars are needed, enable them

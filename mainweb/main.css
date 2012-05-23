@@ -160,14 +160,21 @@ a:hover, a:active {
 #watchvideo_tab {
 }
 #tryitout_tab p {
+	margin:0;
+	text-align:center;
+}
+.tryitout_table {
+	margin-top:18px;
+}
+#newaccount_tab p {
 	margin:2px 0px 11px 5px;
 }
-.tryitout_tablekey {
+.newaccount_tablekey {
 	width:140px;
 	padding-bottom:6px;
 	text-align:right;
 }
-.tryitout_tablesep {
+.newaccount_tablesep {
 	width:10px;
 	text-align:center;
 }

@@ -223,6 +223,9 @@
 	vertical-align:middle;
 	text-align:center;
 }
+.install_chatbuttoncell img {
+	border:none;
+}
 #install_button_advanced {
 	display:none;
 	padding-left:12px;

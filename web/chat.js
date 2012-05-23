@@ -41,7 +41,6 @@ function handleMessage(message) {
 			replaceIconWith('/images/chat_logo1.png', $('#chat_logo'));
 
 			writeWelcomeTextToChatlog();
-			writeSoundsStatusToChatlog();
 
 			break;
 		case Messages.CustomerInLinePositionMessage:
@@ -259,9 +258,9 @@ function showInvalidSiteScreen() {
 }
 
 function showNoOperatorsAvailableScreen() {
-	showMiscMessageTab('Bad news...',
+	showMiscMessageTab('Sorry...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('The representative you were waiting for has just become unavailable. Unfortunately, there is nobody else online for us to connect you with. Please try again another time.')
+			$('<div/>').text('The last representative has just become unavailable. Please try again another time.')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(
@@ -343,11 +342,20 @@ function disableEndChatButton() {
 var jPlayerDing;
 var jPlayerNext;
 
-var soundsEnabled = true;
+var soundPlayersLoaded = 0;
+var soundsEnabled = false;
 
 function initializeJplayers() {
 	jPlayerNext = initializeJplayerNext();
 	jPlayerDing = initializeJplayerDing(jPlayerNext);
+}
+
+function onPlayerLoaded() {
+	soundPlayersLoaded++;
+
+	if (soundPlayersLoaded == 2) {
+		writeSoundsMessageToChatlog();
+	}
 }
 
 function initializeJplayerDing(jPlayerNext) {
@@ -360,13 +368,14 @@ function initializeJplayerDing(jPlayerNext) {
 				mp3: '/audio/hding-lding.mp3',
 				oga: '/audio/hding-lding.ogg'
 			}).jPlayer('load');
+
+			onPlayerLoaded();
 		},
 		ended: function() {
 			jPlayerNext.jPlayer('play');
 		},
 		error: function(e) {
-			log('Disabling sounds due to an error in the \'ding\' player');
-			soundsEnabled = false;
+			log('Sounds will not be enabled due to an error in the \'ding\' player');
 		},
 		swfPath: '/audio',
 		solution: 'flash, html',
@@ -382,9 +391,9 @@ function initializeJplayerNext() {
 	$('body').append(jPlayerDiv);
 	
 	jPlayerDiv.jPlayer({
+		ready: onPlayerLoaded,
 		error: function(e) {
-			log('Disabling sounds due to an error in the \'next\' player');
-			soundsEnabled = false;
+			log('Sounds will not be enabled due to an error in the \'next\' player');
 		},
 		swfPath: '/audio',
 		solution: 'flash, html',
@@ -413,36 +422,33 @@ function playSoundAfterDing(soundName) {
 	}
 }
 
-function writeSoundsStatusToChatlog() {
+function writeSoundsMessageToChatlog() {
 	var chatlogDiv = $('#chat_chatlog');
 
-	if (soundsEnabled) {
-		chatlogDiv.append(
-			$('<div/>').addClass('chatinfotext').append(
-				$('<span/>').text('You\'ll hear a sound when a representative is available. ')
-			).append(
-				$('<a/>').attr('href', '#').text('Don\'t want sounds?').click(function() {
-					if (soundsEnabled) {
-						soundsEnabled = false;
-						chatlogDiv.append(
-							$('<div/>').addClass('chatinfotext').append(
-								$('<span/>').text('Okay, we won\'t play any sounds. Just make sure you don\'t miss your turn!')
-							)
-						);
-					} else {
-						chatlogDiv.append(
-							$('<div/>').addClass('chatinfotext').append(
-								$('<span/>').text('Sounds are already off.')
-							)
-						);
-					}
-					return false; // avoid following the blank link
-				})
-			)
-		);
-	} else {
-		// if the sounds are off (due to an error), don't show any extra messages
-	}
+	chatlogDiv.append(
+		$('<div/>').addClass('chatinfotext').append(
+			$('<span/>').text('Want to be ')
+		).append(
+			$('<a/>').attr('href', 'javascript:void(0)').text('notified by voice').click(function() {
+				if (!soundsEnabled) {
+					soundsEnabled = true;
+					chatlogDiv.append(
+						$('<div/>').addClass('chatinfotext').append(
+							$('<span/>').text('We\'ll let you know when someone is available.')
+						)
+					);
+				} else {
+					chatlogDiv.append(
+						$('<div/>').addClass('chatinfotext').append(
+							$('<span/>').text('Sounds are already on.')
+						)
+					);
+				}
+			})
+		).append(
+			$('<span/>').text(' when a representative is available?')
+		)
+	);
 
 	chatlogWritten(chatlogDiv);
 }
@@ -493,6 +499,9 @@ $(window).bind('load', function() {
 	var chatBox = $('#chat_chatbox');
 	chatBox.keypress(function(e) {
 		if (e.which == 13 && !e.shiftKey && !e.altKey && !e.ctrlKey) { // enter
+			// after the first message is sent, the customer knows how to send messages, so the placeholder can be removed
+			chatBox[0].placeholder = '';
+
 			if (!chatSessionEnded) {
 				if ($.trim(chatBox.val()).length > 0) {
 					queueAjaxCommand([Messages.CustomerSendChatMessage, chatBox.val()]);
