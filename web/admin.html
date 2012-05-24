@@ -52,8 +52,8 @@
 							<div id="main_rightcell">
 								<div id="main_rightcell_general" class="tab">
 									<div class="main_title">General Info and Settings</div>
-									<div class="main_contentbox">
-										<div>Your site ID is <span id="main_general_siteid"></span></div>
+									<div class="main_contentbox centertext">
+										<div>Your site ID is <span id="main_general_siteid" class="darktext"></span></div>
 									</div>
 									<div class="main_rightcell_vspacer"></div>
 									<div class="main_contentbox">
@@ -84,11 +84,19 @@
 								</div>
 								<div id="main_rightcell_operators" class="tab">
 									<div class="main_title">Your Operators</div>
-									<div class="main_contentbox">
-										<div>Operators login at <a id="main_operators_login_url" href="javascript:void(0)"></a></div>
+									<div id="main_operators_notempty">
+										<div class="main_contentbox centertext">
+											<div>Operators login at <a id="main_operators_login_url" href="javascript:void(0)"></a></div>
+										</div>
+										<div class="main_rightcell_vspacer"></div>
+										<div id="main_operators_listbox">
+										</div>
 									</div>
-									<div class="main_rightcell_vspacer"></div>
-									<div id="main_operators_listbox">
+									<div id="main_operators_empty">
+										<div class="main_contentbox">
+											<p>Operators are people you select to chat with your customers.</p>
+											<p class="lastp">To add your first operator, click <span class="darktext">Create</span>.</p>
+										</div>
 									</div>
 									<div class="main_rightcell_vspacer"></div>
 									<div class="fixedtable">

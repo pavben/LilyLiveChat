@@ -97,7 +97,6 @@
 	border:1px solid #BBBBBB;
 	border-radius:5px;
 	color:#656565;
-	text-align:center;
 }
 .main_contentbox a:link, .main_contentbox a:visited {
 	color:#006DA3;
@@ -120,13 +119,16 @@
 .main_contentbox .lastp {
 	margin:0;
 }
+.centertext {
+	text-align:center;
+}
 .main_settings_label {
 	display:table-cell;
 	text-align:center;
 	font-size:120%;
 	line-height:29px;
 }
-#main_general_siteid {
+.main_contentbox .darktext {
 	color:#454545;
 }
 #main_general_sitename {

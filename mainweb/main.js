@@ -14,13 +14,16 @@ $(window).bind('load', function() {
 		changeTabTo(learnMoreTab);
 	});
 
-	$('#menubutton_tryitout').click(function() {
+	function tryItOutHandler() {
 		if (!accountCreated) {
 			changeTabTo(tryItOutTab);
 		} else {
 			changeTabTo(newAccountTab);
 		}
-	});
+	}
+
+	$('#menubutton_tryitout').click(tryItOutHandler);
+	$('#learnmore_createaccount').click(tryItOutHandler);
 
 	$('#tryitout_btn_newaccount').click(function() {
 		$.ajax({

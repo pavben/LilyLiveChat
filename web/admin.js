@@ -520,6 +520,8 @@ function handleMessage(message) {
 			// site name set successfully
 			break;
 		case Messages.AdminOperatorDetailsStartMessage:
+			$('#main_operators_notempty').hide();
+			$('#main_operators_empty').hide();
 			$('#main_operators_listbox').empty();
 			operatorsCount = 0;
 			break;
@@ -570,13 +572,10 @@ function handleMessage(message) {
 
 			break;
 		case Messages.AdminOperatorDetailsEndMessage:
-			if (operatorsCount === 0) {
-				// TODO: Make this text prettier... put it in a contentbox perhaps, and consider replacing the "Operators login at" until someone is added
-				$('#main_operators_listbox').append(
-					$('<div/>').text('This is where you manage your list of operators. People added here will be able to accept chats from your customers.')
-				).append(
-					$('<div/>').addClass('main_operators_listbox_centertext').text('Currently, there are no operators for your site.')
-				);
+			if (operatorsCount > 0) {
+				$('#main_operators_notempty').show();
+			} else {
+				$('#main_operators_empty').show();
 			}
 
 			break;

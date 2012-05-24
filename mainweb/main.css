@@ -185,6 +185,9 @@ a:hover, a:active {
 	line-height:145%;
 	margin:0px 0px 9px 0px;
 }
+#learnmore_tab .lastp {
+	margin:0;
+}
 #tryitout_tab p {
 	margin:0;
 	text-align:center;

@@ -647,14 +647,14 @@ function showMiscMessageTab(title, content, buttons) {
 // icons and suffixes table
 
 var stockIcons = [
-	['/images/cc/batty.png'],
-	['/images/cc/bird.png'],
-	['/images/cc/dog.png'],
-	['/images/cc/froggy.png'],
-	['/images/cc/kitty.png'],
-	['/images/cc/lion.png'],
-	['/images/cc/panda.png'],
-	['/images/cc/penguin.png']
+	'/images/cc/batty.png',
+	'/images/cc/bird.png',
+	'/images/cc/dog.png',
+	'/images/cc/froggy.png',
+	'/images/cc/kitty.png',
+	'/images/cc/lion.png',
+	'/images/cc/panda.png',
+	'/images/cc/penguin.png'
 ];
 
 // misc
