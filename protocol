@@ -37,9 +37,10 @@ Server to Operator
 10 - OperatorLoginFailedMessage
 11 - OperatorLineStatusDetailsMessage [nextCustomerColor, i:numberOfWaiters]
 12 - OperatorLineStatusEmptyMessage
-14 - OperatorNowTalkingToMessage [sessionId, color, referrer]
+14 - OperatorNowTalkingToMessage [sessionId, color, currentPage, referrer]
 15 - OperatorReceiveChatMessage [sessionId, text]
 18 - OperatorChatEndedMessage [sessionId]
+60 - CSMTOperatorCustomerOnPage [sessionId, currentPage]
 
 Admin to Server
 ================================================================
@@ -67,7 +68,6 @@ Server to Admin
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
 56 - AdminSetAdminPasswordSuccessMessage
--60 - AdminAdminReplaceSuccessMessage
 -61 - AdminAdminReplaceFailedMessage
 -64 - AdminAdminDeleteSuccessMessage
 -65 - AdminAdminDeleteFailedMessage

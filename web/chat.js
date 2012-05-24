@@ -21,12 +21,17 @@ function handleMessage(message) {
 					visitorId = '';
 				}
 
+				var currentPage = $.cookie(siteId + '.currentPage');
+				if (currentPage === null) {
+					currentPage = '';
+				}
+
 				var referrer = $.cookie(siteId + '.referrer');
 				if (referrer === null) {
 					referrer = '';
 				}
 
-				queueAjaxCommand([Messages.CustomerJoinMessage, visitorId, referrer]);
+				queueAjaxCommand([Messages.CustomerJoinMessage, visitorId, currentPage, referrer]);
 			} else {
 				showInactiveSiteScreen();
 			}

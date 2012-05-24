@@ -26,22 +26,23 @@ import Liberty.ChatServer.SiteDataSaver
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
 import Liberty.ChatServer.Utils
+import Liberty.ChatServer.VisitorClientMap
 import Prelude hiding (catch)
 import Safe
 
-initializeClient :: Socket -> SiteMapTVar -> SiteDataSaverChan -> IO ()
-initializeClient clientSocket siteMapTVar siteDataSaverChan = do
+initializeClient :: Socket -> SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
+initializeClient clientSocket siteMapTVar siteDataSaverChan visitorClientMapTVar = do
   clientSendChan <- atomically $ newTChan
   clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan (OCDClientUnregistered Nothing))
   finally
     (do
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
-      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar siteDataSaverChan
+      clientSocketReadLoop clientDataTVar LBS.empty siteMapTVar siteDataSaverChan visitorClientMapTVar
     )
     (do
       atomically $ writeTChan clientSendChan $ CloseSocket
       sClose clientSocket
-      handleClientExitEvent clientDataTVar
+      handleClientExitEvent clientDataTVar visitorClientMapTVar
     )
 
 clientSocketSendLoop :: ClientSendChan -> ClientDataTVar -> IO ()
@@ -68,16 +69,16 @@ clientSocketSendLoop clientSendChan clientDataTVar = do
       putStrLn "Got CloseSocket message. Closing client socket."
       sClose clientSocket
 
-clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> SiteDataSaverChan -> IO ()
-clientSocketReadLoop clientDataTVar buffer siteMapTVar siteDataSaverChan =
+clientSocketReadLoop :: ClientDataTVar -> ByteString -> SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
+clientSocketReadLoop clientDataTVar buffer siteMapTVar siteDataSaverChan visitorClientMapTVar =
   if LBS.length buffer <= maxReceiveBufferLength then do
     case parseMessage buffer of
       Just (maybeMessage, newBuffer) ->
         case maybeMessage of
           Just (messageType, encodedParams) -> do
             putStrLn $ "Msg: " ++ show messageType ++ ", Encoded Params: " ++ show encodedParams
-            handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaverChan
-            clientSocketReadLoop clientDataTVar newBuffer siteMapTVar siteDataSaverChan
+            handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaverChan visitorClientMapTVar
+            clientSocketReadLoop clientDataTVar newBuffer siteMapTVar siteDataSaverChan visitorClientMapTVar
           Nothing -> do
             putStrLn "No valid message in current buffer yet"
             clientData <- atomically $ readTVar clientDataTVar
@@ -96,7 +97,7 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar siteDataSaverChan =
             case maybeReceivedData of
               Just receivedData ->
                 -- now that we've received some data, loop around and try parsing it
-                clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar siteDataSaverChan
+                clientSocketReadLoop clientDataTVar (LBS.append newBuffer receivedData) siteMapTVar siteDataSaverChan visitorClientMapTVar
               Nothing ->
                 putStrLn $ "Client disconnecting -- recv returned nothing"
       Nothing ->
@@ -106,8 +107,8 @@ clientSocketReadLoop clientDataTVar buffer siteMapTVar siteDataSaverChan =
     createAndSendMessage SomethingWentWrongMessage () clientDataTVar
     closeClientSocket clientDataTVar
 
-handleMessage :: ChatServerMessageType -> ByteString -> ClientDataTVar -> SiteMapTVar -> SiteDataSaverChan -> IO ()
-handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaverChan = do
+handleMessage :: ChatServerMessageType -> ByteString -> ClientDataTVar -> SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
+handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaverChan visitorClientMapTVar = do
   clientData <- atomically $ readTVar clientDataTVar
   case cdOtherData clientData of
     OCDClientUnregistered maybeSiteDataTVar ->
@@ -116,13 +117,13 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
           case messageType of
             UnregisteredSelectSiteMessage -> unpackAndHandle $ \siteId -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
             CSSALoginRequestMessage -> unpackAndHandle $ \() -> handleCSSALoginRequestMessage clientDataTVar
-            CSMTVisitorOnPage -> unpackAndHandle $ \(visitorId, currentPage) -> handleCSMTVisitorOnPage visitorId currentPage
+            CSMTVisitorOnPage -> unpackAndHandle $ \(visitorId, currentPage) -> handleCSMTVisitorOnPage visitorId currentPage visitorClientMapTVar
             _ -> do
               putStrLn "Client (Unregistered) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
           case messageType of
-            CustomerJoinMessage -> unpackAndHandle $ \(visitorId, referrer) -> handleCustomerJoinMessage visitorId referrer clientDataTVar siteDataTVar
+            CustomerJoinMessage -> unpackAndHandle $ \(maybeVisitorId, maybeCurrentPage, maybeReferrer) -> handleCustomerJoinMessage maybeVisitorId maybeCurrentPage maybeReferrer clientDataTVar siteDataTVar visitorClientMapTVar
             OperatorLoginRequestMessage -> unpackAndHandle $ \(username, password) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
             AdminLoginRequestMessage -> unpackAndHandle $ \password -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
             _ -> do
@@ -131,7 +132,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
     OCDClientCustomerData clientCustomerData ->
       case messageType of
         CustomerSendChatMessage -> unpackAndHandle $ \text -> handleCustomerSendChatMessage text clientCustomerData clientDataTVar
-        CustomerEndingChatMessage -> unpackAndHandle $ \() -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData)
+        CustomerEndingChatMessage -> unpackAndHandle $ \() -> handleCustomerEndingChatMessage (ccdChatSessionTVar clientCustomerData) visitorClientMapTVar
         _ -> do
           putStrLn "Client (Customer) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -139,7 +140,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
       case messageType of
         OperatorAcceptNextChatSessionMessage -> unpackAndHandle $ \() -> handleOperatorAcceptNextChatSessionMessage clientDataTVar (codSiteDataTVar clientOperatorData)
         OperatorSendChatMessage -> unpackAndHandle $ \(chatSessionId :: Int, text) -> handleOperatorSendChatMessage (toInteger chatSessionId) text clientDataTVar (codChatSessions clientOperatorData)
-        OperatorEndingChatMessage -> unpackAndHandle $ \(chatSessionId :: Int) -> handleOperatorEndingChatMessage (toInteger chatSessionId) (codChatSessions clientOperatorData)
+        OperatorEndingChatMessage -> unpackAndHandle $ \(chatSessionId :: Int) -> handleOperatorEndingChatMessage (toInteger chatSessionId) (codChatSessions clientOperatorData) visitorClientMapTVar
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -198,12 +199,31 @@ handleCSSALoginRequestMessage clientDataTVar =
       createAndSendMessage CSSALoginFailedMessage () clientDataTVar
       closeClientSocket clientDataTVar
 
-handleCSMTVisitorOnPage :: Text -> Text -> IO ()
-handleCSMTVisitorOnPage visitorId currentPage =
+handleCSMTVisitorOnPage :: Text -> Text -> VisitorClientMapTVar -> IO ()
+handleCSMTVisitorOnPage visitorId currentPage visitorClientMapTVar = do
   putStrLn $ "Visitor " ++ LT.unpack visitorId ++ " is now on page: " ++ LT.unpack currentPage
+  atomically $ do
+    clientDataTVars <- getClientDataTVarsForVisitorId visitorId visitorClientMapTVar
+    flip mapM_ clientDataTVars $ \clientDataTVar -> do
+      clientData <- readTVar clientDataTVar
+      case cdOtherData clientData of
+        OCDClientCustomerData clientCustomerData -> do
+          -- update the customer's current page
+          writeTVar clientDataTVar $ clientData {
+            cdOtherData = OCDClientCustomerData clientCustomerData { ccdCurrentPage = Just currentPage }
+          }
 
-handleCustomerJoinMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleCustomerJoinMessage visitorId referrer clientDataTVar siteDataTVar = do
+          chatSession <- readTVar (ccdChatSessionTVar clientCustomerData)
+          case csOperator chatSession of
+            ChatOperatorClient operatorClientDataTVar ->
+              createAndSendMessage CSMTOperatorCustomerOnPage (fromIntegral $ csId chatSession :: Int, currentPage) operatorClientDataTVar
+            ChatOperatorNobody ->
+              -- customer visited a new page before an operator accepted their chat
+              return ()
+        _ -> return ()
+
+handleCustomerJoinMessage :: Maybe Text -> Maybe Text -> Maybe Text -> ClientDataTVar -> SiteDataTVar -> VisitorClientMapTVar -> IO ()
+handleCustomerJoinMessage maybeVisitorId maybeCurrentPage maybeReferrer clientDataTVar siteDataTVar visitorClientMapTVar = do
   -- generate a color for this customer (we do it out here since it's IO)
   customerColor <- getRandomPersonColorHex
   atomically $ do
@@ -213,11 +233,14 @@ handleCustomerJoinMessage visitorId referrer clientDataTVar siteDataTVar = do
       let thisChatSessionId = sdNextSessionId siteData
       -- create a new chat session with this client as the customer and no operator
       chatSessionTVar <- newTVar $ ChatSession thisChatSessionId clientDataTVar ChatOperatorNobody [] siteDataTVar Nothing
-      writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData customerColor visitorId referrer siteDataTVar chatSessionTVar }
+      writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientCustomerData $ ClientCustomerData customerColor maybeVisitorId maybeCurrentPage maybeReferrer siteDataTVar chatSessionTVar }
 
       -- add the newly-created chat session to the site data's waiting list
       let newSessionsWaiting = sdSessionsWaiting siteData ++ [chatSessionTVar]
       writeTVar siteDataTVar $ siteData { sdSessionsWaiting = newSessionsWaiting, sdNextSessionId = thisChatSessionId + 1 }
+
+      -- add this customer to the visitorClientMap
+      addCustomerToVisitorClientMap clientDataTVar visitorClientMapTVar
 
       -- notify the client that they've joined successfully and tell them their color
       createAndSendMessage CustomerJoinSuccessMessage (customerColor) clientDataTVar
@@ -314,8 +337,8 @@ handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar =
         ChatOperatorClient operatorClientDataTVar -> createAndSendMessage OperatorReceiveChatMessage (fromIntegral $ csId chatSession :: Int, messageText) operatorClientDataTVar
         ChatOperatorNobody -> return () -- we have buffered the message above
 
-handleCustomerEndingChatMessage :: ChatSessionTVar -> IO ()
-handleCustomerEndingChatMessage chatSessionTVar = atomically $ endChatSession chatSessionTVar
+handleCustomerEndingChatMessage :: ChatSessionTVar -> VisitorClientMapTVar -> IO ()
+handleCustomerEndingChatMessage chatSessionTVar visitorClientMapTVar = atomically $ endChatSession chatSessionTVar visitorClientMapTVar
 
 handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
 handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
@@ -345,9 +368,9 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
             -- read additional data that will be needed below
             updatedChatSession <- readTVar chatSessionTVar
             customerClientData <- readTVar (csCustomerClientDataTVar updatedChatSession)
-            (customerColor, customerReferrer) <- case cdOtherData customerClientData of
-              OCDClientCustomerData clientCustomerData -> return (ccdColor clientCustomerData, ccdReferrer clientCustomerData)
-              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, LT.empty)
+            (customerColor, maybeCustomerCurrentPage, maybeCustomerReferrer) <- case cdOtherData customerClientData of
+              OCDClientCustomerData clientCustomerData -> return (ccdColor clientCustomerData, ccdCurrentPage clientCustomerData, ccdReferrer clientCustomerData)
+              _ -> return $ trace "ASSERT: csCustomerClientDataTVar contains a non-customer" (LT.empty, Nothing, Nothing)
             -- update the operators with 'next in line' and waiting customers with their new position
             waitingListUpdated siteDataTVar
           
@@ -366,7 +389,8 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
               (
                 fromIntegral $ csId updatedChatSession :: Int,
                 customerColor,
-                customerReferrer
+                maybeCustomerCurrentPage,
+                maybeCustomerReferrer
               )
               clientDataTVar
 
@@ -399,8 +423,8 @@ handleOperatorSendChatMessage chatSessionId messageText clientDataTVar chatSessi
           createAndSendMessage CustomerReceiveChatMessage (messageText) (csCustomerClientDataTVar chatSession)
         _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
-handleOperatorEndingChatMessage :: Integer -> [ChatSessionTVar] -> IO ()
-handleOperatorEndingChatMessage chatSessionId chatSessionTVars =
+handleOperatorEndingChatMessage :: Integer -> [ChatSessionTVar] -> VisitorClientMapTVar -> IO ()
+handleOperatorEndingChatMessage chatSessionId chatSessionTVars visitorClientMapTVar =
   atomically $ do
     matchedSessions <- filterM (\chatSessionTVar -> do
       chatSession <- readTVar chatSessionTVar
@@ -408,7 +432,7 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars =
       ) chatSessionTVars
 
     case matchedSessions of
-      [chatSessionTVar] -> endChatSession chatSessionTVar
+      [chatSessionTVar] -> endChatSession chatSessionTVar visitorClientMapTVar
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
 handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
@@ -651,17 +675,17 @@ sendSiteInfoToAdmins siteDataTVar = do
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
 sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, sdName siteData) adminClientDataTVar
 
-handleClientExitEvent :: ClientDataTVar -> IO ()
-handleClientExitEvent clientDataTVar = do
+handleClientExitEvent :: ClientDataTVar -> VisitorClientMapTVar -> IO ()
+handleClientExitEvent clientDataTVar visitorClientMapTVar = do
   atomically $ do
     clientData <- readTVar clientDataTVar
     case cdOtherData clientData of
       OCDClientCustomerData clientCustomerData -> do
         let chatSessionTVar = ccdChatSessionTVar clientCustomerData
-        endChatSession chatSessionTVar
+        endChatSession chatSessionTVar visitorClientMapTVar
       OCDClientOperatorData clientOperatorData -> do
         -- end all chat sessions
-        mapM_ endChatSession $ codChatSessions clientOperatorData
+        mapM_ (flip endChatSession visitorClientMapTVar) $ codChatSessions clientOperatorData
         
         -- remove the operator from sdOnlineOperators
         let siteDataTVar = codSiteDataTVar clientOperatorData
@@ -750,11 +774,19 @@ sendLineStatusInfoToOperator (LineStatusInfo maybeNextCustomerInfo numCustomersI
     Just (nextCustomerColor) -> createAndSendMessage OperatorLineStatusDetailsMessage (nextCustomerColor, numCustomersInLine) clientDataTVar
     Nothing -> createAndSendMessage OperatorLineStatusEmptyMessage () clientDataTVar
 
-endChatSession :: ChatSessionTVar -> STM ()
-endChatSession chatSessionTVar = do
+endChatSession :: ChatSessionTVar -> VisitorClientMapTVar -> STM ()
+endChatSession chatSessionTVar visitorClientMapTVar = do
   chatSession <- readTVar chatSessionTVar
+  let customerClientDataTVar = csCustomerClientDataTVar chatSession
+
   -- notify the customer that the chat session has ended
-  createAndSendMessage CustomerChatEndedMessage () (csCustomerClientDataTVar chatSession)
+  createAndSendMessage CustomerChatEndedMessage () customerClientDataTVar
+
+  -- remove this customer from the visitorClientMap
+  removeCustomerFromVisitorClientMap customerClientDataTVar visitorClientMapTVar
+  -- TODO: remove this:
+  visitorClientMap <- readTVar visitorClientMapTVar
+  trace (show visitorClientMap) (return ())
   
   case csOperator chatSession of
     ChatOperatorNobody -> do

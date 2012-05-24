@@ -7,8 +7,11 @@ module Liberty.WebChatInterface.MessageFormatConverter (
 import qualified Data.Aeson as J
 import Data.Attoparsec.Number as DAN
 import Data.ByteString.Lazy (ByteString)
+import Data.Maybe
 import qualified Data.MessagePack as MP
+import qualified Data.Text as T
 import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as LT
 import Prelude hiding (catch)
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
@@ -29,8 +32,13 @@ jsonToMP :: ChatServerMessageType -> [J.Value] -> Maybe ByteString
 jsonToMP UnregisteredSelectSiteMessage [J.String siteId] =
   createMessage UnregisteredSelectSiteMessage (siteId)
 
-jsonToMP CustomerJoinMessage [J.String visitorId, J.String referrer] =
-  createMessage CustomerJoinMessage (visitorId, referrer)
+jsonToMP CustomerJoinMessage [J.String visitorId, J.String currentPage, J.String referrer] =
+  let
+    maybeVisitorId = if not $ T.null visitorId then Just visitorId else Nothing
+    maybeCurrentPage = if not $ T.null currentPage then Just currentPage else Nothing
+    maybeReferrer = if not $ T.null referrer then Just referrer else Nothing
+  in
+    createMessage CustomerJoinMessage (maybeVisitorId, maybeCurrentPage, maybeReferrer)
 
 jsonToMP CustomerSendChatMessage [J.String text] =
   createMessage CustomerSendChatMessage (text)
@@ -116,13 +124,21 @@ messageToJson OperatorLineStatusEmptyMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId OperatorLineStatusEmptyMessage)]
 
 messageToJson OperatorNowTalkingToMessage encodedParams =
-  unpackAndHandle encodedParams $ \(sessionId :: Int, color :: Text, referrer :: Text) -> [J.toJSON (messageTypeToId OperatorNowTalkingToMessage), J.toJSON sessionId, J.toJSON color, J.toJSON referrer]
+  unpackAndHandle encodedParams $ \(sessionId :: Int, color :: Text, maybeCurrentPage :: Maybe Text, maybeReferrer :: Maybe Text) ->
+  let
+    currentPage = fromMaybe LT.empty maybeCurrentPage
+    referrer = fromMaybe LT.empty maybeReferrer
+  in
+    [J.toJSON (messageTypeToId OperatorNowTalkingToMessage), J.toJSON sessionId, J.toJSON color, J.toJSON currentPage, J.toJSON referrer]
 
 messageToJson OperatorReceiveChatMessage encodedParams =
   unpackAndHandle encodedParams $ \(sessionId :: Int, text :: Text) -> [J.toJSON (messageTypeToId OperatorReceiveChatMessage), J.toJSON sessionId, J.toJSON text]
 
 messageToJson OperatorChatEndedMessage encodedParams =
   unpackAndHandle encodedParams $ \(sessionId :: Int) -> [J.toJSON (messageTypeToId OperatorChatEndedMessage), J.toJSON sessionId]
+
+messageToJson CSMTOperatorCustomerOnPage encodedParams =
+  unpackAndHandle encodedParams $ \(sessionId :: Int, currentPage :: Text) -> [J.toJSON (messageTypeToId CSMTOperatorCustomerOnPage), J.toJSON sessionId, J.toJSON currentPage]
 
 messageToJson AdminLoginSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginSuccessMessage)]

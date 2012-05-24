@@ -239,6 +239,7 @@ var Messages = {
 	AdminSetAdminPasswordSuccessMessage : 56,
 	CustomerJoinSuccessMessage : 57,
 	CSUnavailableMessage : 58,
+	CSMTOperatorCustomerOnPage : 60,
 	AdminOperatorDeleteSuccessMessage : 62,
 	AdminOperatorDeleteFailedMessage : 63
 };

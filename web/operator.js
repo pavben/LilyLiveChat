@@ -227,8 +227,16 @@ function handleMessage(message) {
 		case Messages.OperatorNowTalkingToMessage:
 			var chatSessionId = message[0];
 			var color = message[1];
-			var referrer = message[2];
-			addActiveChatSession(chatSessionId, color, referrer);
+			var currentPage = message[2];
+			var referrer = message[3];
+
+			addActiveChatSession(chatSessionId, color);
+
+			// process the 'referrer' parameter we got in the OperatorNowTalkingToMessage -- this is the URL the customer came from to arrive at the operator's site
+			processReferrer(referrer, chatSessionId);
+
+			writeCustomerOnPageMessage(chatSessionId, currentPage, 'currently');
+
 			break;
 		case Messages.OperatorReceiveChatMessage:
 			var chatSessionId = message[0];
@@ -260,6 +268,11 @@ function handleMessage(message) {
 
 			decreaseNumActiveChats();
 			break;
+		case Messages.CSMTOperatorCustomerOnPage:
+			var chatSessionId = message[0];
+			var currentPage = message[1];
+
+			writeCustomerOnPageMessage(chatSessionId, currentPage, 'now');
 		default: // Invalid message type
 			log("Got invalid message type: " + messageTypeId);
 	}
@@ -278,8 +291,31 @@ function handleSessionEnded() {
 
 // TODO: unrelated: rename all global vars to g_*
 
-function processReferrer(url, chatSessionId) {
+function writeCustomerOnPageMessage(chatSessionId, url, nowOrCurrently) {
 	var they = getChatSessionData(chatSessionId).they;
+	var chatlog = $('#chat_chatlog_' + chatSessionId);
+
+	var protocolMatch = url.match(/^https?:\/\//i);
+	if (protocolMatch === null) {
+		return; // do nothing because the URL didn't have an HTTP protocol prefix
+	}
+
+	var urlWithoutProtocol = url.substring(protocolMatch[0].length);
+
+	chatlog.append(
+		$('<div/>').addClass('chatinfotext ellipsis').append(
+			$('<span/>').css('color', they.color).text(they.name)
+		).append(
+			$('<span/>').text(' is ' + nowOrCurrently + ' on ')
+		).append(
+			$('<a/>').attr('href', url).attr('target', '_blank').text(urlWithoutProtocol)
+		)
+	);
+
+	chatlogWritten(chatlog);
+}
+
+function processReferrer(url, chatSessionId) {
 	var chatlog = $('#chat_chatlog_' + chatSessionId);
 
 	function getSearchEngineAndKeywords(hostAndPort, queryString) {
@@ -350,40 +386,38 @@ function processReferrer(url, chatSessionId) {
 		chatlogWritten(chatlog);
 	}
 
-	{
-		var protocolMatch = url.match(/^https?:\/\//i);
-		if (protocolMatch === null) {
-			return; // do nothing because the URL didn't have an HTTP protocol prefix (or was empty)
-		}
-
-		var urlWithoutProtocol = url.substring(protocolMatch[0].length);
-
-		var hostPathAndQueryString = urlWithoutProtocol.match(/^(.*?)(?:(\/.*?)(\?.*?)?)?$/);
-		if (hostPathAndQueryString === null) {
-			return; // can't extract the host, path, and query string -- invalid URL
-		}
-
-		var hostAndPort = hostPathAndQueryString[1];
-		var path = hostPathAndQueryString[2];
-		var queryString = hostPathAndQueryString[3];
-
-		if (queryString !== undefined) {
-			// if there is a query string, find out if it's a known search engine so that we can attempt to extract the keywords
-
-			var searchEngineAndKeywords = getSearchEngineAndKeywords(hostAndPort, queryString);
-			var searchEngine = searchEngineAndKeywords[0];
-			// if the keywords are empty (''), we treat that as if the keywords key wasn't even present
-			var searchKeywords = (searchEngineAndKeywords[1] !== '') ? searchEngineAndKeywords[1] : null;
-
-			if (searchEngine !== null) {
-				writeSearchEngineReferrerToChatlog(searchEngine, searchKeywords, chatlog);
-				return;
-			}
-		}
-
-		// if here, the referrer is not a known search engine
-		writeRegularReferrerToChatlog(url, urlWithoutProtocol);
+	var protocolMatch = url.match(/^https?:\/\//i);
+	if (protocolMatch === null) {
+		return; // do nothing because the URL didn't have an HTTP protocol prefix (or was empty)
 	}
+
+	var urlWithoutProtocol = url.substring(protocolMatch[0].length);
+
+	var hostPathAndQueryString = urlWithoutProtocol.match(/^(.*?)(?:(\/.*?)(\?.*?)?)?$/);
+	if (hostPathAndQueryString === null) {
+		return; // can't extract the host, path, and query string -- invalid URL
+	}
+
+	var hostAndPort = hostPathAndQueryString[1];
+	var path = hostPathAndQueryString[2];
+	var queryString = hostPathAndQueryString[3];
+
+	if (queryString !== undefined) {
+		// if there is a query string, find out if it's a known search engine so that we can attempt to extract the keywords
+
+		var searchEngineAndKeywords = getSearchEngineAndKeywords(hostAndPort, queryString);
+		var searchEngine = searchEngineAndKeywords[0];
+		// if the keywords are empty (''), we treat that as if the keywords key wasn't even present
+		var searchKeywords = (searchEngineAndKeywords[1] !== '') ? searchEngineAndKeywords[1] : null;
+
+		if (searchEngine !== null) {
+			writeSearchEngineReferrerToChatlog(searchEngine, searchKeywords, chatlog);
+			return;
+		}
+	}
+
+	// if here, the referrer is not a known search engine
+	writeRegularReferrerToChatlog(url, urlWithoutProtocol);
 }
 
 /*
@@ -423,7 +457,7 @@ function updateActiveChatsLabel() {
 	});
 }
 
-function addActiveChatSession(chatSessionId, color, referrer) {
+function addActiveChatSession(chatSessionId, color) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
 		$('<div/>').attr('id', 'chat_sessionlistbuttonwrapper_' + chatSessionId).append(
@@ -526,9 +560,6 @@ function addActiveChatSession(chatSessionId, color, referrer) {
 	});
 
 	initializeAutoGrowingTextArea(chatbox, $('#chat_chatboxwrapper_' + chatSessionId));
-
-	// process the 'referrer' parameter we got in the OperatorNowTalkingToMessage -- this is the URL the customer came from to arrive at the operator's site
-	processReferrer(referrer, chatSessionId);
 
 	setVisibleChatSessionId(chatSessionId);
 
