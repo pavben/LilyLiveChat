@@ -784,9 +784,6 @@ endChatSession chatSessionTVar visitorClientMapTVar = do
 
   -- remove this customer from the visitorClientMap
   removeCustomerFromVisitorClientMap customerClientDataTVar visitorClientMapTVar
-  -- TODO: remove this:
-  visitorClientMap <- readTVar visitorClientMapTVar
-  trace (show visitorClientMap) (return ())
   
   case csOperator chatSession of
     ChatOperatorNobody -> do

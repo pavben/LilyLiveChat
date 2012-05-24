@@ -61,14 +61,22 @@ var lilyLiveChat_launch;
 	// END originalReferrer cookie code
 	
 	// BEGIN visitorId
-	function randomVisitorId() {
-		return '123aAbBcC';
+	function generateRandomVisitorId() {
+		function generateRandomString(length, chars) {
+			var result = '';
+			for (var i = length; i > 0; --i) {
+				result += chars[Math.round(Math.random() * (chars.length - 1))];
+			}
+			return result;
+		}
+
+		return generateRandomString(32, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
 	}
 
 	var visitorId = readPrefixedCookie('visitorId');
 
 	if (visitorId === null) {
-		visitorId = randomVisitorId();
+		visitorId = generateRandomVisitorId();
 		setPrefixedCookie('visitorId', visitorId);
 	}
 	// END visitorId
