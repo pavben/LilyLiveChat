@@ -112,6 +112,7 @@ input {
 	height:21px;
 }
 .chatboxwrapper {
+	margin-top:9px;
 	background-color:#F4F4F4;
 	overflow:hidden;
 }
@@ -239,12 +240,6 @@ input {
 	overflow-y:auto;
 	white-space:pre-wrap;
 	word-wrap: break-word;
-}
-.chatlog {
-	margin-top:9px;
-}
-.chatlogfixed {
-	width:623px;
 }
 .chatmsgtext, .chatinfotext {
 	font-size:18px;

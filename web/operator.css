@@ -39,11 +39,13 @@
 	display:table-cell;
 	width:641px;
 	min-width:641px;
-	padding:9px 9px 9px 9px;
 	background-color:#E3E3E3;
 }
-.chat_buttonswrapper {
-	margin-top:6px;
+#chat_maincell_none {
+	padding:8px 9px 9px 9px;
+}
+.chat_maincell_chatwindow {
+	padding:6px 9px 9px 9px;
 }
 #chat_rightcell {
 	display:table-cell;
@@ -177,6 +179,7 @@
 }
 
 /* extensions from common */
-.chatboxwrapper {
+.chatlogfixed {
 	margin-top:6px;
+	width:605px;
 }

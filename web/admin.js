@@ -145,21 +145,6 @@ $(window).bind('load', function() {
 		$('#install_button_advanced').slideToggle(300, onResize);
 	});
 
-	/*
-	// Auto-select all content in the code textareas on click
-	$('.install_code').focus(function() {
-		textarea = $(this);
-		textarea.select();
-
-		textarea.mouseup(function() {
-			// Prevent further mouseup intervention
-			textarea.unbind("mouseup");
-			// Prevent the click from canceling the selection
-			return false;
-		});
-	});
-	*/
-
 	updateInstallCodeMain(siteId);
 
 	$('#install_button_chatbutton1').click(function() {

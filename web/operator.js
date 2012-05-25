@@ -481,10 +481,8 @@ function addActiveChatSession(chatSessionId, color) {
 
 	// create the chat session tab
 	$('#chat_maincell').append(
-		$('<div/>').attr('id', 'chat_maincell_' + chatSessionId).addClass('tab').append(
-			$('<div/>').attr('id', 'chat_chatlog_' + chatSessionId).addClass('chatlogfixed')
-		).append(
-			$('<div/>').attr('id', 'chat_buttonswrapper_' + chatSessionId).addClass('chat_buttonswrapper').append(
+		$('<div/>').attr('id', 'chat_maincell_' + chatSessionId).addClass('chat_maincell_chatwindow tab').append(
+			$('<div/>').attr('id', 'chat_buttonswrapper_' + chatSessionId).append(
 				$('<div/>').addClass('fixedtable').append(
 					$('<div/>').addClass('cell')
 				).append(
@@ -493,6 +491,8 @@ function addActiveChatSession(chatSessionId, color) {
 					)
 				)
 			)
+		).append(
+			$('<div/>').attr('id', 'chat_chatlog_' + chatSessionId).addClass('chatlogfixed')
 		).append(
 			$('<div/>').attr('id', 'chat_chatboxwrapper_' + chatSessionId).addClass('chatboxwrapper').append(
 				$('<textarea/>').attr('id', 'chat_chatbox_' + chatSessionId).addClass('chatbox')
@@ -995,20 +995,17 @@ function updateChatlogHeight(chatSessionId) {
 	$('body').css('overflow-y', 'hidden');
 
 	var chatlogDiv = chatSessionIdToObject('#chat_chatlog_', chatSessionId);
-	var buttonsWrapper = chatSessionIdToObject('#chat_buttonswrapper_', chatSessionId);
 	var chatboxWrapper = chatSessionIdToObject('#chat_chatboxwrapper_', chatSessionId);
-	var chatMaincellDiv = $('#chat_maincell');
+	var chatMaincellChatWindowDiv = chatSessionIdToObject('#chat_maincell_', chatSessionId);
 	var newChatlogHeight = $(window).height()
 		- chatlogDiv.offset().top // remove the space from the start of maincell to the start of chatlog
 		- stripPx(chatlogDiv.css('padding-top')) // top and bottom paddings are not counted in the height
 		- stripPx(chatlogDiv.css('padding-bottom'))
 		- stripPx(chatlogDiv.css('border-top-width')) // same for border
 		- stripPx(chatlogDiv.css('border-bottom-width'))
-		- stripPx(buttonsWrapper.css('margin-top')) // remove the height of the spacer above the buttons wrapper
-		- buttonsWrapper.outerHeight() // remove the height of the buttons wrapper
 		- stripPx(chatboxWrapper.css('margin-top')) // remove the height of the spacer above the chatbox
 		- chatboxWrapper.outerHeight() // remove the height of the chatbox wrapper
-		- stripPx(chatMaincellDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
+		- stripPx(chatMaincellChatWindowDiv.css('padding-bottom')); // remove the height of the padding below the chatbox
 
 	if (newChatlogHeight < 200) {
 		newChatlogHeight = 200;
