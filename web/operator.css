@@ -58,6 +58,7 @@
 	vertical-align:middle;
 }
 #chat_namecell_tooltip {
+	z-index:1;
 	position:absolute;
 	width:300px;
 	padding:9px 9px 9px 9px;
@@ -120,7 +121,7 @@
 .chat_sessionlistcontent {
 	padding:7px 7px 0px 7px;
 }
-.chat_sessionlistbutton_full, .chat_sessionlistbutton_open {
+.chat_sessionlistbutton {
 	height:25px;
 	line-height:25px;
 	font-size:18px;
@@ -141,34 +142,26 @@
 	-o-user-select: none;
 	user-select: none;
 }
-.chat_sessionlistbutton_full {
-	padding:0px 5px 0px 5px;
-	overflow:hidden;
-	white-space:nowrap;
-	text-overflow:ellipsis;
-	text-align:center;
-}
-.chat_sessionlistbutton_full:hover, .chat_sessionlistbutton_open:hover {
+.chat_sessionlistbutton:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
-.chat_sessionlistbutton_full:active, .chat_sessionlistbutton_open:active {
+.chat_sessionlistbutton:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
-.chat_sessionlistbutton_ind_base, .chat_sessionlistbutton_ind_active, .chat_sessionlistbutton_ind_ended {
-	width:21px;
-	height:25px;
+.chat_sessionlistbutton_colorlabel_wrapper {
+	padding:1px 0px 1px 1px;
+	width:20px;
 }
-.chat_sessionlistbutton_ind_base {
-	background-image: url('images/sessionbutton_gray.png');
+.chat_sessionlistbutton_colorlabel {
+	width:18px;
+	height:21px;
+	border:1px solid #353535;
+	border-top-left-radius:4px;
+	border-bottom-left-radius:4px;
+	opacity:0.65;
 }
-.chat_sessionlistbutton_ind_active {
-	background-image: url('images/sessionbutton_green.png');
-}
-.chat_sessionlistbutton_ind_ended {
-	background-image: url('images/sessionbutton_red.png');
-}
-.chat_sessionlistbutton_open_text {
-	padding:0px 21px 0px 0px;
+.chat_sessionlistbutton_textlabel {
+	padding:0px 8px 0px 5px;
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;

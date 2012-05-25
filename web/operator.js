@@ -461,16 +461,16 @@ function addActiveChatSession(chatSessionId, color) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
 		$('<div/>').attr('id', 'chat_sessionlistbuttonwrapper_' + chatSessionId).append(
-			$('<div/>').attr('id', 'chat_sessionlistbutton_' + chatSessionId).addClass('chat_sessionlistbutton_open').click(function() {
+			$('<div/>').attr('id', 'chat_sessionlistbutton_' + chatSessionId).addClass('chat_sessionlistbutton').click(function() {
 				setVisibleChatSessionId(chatSessionId);
 			}).append(
 				$('<div/>').addClass('fixedtable').append(
 					$('<div/>').addClass('tablerow').append(
-						$('<div/>').addClass('chat_sessionlistbutton_ind_base').addClass('cell').append(
-							$('<div/>').attr('id', 'chat_sessionlistbutton_ind_' + chatSessionId).fadeTo(0, 0)
+						$('<div/>').addClass('chat_sessionlistbutton_colorlabel_wrapper cell').append(
+							$('<div/>').addClass('chat_sessionlistbutton_colorlabel').css('background-color', color)
 						)
 					).append(
-						$('<div/>').addClass('chat_sessionlistbutton_open_text').addClass('cell').css('color', color).text('Customer')
+						$('<div/>').addClass('chat_sessionlistbutton_textlabel cell').css('color', color)
 					)
 				)
 			)
@@ -720,7 +720,8 @@ function lineStatusFinished() {
 }
 
 function updateNextInLine(color, lineLength) {
-	var nextInLineButtonText = $('#chat_nextinlinebutton_text');
+	var nextInLineButtonColorLabel = $('#chat_nextinlinebutton_colorlabel');
+	var nextInLineButtonTextLabel = $('#chat_nextinlinebutton_textlabel');
 	var nextInLineButtonWrapper = $('#chat_nextinlinebuttonwrapper');
 	var nextInLineHeader = $('#chat_nextinlineheader');
 	var nextInLineHeaderText = $('#chat_nextinlineheadertext');
@@ -740,8 +741,9 @@ function updateNextInLine(color, lineLength) {
 				nextInLineHeaderText.text(nextInLineHeaderTextTarget);
 				nextInLineHeaderText.fadeTo(500, 1);
 
-				nextInLineButtonText.text('Next Customer');
-				nextInLineButtonText.css('color', color);
+				nextInLineButtonColorLabel.css('background-color', color);
+				nextInLineButtonTextLabel.css('color', color);
+				nextInLineButtonTextLabel.text('Next in line');
 				nextInLineButtonWrapper.fadeTo(500, 1);
 
 				lineStatusFinished();
@@ -764,8 +766,9 @@ function updateNextInLine(color, lineLength) {
 		}
 		if (currentDisplayedNextInLine[0] != color) {
 			nextInLineButtonWrapper.fadeTo(250, 0, function() {
-				nextInLineButtonText.text('Next Customer');
-				nextInLineButtonText.css('color', color);
+				nextInLineButtonColorLabel.css('background-color', color);
+				nextInLineButtonTextLabel.css('color', color);
+				nextInLineButtonTextLabel.text('Next in line');
 				nextInLineButtonWrapper.fadeTo(500, 1);
 
 				lineStatusFinished();
