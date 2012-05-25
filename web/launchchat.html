@@ -15,7 +15,7 @@
 			$.cookie(siteId + '.' + name, val, { expires: 1, path: '/', domain: 'lilylivechat.net' });
 		} else {
 			// if no visitorId given, clear the cookie
-			$.cookie(siteId + '.' + name, null);
+			$.cookie(siteId + '.' + name, null, { path: '/', domain: 'lilylivechat.net' });
 		}
 	}
 
