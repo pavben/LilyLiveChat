@@ -245,9 +245,9 @@ function handleMessage(message) {
 			var they = getChatSessionData(chatSessionId).they;
 
 			writeMessageToChatlog(they.name, they.color, text, chatSessionIdToObject('#chat_chatlog_', chatSessionId));
-			if (visibleChatSessionId !== chatSessionId) {
-				setChatSessionIndicator(chatSessionId, ButtonIndicatorStates.Active);
-			}
+
+			// update the button label to be the message
+			setButtonTextLabelIfInactive(chatSessionId, text);
 
 			break;
 		case Messages.OperatorChatEndedMessage:
@@ -257,8 +257,6 @@ function handleMessage(message) {
 			if (chatSessionData !== null) {
 				// if the chat window still exists, it means the customer (not the operator) ended the chat session
 				writeInfoTextToChatlog('The customer has ended the chat session.', $('#chat_chatlog_' + chatSessionId));
-				// set the session indicator to ended
-				setChatSessionIndicator(chatSessionId, ButtonIndicatorStates.Ended);
 
 				chatSessionData.chatSessionEnded = true;
 
@@ -470,7 +468,7 @@ function addActiveChatSession(chatSessionId, color) {
 							$('<div/>').addClass('chat_sessionlistbutton_colorlabel').css('background-color', color)
 						)
 					).append(
-						$('<div/>').addClass('chat_sessionlistbutton_textlabel cell').css('color', color)
+						$('<div/>').attr('id', 'chat_sessionlistbutton_textlabel_' + chatSessionId).addClass('chat_sessionlistbutton_textlabel cell').css('color', color)
 					)
 				)
 			)
@@ -505,9 +503,6 @@ function addActiveChatSession(chatSessionId, color) {
 
 	// mark the chat session as open; this is set to false when the session is beginning its 'Close' fade-out
 	getChatSessionData(chatSessionId).isOpen = true;
-
-	// start in the normal state, which means no active or ended class in the indicator
-	getChatSessionData(chatSessionId).buttonIndicatorState = ButtonIndicatorStates.Normal;
 
 	// close handler
 	chatSessionIdToObject('#chat_btn_endchat_', chatSessionId).click(function() {
@@ -567,6 +562,19 @@ function addActiveChatSession(chatSessionId, color) {
 	increaseNumActiveChats();
 }
 
+function setButtonTextLabelIfInactive(chatSessionId, text) {
+	var buttonTextLabel = chatSessionIdToObject('#chat_sessionlistbutton_textlabel_', chatSessionId);
+
+	// if inactive
+	if (visibleChatSessionId !== chatSessionId) {
+		// set the label
+		buttonTextLabel.text(text);
+	} else {
+		// clear the label
+		buttonTextLabel.text('');
+	}
+}
+
 /* Session-specific storage functions */
 function getChatSessionData(chatSessionId) {
 	var mainCell = $('#chat_maincell_' + chatSessionId);
@@ -604,74 +612,6 @@ function getOpenChatSessionIds() {
 	}
 
 	return chatSessionIds;
-}
-
-var SessionListButtonClasses = {
-	Active : 'chat_sessionlistbutton_ind_active',
-	Ended : 'chat_sessionlistbutton_ind_ended'
-}
-
-var ButtonIndicatorStates = {
-	Normal : 0,
-	Active : 1,
-	Ended : 2
-}
-
-function setChatSessionIndicator(chatSessionId, targetValue) {
-	if (isChatSessionOpen(chatSessionId)) {
-		var sessionButtonIndicator = $('#chat_sessionlistbutton_ind_' + chatSessionId);
-
-		var sessionData = getChatSessionData(chatSessionId);
-
-		/* Current  | Next    | Action
-		 * ---------------------------
-		 * Normal   | Active  | Show Active
-		 * Normal   | Ended   | Show Ended
-		 * Active   | Normal  | Fade Active
-		 * Active   | Ended   | Fade Active, Show Ended
-		 *
-		 * and ignore all others
-		 */
-
-		var fadeInTime = 200;
-		var fadeOutTime = 100;
-
-		if (sessionData.buttonIndicatorState === ButtonIndicatorStates.Normal) {
-			switch (targetValue) {
-			case ButtonIndicatorStates.Active:
-				sessionButtonIndicator.addClass(SessionListButtonClasses.Active);
-				// fade in
-				sessionButtonIndicator.fadeTo(fadeInTime, 1);
-				sessionData.buttonIndicatorState = targetValue;
-				break;
-			case ButtonIndicatorStates.Ended:
-				sessionButtonIndicator.addClass(SessionListButtonClasses.Ended);
-				// fade in
-				sessionButtonIndicator.fadeTo(fadeInTime, 1);
-				sessionData.buttonIndicatorState = targetValue;
-				break;
-			}
-		} else if (sessionData.buttonIndicatorState === ButtonIndicatorStates.Active) {
-			switch (targetValue) {
-			case ButtonIndicatorStates.Normal:
-				sessionButtonIndicator.fadeTo(0, 0, function() {
-					sessionButtonIndicator.removeClass(SessionListButtonClasses.Active);
-				});
-				sessionData.buttonIndicatorState = targetValue;
-				break;
-			case ButtonIndicatorStates.Ended:
-				sessionButtonIndicator.fadeTo(fadeOutTime, 0, function() {
-					// now that it's faded out, switch the class
-					sessionButtonIndicator.removeClass(SessionListButtonClasses.Active);
-					sessionButtonIndicator.addClass(SessionListButtonClasses.Ended);
-					// fade in
-					sessionButtonIndicator.fadeTo(fadeInTime, 1);
-				});
-				sessionData.buttonIndicatorState = targetValue;
-				break;
-			}
-		}
-	}
 }
 
 /* Line status updating and effects */
@@ -855,10 +795,6 @@ function followVisibleChatSessionIdTarget() {
 	if (visibleChatSessionIdTarget !== undefined) {
 		var initialCell = chatSessionIdToObject('#chat_maincell_', visibleChatSessionId);
 
-		// set the indicator to Normal
-		// to be correct, it should be done after the chat session is loaded, but resetting the indicator instantly yields a better user experience
-		setChatSessionIndicator(visibleChatSessionIdTarget, ButtonIndicatorStates.Normal);
-
 		// NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
 		initialCell.fadeTo(100, 0, function() {
 			initialCell.hide();
@@ -874,8 +810,8 @@ function followVisibleChatSessionIdTarget() {
 						// if the target hasn't changed during the fade-in, we're done
 						visibleChatSessionIdTarget = undefined;
 
-						// and once again set the indicator to Normal (this covers the case where a message comes in while we're fading-in the new chat session)
-						setChatSessionIndicator(visibleChatSessionId, ButtonIndicatorStates.Normal);
+						// reset the button label to empty, since we're now looking at this window
+						setButtonTextLabelIfInactive(visibleChatSessionId, '');
 					} else {
 						// otherwise, transition to the new target
 						setTimeout(followVisibleChatSessionIdTarget, 0);

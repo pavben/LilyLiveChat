@@ -45,7 +45,7 @@
 	padding:8px 9px 9px 9px;
 }
 .chat_maincell_chatwindow {
-	padding:6px 9px 9px 9px;
+	padding:5px 9px 9px 9px;
 }
 #chat_rightcell {
 	display:table-cell;
@@ -111,9 +111,11 @@
 }
 #chat_nextinlineheader {
 	height:71px;
+	color:#555555;
 }
 #chat_activechatsheader {
 	height:29px;
+	color:#555555;
 }
 #chat_nextinlinebuttonwrapper {
 	display:none;
@@ -149,23 +151,22 @@
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
 .chat_sessionlistbutton_colorlabel_wrapper {
-	padding:1px 0px 1px 1px;
-	width:20px;
+	padding:1px;
+	width:25px;
 }
 .chat_sessionlistbutton_colorlabel {
-	width:18px;
-	height:21px;
-	border:1px solid #353535;
+	width:23px;
+	height:23px;
 	border-top-left-radius:4px;
 	border-bottom-left-radius:4px;
 	opacity:0.65;
 }
 .chat_sessionlistbutton_textlabel {
-	padding:0px 8px 0px 5px;
+	padding:0px 5px 0px 5px;
 	overflow:hidden;
 	white-space:nowrap;
 	text-overflow:ellipsis;
-	text-align:center;
+	text-align:left;
 }
 .chat_sessionlistsep {
 	height:7px;
