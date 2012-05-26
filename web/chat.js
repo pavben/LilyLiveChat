@@ -72,7 +72,7 @@ function handleMessage(message) {
 			break;
 		case Messages.SomethingWentWrongMessage:
 		case Messages.CSUnavailableMessage:
-			// TODO PR: Show more appropriate screens for these
+			// TODO PL: Show more appropriate screens for these
 			showDisconnectedScreen();
 			break;
 		case Messages.CSMTWrongChatServer:

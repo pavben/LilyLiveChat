@@ -147,8 +147,7 @@ function checkRingtoneStateLoop() {
 		if (!ringtoneActive) {
 			ringtoneActive = true;
 
-			// TODO: enable
-			//jPlayerRingtone.jPlayer('play');
+			jPlayerRingtone.jPlayer('play');
 		}
 	} else if (ringtoneActive) {
 		// either we have active chats or there isn't anyone in line
@@ -188,7 +187,7 @@ function handleMessage(message) {
 			break;
 		case Messages.SomethingWentWrongMessage:
 		case Messages.CSUnavailableMessage:
-			// TODO PR: Show more appropriate screens for these
+			// TODO PL: Show more appropriate screens for these
 			showDisconnectedScreen();
 			break;
 		case Messages.CSMTWrongChatServer:
@@ -318,6 +317,7 @@ function writeCustomerOnPageMessage(chatSessionId, url, nowOrCurrently) {
 }
 
 function processReferrer(url, chatSessionId) {
+	var customerColor = getChatSessionData(chatSessionId).color;
 	var chatlog = $('#chat_chatlog_' + chatSessionId);
 
 	function getSearchEngineAndKeywords(hostAndPort, queryString) {
@@ -350,9 +350,10 @@ function processReferrer(url, chatSessionId) {
 	function writeSearchEngineReferrerToChatlog(searchEngine, searchKeywords) {
 		if (searchKeywords !== null) {
 			chatlog.append(
-				// TODO: Format this better... the dash is very basic. Should be fine for launch though.
 				$('<div/>').addClass('chatinfotext').append(
-					$('<span/>').text('- Searched for ')
+					$('<span/>').css('color', customerColor).text('Customer')
+				).append(
+					$('<span/>').text(' searched for ')
 				).append(
 					$('<span/>').css('color', '#454545').text(searchKeywords)
 				).append(
@@ -364,11 +365,13 @@ function processReferrer(url, chatSessionId) {
 		} else {
 			chatlog.append(
 				$('<div/>').addClass('chatinfotext').append(
-					$('<span/>').text('- Arrived from ')
+					$('<span/>').css('color', customerColor).text('Customer')
+				).append(
+					$('<span/>').text(' arrived from ')
 				).append(
 					$('<span/>').css('color', '#454545').text(searchEngine)
 				).append(
-					$('<span/>').text(', but the search keywords are hidden.')
+					$('<span/>').text(', but the search keywords were hidden.')
 				)
 			);
 		}
@@ -379,7 +382,9 @@ function processReferrer(url, chatSessionId) {
 	function writeRegularReferrerToChatlog(referrerUrl, referrerUrlWithoutProtocol) {
 		chatlog.append(
 			$('<div/>').addClass('chatinfotext ellipsis').append(
-				$('<span/>').text('- Arrived from ')
+				$('<span/>').css('color', customerColor).text('Customer')
+			).append(
+				$('<span/>').text(' arrived from ')
 			).append(
 				$('<a/>').attr('href', referrerUrl).attr('target', '_blank').text(referrerUrlWithoutProtocol)
 			)
