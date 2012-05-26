@@ -22,6 +22,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as LT
 import Data.Word
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (recv)
@@ -30,6 +31,7 @@ import Liberty.WebChatInterface.MessageFormatConverter
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.RandomString
+import Liberty.Common.ServiceClient
 import Liberty.Common.Timeouts
 
 type SessionId = Text
@@ -52,7 +54,8 @@ createSessionMapTVar = atomically $ newTVar Map.empty
 
 createSession :: SessionMapTVar -> IO (Maybe (SessionId, SessionDataTVar))
 createSession sessionMapTVar = do
-  maybeProxySocket <- establishProxyConnection
+  -- TODO PL: server "anivia" is hardcoded
+  maybeProxySocket <- establishServiceConnection (getServiceConnectionDataForChatServer (LT.pack "anivia"))
   case maybeProxySocket of
     Just proxySocket -> do
       (sessionId, sessionDataTVar) <- tryCreateSessionUntilSuccess sessionMapTVar proxySocket
@@ -144,20 +147,6 @@ tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
     Just sessionDataTVar -> do
       return (newSessionId, sessionDataTVar)
     Nothing -> tryCreateSessionUntilSuccess sessionMapTVar proxySocket
-
-establishProxyConnection :: IO (Maybe Socket)
-establishProxyConnection = do
-  socketInitResult <- try (socket AF_INET Stream 0)
-  case socketInitResult of
-    Right proxySocket ->
-      catch
-        (do
-          hostAddress <- inet_addr "192.168.1.102"
-          connect proxySocket (SockAddrInet 9800 hostAddress)
-          return $ Just proxySocket
-        )
-        (\(SomeException _) -> return Nothing)
-    Left (SomeException _) -> return Nothing
 
 resetSessionTimeout :: SessionDataTVar -> SessionId -> SessionMapTVar -> IO ()
 resetSessionTimeout sessionDataTVar sessionId sessionMapTVar = do

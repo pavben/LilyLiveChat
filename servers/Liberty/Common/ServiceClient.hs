@@ -5,6 +5,7 @@ module Liberty.Common.ServiceClient(
   runServiceTask,
   serviceRequest,
   withServiceConnection,
+  establishServiceConnection,
   sendMessageToService,
   receiveMessageFromService
 ) where
@@ -23,8 +24,7 @@ import Liberty.Common.Messages
 
 -- TODO: Make it IPv6 instead
 data ServiceConnectionData = ServiceConnectionData {
-  sdcHost :: String,
-  sdcPort :: PortNumber
+  sdcHost :: String
 }
 
 getLocalServiceConnectionData :: String -> ServiceConnectionData
@@ -32,7 +32,7 @@ getLocalServiceConnectionData serviceName =
   let
     hostName = serviceName ++ ".local.lilylivechat.net"
   in
-    ServiceConnectionData hostName 9800
+    ServiceConnectionData hostName
 
 data ServiceTask a = ServiceTask (IO (Maybe a))
 
@@ -74,22 +74,38 @@ serviceRequest serviceConnectionData messageType messageParams =
 
 withServiceConnection :: ServiceConnectionData -> (ServiceHandle -> ServiceTask a) -> IO (Maybe a)
 withServiceConnection serviceConnectionData f = runServiceTask $ do
-  serviceSocket <- establishConnection (sdcHost serviceConnectionData) (sdcPort serviceConnectionData)
+  serviceSocket <- establishServiceConnectionST serviceConnectionData
   liftIO $ putStrLn "Conn established"
   finallyST
     (f serviceSocket)
     (liftIO $ sClose serviceSocket)
 
-establishConnection :: String -> PortNumber -> ServiceTask Socket
-establishConnection host port = do
+establishServiceConnection :: ServiceConnectionData -> IO (Maybe Socket)
+establishServiceConnection serviceConnectionData = do
+  socketInitResult <- try (socket AF_INET Stream 0)
+  case socketInitResult of
+    Right serviceSocket ->
+      catch
+        (do
+          hostEntry <- getHostByName (sdcHost serviceConnectionData)
+          connect serviceSocket (SockAddrInet 9800 (hostAddress hostEntry))
+          return $ Just serviceSocket
+        )
+        (\(SomeException ex) -> do
+          putStrLn $ "Resolve/Connect exception: " ++ show ex
+          return Nothing
+        )
+    Left (SomeException _) -> return Nothing
+
+establishServiceConnectionST :: ServiceConnectionData -> ServiceTask Socket
+establishServiceConnectionST serviceConnectionData = do
   socketInitResult <- liftIO $ try (socket AF_INET Stream 0)
   case socketInitResult of
     Right serviceSocket ->
       catchST
         (do
-          hostEntry <- liftIO $ getHostByName host
-          -- TODO: is port needed, or is it always 9800? should be the latter, I believe
-          liftIO $ connect serviceSocket (SockAddrInet port (hostAddress hostEntry))
+          hostEntry <- liftIO $ getHostByName (sdcHost serviceConnectionData)
+          liftIO $ connect serviceSocket (SockAddrInet 9800 (hostAddress hostEntry))
           return serviceSocket
         )
         (\(SomeException ex) -> do

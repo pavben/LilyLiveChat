@@ -36,7 +36,7 @@ siteDataSaverWorker siteDataSaverChan maybeRetrySiteData = do
           siteDataSaverWorker siteDataSaverChan Nothing
         SSDNotAuthoritative ->
           -- if we are no longer the authority for this site, drop the change and continue to the next site
-          -- TODO: also remove the site from our cache
+          -- TODO PL: also remove the site from our cache
           siteDataSaverWorker siteDataSaverChan Nothing
         SSDNotAvailable -> do
           putStrLn $ "Error saving site: " ++ show siteData ++ ". Retrying in 5 seconds..."

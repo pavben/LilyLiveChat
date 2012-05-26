@@ -29,7 +29,7 @@ maxOperatorTitleLength = 25
 maxIconUrlLength :: Int64
 maxIconUrlLength = 250
 
--- TODO: Enforce this limit on the client side
+-- TODO PL: Enforce this limit on the client side
 -- CONSIDER: Instead of limiting individual messages, limit all traffic from the client
 maxChatMessageLength :: Int64
 maxChatMessageLength = 20000
