@@ -468,7 +468,7 @@ function addActiveChatSession(chatSessionId, color) {
 	// create the chat button
 	$('#chat_activechatscontainer').prepend(
 		$('<div/>').attr('id', 'chat_sessionlistbuttonwrapper_' + chatSessionId).append(
-			$('<div/>').attr('id', 'chat_sessionlistbutton_' + chatSessionId).addClass('chat_sessionlistbutton').click(function() {
+			$('<div/>').attr('id', 'chat_sessionlistbutton_' + chatSessionId).addClass('chat_sessionlistbutton chat_sessionlistbutton_noncurrent').click(function() {
 				setVisibleChatSessionId(chatSessionId);
 			}).append(
 				$('<div/>').addClass('fixedtable').append(
@@ -811,6 +811,22 @@ function followVisibleChatSessionIdTarget() {
 		// NOTE: When increasing the fade time here, make sure buttonWrapper.slideUp(x..) is higher
 		initialCell.fadeTo(100, 0, function() {
 			initialCell.hide();
+
+			if (visibleChatSessionId !== null) {
+				var currentButton = chatSessionIdToObject('#chat_sessionlistbutton_', visibleChatSessionId);
+				
+				// make the current button non-current
+				currentButton.removeClass('chat_sessionlistbutton_current');
+				currentButton.addClass('chat_sessionlistbutton_noncurrent');
+			}
+
+			if (visibleChatSessionIdTarget !== null) {
+				var nextCurrentButton = chatSessionIdToObject('#chat_sessionlistbutton_', visibleChatSessionIdTarget);
+
+				// make the next current button current
+				nextCurrentButton.removeClass('chat_sessionlistbutton_noncurrent');
+				nextCurrentButton.addClass('chat_sessionlistbutton_current');
+			}
 
 			visibleChatSessionId = visibleChatSessionIdTarget;
 

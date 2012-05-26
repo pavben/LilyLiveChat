@@ -144,10 +144,13 @@
 	-o-user-select: none;
 	user-select: none;
 }
-.chat_sessionlistbutton:hover {
+.chat_sessionlistbutton_current {
+	box-shadow: 0px 0px 1px 1px #e6c284;
+}
+.chat_sessionlistbutton_noncurrent:hover {
 	box-shadow: 0px 0px 1px 1px #84d3e6;
 }
-.chat_sessionlistbutton:active {
+.chat_sessionlistbutton_noncurrent:active {
 	box-shadow: 0px 0px 6px 2px #c8c8c8 inset;
 }
 .chat_sessionlistbutton_colorlabel_wrapper {
