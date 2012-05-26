@@ -242,9 +242,9 @@ function handleMessage(message) {
 			var chatSessionId = message[0];
 			var text = message[1];
 
-			var they = getChatSessionData(chatSessionId).they;
+			var customerColor = getChatSessionData(chatSessionId).color;
 
-			writeMessageToChatlog(they.name, they.color, text, chatSessionIdToObject('#chat_chatlog_', chatSessionId));
+			writeMessageToChatlog('Customer', customerColor, text, chatSessionIdToObject('#chat_chatlog_', chatSessionId));
 
 			// update the button label to be the message
 			setButtonTextLabelIfInactive(chatSessionId, text);
@@ -290,7 +290,7 @@ function handleSessionEnded() {
 // TODO: unrelated: rename all global vars to g_*
 
 function writeCustomerOnPageMessage(chatSessionId, url, nowOrCurrently) {
-	var they = getChatSessionData(chatSessionId).they;
+	var customerColor = getChatSessionData(chatSessionId).color;
 	var chatlog = $('#chat_chatlog_' + chatSessionId);
 
 	var protocolMatch = url.match(/^https?:\/\//i);
@@ -302,7 +302,7 @@ function writeCustomerOnPageMessage(chatSessionId, url, nowOrCurrently) {
 
 	chatlog.append(
 		$('<div/>').addClass('chatinfotext ellipsis').append(
-			$('<span/>').css('color', they.color).text(they.name)
+			$('<span/>').css('color', customerColor).text('Customer')
 		).append(
 			$('<span/>').text(' is ' + nowOrCurrently + ' on ')
 		).append(
@@ -498,8 +498,8 @@ function addActiveChatSession(chatSessionId, color) {
 		)
 	);
 
-	// TODO: decide what data to store here
-	var they = (getChatSessionData(chatSessionId).they = new Person('Customer', color, '', ''));
+	// store the person's color
+	getChatSessionData(chatSessionId).color = color;
 
 	// mark the chat session as open; this is set to false when the session is beginning its 'Close' fade-out
 	getChatSessionData(chatSessionId).isOpen = true;

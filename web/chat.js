@@ -113,6 +113,13 @@ function handleSessionEnded() {
 	}
 }
 
+function Person(name, color, title, iconUrl) {
+	this.name = name;
+	this.color = color;
+	this.title = title;
+	this.iconUrl = iconUrl;
+}
+
 var they = null;
 
 function replaceMeWith(person) {
@@ -125,6 +132,22 @@ function replaceThemWith(person) {
 		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
 		replaceCardTextWith(person, null, $('#chat_theirname'), $('#chat_theirtitle'));
 	});
+}
+
+function replaceCardTextWith(person, card, name, title) {
+	// if card is provided, perform the fadeout & fadein
+	// otherwise, change the fields instantly
+	if (card) {
+		card.fadeTo(100, 0);
+	}
+	name.text(person.name);
+	name.css('color', person.color);
+
+	title.text(person.title);
+
+	if (card) {
+		card.fadeTo(1000, 1);
+	}
 }
 
 var currentRightSpaceDiv = null;
