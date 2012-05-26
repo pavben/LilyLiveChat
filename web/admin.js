@@ -149,14 +149,14 @@ $(window).bind('load', function() {
 
 	$('#install_button_chatbutton1').click(function() {
 		$('#install_code_button').fadeTo(100, 0, function() {
-			updateInstallCodeButton('chatbutton1');
+			updateInstallCodeButton('1');
 			$('#install_code_button').fadeTo(300, 1);
 		})
 	}).click();
 
 	$('#install_button_chatbutton2').click(function() {
 		$('#install_code_button').fadeTo(100, 0, function() {
-			updateInstallCodeButton('chatbutton2');
+			updateInstallCodeButton('2');
 			$('#install_code_button').fadeTo(300, 1);
 		})
 	});
@@ -367,7 +367,7 @@ function updateInstallCodeButton(buttonName) {
 '<!-- BEGIN LilyLiveChat button code -->',
 '<div class="lilylivechat_online" style="display:none;">',
 '	<a href="http://www.lilylivechat.net" title="Live Chat" onclick="try { lilyLiveChat_launch(); } catch(e) { alert(\'LilyLiveChat main code not linked!\'); } finally { return false; }">',
-'		<img src="//www.lilylivechat.net/images/' + buttonName + '.png" alt="Live Chat" />',
+'		<img src="//lilylivechat.net/chatbuttons/' + buttonName + '_on.png" alt="Live Chat" />',
 '	</a>',
 '</div>',
 '<div class="lilylivechat_offline" style="display:none;">',
@@ -614,7 +614,11 @@ function generatePersonColor() {
 function showLoginFailedScreen() {
 	showMiscMessageTab('No match...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('Can\'t remember the password? You can reset it from the payment system (TODO).')
+			$('<div/>').text('Try again. If you can\'t remember the password, contact us at ').append(
+				$('<a/>').attr('href', 'mailto:info@virtivia.com').text('info@virtivia.com')
+			).append(
+				' or create a new account, whichever is easier.'
+			)
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(

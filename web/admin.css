@@ -98,14 +98,6 @@
 	border-radius:5px;
 	color:#656565;
 }
-.main_contentbox a:link, .main_contentbox a:visited {
-	color:#006DA3;
-	text-decoration:none;
-}
-.main_contentbox a:hover, .main_contentbox a:active {
-	color:#006DA3;
-	text-decoration:underline;
-}
 .main_contentbox h2 {
 	margin:0px 0px 9px 0px;
 	font-size:130%;

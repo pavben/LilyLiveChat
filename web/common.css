@@ -17,6 +17,14 @@ input {
 	padding:0;
 	outline:none;
 }
+a:link, a:visited {
+	color:#006DA3;
+	text-decoration:none;
+}
+a:hover, a:active {
+	color:#006DA3;
+	text-decoration:underline;
+}
 .tab {
 	display:none;
 }
@@ -247,14 +255,6 @@ input {
 }
 .chatinfotext {
 	color:#7C7C7C;
-}
-.chatmsgtext a:link, .chatmsgtext a:visited, .chatinfotext a:link, .chatinfotext a:visited {
-	color:#006DA3;
-	text-decoration:none;
-}
-.chatmsgtext a:hover, .chatmsgtext a:active, .chatinfotext a:hover, .chatinfotext a:active {
-	color:#006DA3;
-	text-decoration:underline;
 }
 .ellipsis {
 	overflow:hidden;
