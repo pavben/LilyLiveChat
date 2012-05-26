@@ -182,7 +182,7 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
       let isActive = not $ null $ sdOnlineOperators siteData
       createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
     Left SLENotFound -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
-    Left SLENotAuthoritative -> createAndSendMessage SomethingWentWrongMessage () clientDataTVar -- TODO PL: A special "not authoritative" message
+    Left SLENotAuthoritative -> createAndSendMessage CSMTWrongChatServer () clientDataTVar
     Left SLENotAvailable -> createAndSendMessage CSUnavailableMessage () clientDataTVar
 
 handleCSSALoginRequestMessage :: ClientDataTVar -> IO ()

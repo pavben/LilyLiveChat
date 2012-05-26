@@ -482,6 +482,10 @@ function handleMessage(message) {
 			// TODO PR: Show more appropriate screens for these
 			showDisconnectedScreen();
 			break;
+		case Messages.CSMTWrongChatServer:
+			// TODO PL: Show a "Please update your bookmarks" screen instead of instantly refreshing through SL
+			refreshThroughSiteLocator();
+			break;
 		case Messages.AdminLoginSuccessMessage:
 			changeTabTo(mainTab);
 			log("Login successful");

@@ -240,6 +240,7 @@ var Messages = {
 	CustomerJoinSuccessMessage : 57,
 	CSUnavailableMessage : 58,
 	CSMTOperatorCustomerOnPage : 60,
+	CSMTWrongChatServer : 61,
 	AdminOperatorDeleteSuccessMessage : 62,
 	AdminOperatorDeleteFailedMessage : 63
 };

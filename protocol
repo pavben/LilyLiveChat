@@ -23,6 +23,7 @@ Server to Customer
 19 - CustomerChatEndedMessage
 23 - CustomerNoOperatorsAvailableMessage
 58 - CSUnavailableMessage
+61 - CSMTWrongChatServer
 
 Operator to Server
 ================================================================
@@ -68,7 +69,6 @@ Server to Admin
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
 56 - AdminSetAdminPasswordSuccessMessage
--61 - AdminAdminReplaceFailedMessage
 -64 - AdminAdminDeleteSuccessMessage
 -65 - AdminAdminDeleteFailedMessage
 

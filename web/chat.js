@@ -75,6 +75,10 @@ function handleMessage(message) {
 			// TODO PR: Show more appropriate screens for these
 			showDisconnectedScreen();
 			break;
+		case Messages.CSMTWrongChatServer:
+			// TODO PL: Show a "Please update your bookmarks" screen instead of instantly refreshing through SL
+			refreshThroughSiteLocator();
+			break;
 		case Messages.CustomerChatEndedMessage:
 			if (chatSessionEnded) {
 				writeInfoTextToChatlog('The chat session has ended.', $('#chat_chatlog'));
