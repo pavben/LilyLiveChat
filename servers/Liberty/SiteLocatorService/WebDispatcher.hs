@@ -75,7 +75,7 @@ receiveHttpRequestLoop handleStream siteMapTVar = do
           case maybeServerId of
             Just serverId -> do
               let requestUriQuery = C8.pack (uriQuery (rqURI request))
-              let targetUrl = LBS.concat [C8.pack "http://", C8.pack $ LT.unpack serverId, C8.pack ".lilylivechat.net", requestUriPath, requestUriQuery]
+              let targetUrl = LBS.concat [C8.pack "https://", C8.pack $ LT.unpack serverId, C8.pack ".lilylivechat.net", requestUriPath, requestUriQuery]
               respondHTTP handleStream (Response (3,0,2) "Found" [mkHeader HdrLocation $ C8.unpack targetUrl] $ redirectBody targetUrl)
             Nothing -> do
               putStrLn "No servers available"

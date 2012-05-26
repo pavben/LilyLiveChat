@@ -356,15 +356,7 @@ function onNameOrTitleEdited(nameOrTitleStr) {
 function updateInstallCodeMain(siteId) {
 	$('#install_code_main').val(
 		[
-'<!-- BEGIN LilyLiveChat main code -->',
-'<script type="text/javascript">',
-'var lilyLiveChat_siteId = \'' + siteId + '\';',
-'(function() {',
-'	var l = document.createElement(\'script\'); l.type = \'text/javascript\'; l.async = true; l.src = document.location.protocol + \'//sl.lilylivechat.net/lilycode/' + siteId + '\';',
-'	var s = document.getElementsByTagName(\'script\')[0]; s.parentNode.insertBefore(l, s);',
-'})();',
-'</script>',
-'<!-- END LilyLiveChat main code -->'
+'<script type="text/javascript" src="//lilylivechat.net/lilycode/' + siteId + '"></script>'
 		].join('\n')
 	);
 }
@@ -375,7 +367,7 @@ function updateInstallCodeButton(buttonName) {
 '<!-- BEGIN LilyLiveChat button code -->',
 '<div class="lilylivechat_online" style="display:none;">',
 '	<a href="http://www.lilylivechat.net" title="Live Chat" onclick="try { lilyLiveChat_launch(); } catch(e) { alert(\'LilyLiveChat main code not linked!\'); } finally { return false; }">',
-'		<img src="http://web.lilylivechat.net/images/' + buttonName + '.png" alt="Live Chat" />',
+'		<img src="//www.lilylivechat.net/images/' + buttonName + '.png" alt="Live Chat" />',
 '	</a>',
 '</div>',
 '<div class="lilylivechat_offline" style="display:none;">',
