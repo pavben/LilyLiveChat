@@ -641,7 +641,7 @@ function getUrlParameter(name, queryString) {
 }
 
 function refreshThroughSiteLocator() {
-	window.location.hostname = 'sl.lilylivechat.net';
+	window.location = 'http://lilylivechat.net' + window.location.pathname + window.location.search;
 }
 
 function stripPx(text) {

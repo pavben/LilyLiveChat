@@ -205,7 +205,7 @@ var lilyLiveChat_launch;
 	}
 
 	// we use POST instead of GET to avoid caching
-	xhr.open('POST', window.location.protocol + '//sl.lilylivechat.net/chatstatus/' + siteId + '/' + visitorId, true);;
+	xhr.open('POST', '//lilylivechat.net/chatstatus/' + siteId + '/' + visitorId, true);
 	xhr.send(null);
 	
 	// END get site chat status and call setChatStatus
@@ -216,6 +216,6 @@ var lilyLiveChat_launch;
 		var wH = 659;
 		var wL = (window.screen.width - wW) / 2;
 		var wT = (window.screen.height - wH) / 3;
-		window.open('http://sl.lilylivechat.net/launchchat/' + siteId + '?visitorId=' + visitorId + '&currentPage=' + window.location.href + (originalReferrer ? '&originalReferrer=' + encodeURIComponent(originalReferrer) : ''), '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
+		window.open('http://lilylivechat.net/launchchat/' + siteId + '?visitorId=' + visitorId + '&currentPage=' + window.location.href + (originalReferrer ? '&originalReferrer=' + encodeURIComponent(originalReferrer) : ''), '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
 	};
 })();

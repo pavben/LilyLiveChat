@@ -614,7 +614,7 @@ function generatePersonColor() {
 function showLoginFailedScreen() {
 	showMiscMessageTab('No match...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('Try again. If you can\'t remember the password, contact us at ').append(
+			$('<div/>').text('Try again. If you can\'t remember your password, contact us at ').append(
 				$('<a/>').attr('href', 'mailto:info@virtivia.com').text('info@virtivia.com')
 			).append(
 				' or create a new account, whichever is easier.'
