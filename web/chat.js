@@ -48,7 +48,7 @@ function handleMessage(message) {
 
 			changeTabTo(chatTab);
 
-			replaceIconWith('/images/chat_logo1.png', $('#chat_logo'));
+			replaceImageWith('/images/chat_logo1.png', $('#chat_logo'));
 
 			writeWelcomeTextToChatlog();
 
@@ -129,7 +129,7 @@ function replaceMeWith(person) {
 function replaceThemWith(person) {
 	they = person;
 	changeRightSpaceDivTo($('#chat_theircardcell'), function() {
-		replaceIconWith(person.iconUrl, $('#chat_theiricon'));
+		replaceImageWith(person.iconUrl, $('#chat_theiricon'));
 		replaceCardTextWith(person, null, $('#chat_theirname'), $('#chat_theirtitle'));
 	});
 }
@@ -526,7 +526,7 @@ $(window).bind('load', function() {
 	$('#chat_inlinecell').hide();
 
 	// set the waiting clock icon
-	replaceIconWith('/images/waiting_clock.png', $('#chat_waiticon'));
+	replaceImageWith('/images/waiting_clock.png', $('#chat_waiticon'));
 
 	// chat tab handlers
 	var chatBox = $('#chat_chatbox');

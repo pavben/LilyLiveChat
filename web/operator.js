@@ -11,7 +11,7 @@ $(window).bind('load', function() {
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
-	replaceIconWith('/images/operator_login.png', $('#login_icon'));
+	replaceImageWith('/images/operator_login.png', $('#login_icon'));
 	// default these labels
 	$('#chat_nextinlineheadertext').text('No customers waiting');
 	$('#chat_activechatsheader').text('No active chats');
@@ -203,7 +203,7 @@ function handleMessage(message) {
 
 				$('#chat_myname').css('color', color).text(name);
 				$('#chat_mytitle').text(title);
-				replaceIconWith(iconUrl, $('#chat_myicon'));
+				replaceImageWith(iconUrl, $('#chat_myicon'));
 
 				changeTabTo(chatTab);
 			}

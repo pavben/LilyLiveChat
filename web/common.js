@@ -393,8 +393,7 @@ function onBasicVCenterResizeMinPadding(tabName, minPaddingHeight) {
 
 // other
 
-// TODO: rename to replaceImageWith
-function replaceIconWith(iconUrl, icon) {
+function replaceImageWith(iconUrl, icon) {
 	var fadeOutTime = 100;
 	var fadeInTime = 500;
 

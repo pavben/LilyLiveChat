@@ -29,7 +29,7 @@ $(window).bind('load', function() {
 	installButtonSubtab = $('#main_rightcell_install_button');
 	adminPasswordSubtab = $('#main_rightcell_adminpassword');
 
-	replaceIconWith('/images/lock.png', $('#login_icon'));
+	replaceImageWith('/images/lock.png', $('#login_icon'));
 
 	// login tab handlers
 
@@ -43,22 +43,22 @@ $(window).bind('load', function() {
 	});
 	
 	// main tab handlers
-	replaceIconWith('/images/admin_general.png', $('#main_btn_general'));
+	replaceImageWith('/images/admin_general.png', $('#main_btn_general'));
 	$('#main_btn_general').click(function() {
 		changeSubtabTo(generalSubtab);
 	});
 
-	replaceIconWith('/images/admin_operators.png', $('#main_btn_operators'));
+	replaceImageWith('/images/admin_operators.png', $('#main_btn_operators'));
 	$('#main_btn_operators').click(function() {
 		changeSubtabTo(operatorsSubtab);
 	});
 
-	replaceIconWith('/images/admin_install.png', $('#main_btn_install'));
+	replaceImageWith('/images/admin_install.png', $('#main_btn_install'));
 	$('#main_btn_install').click(function() {
 		changeSubtabTo(installSubtab);
 	});
 
-	replaceIconWith('/images/admin_security.png', $('#main_btn_adminpassword'));
+	replaceImageWith('/images/admin_security.png', $('#main_btn_adminpassword'));
 	$('#main_btn_adminpassword').click(function() {
 		changeSubtabTo(adminPasswordSubtab);
 	});
@@ -125,7 +125,7 @@ $(window).bind('load', function() {
 
 		editOperatorCurrentIcon = nextIcon;
 
-		replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
+		replaceImageWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
 	});
 
 	onChangeToFieldValue($('#main_editoperator_name'), function() {
@@ -248,7 +248,7 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 		editOperatorCurrentIcon = stockIcons[Math.floor(Math.random() * stockIcons.length)];
 	}
 
-	replaceIconWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
+	replaceImageWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
 
 	$('#main_editoperator_username').val(edit ? username : '');
 
@@ -551,7 +551,7 @@ function handleMessage(message) {
 				})
 			);
 
-			replaceIconWith(iconUrl, $('#main_operators_' + operatorId + '_icon'));
+			replaceImageWith(iconUrl, $('#main_operators_' + operatorId + '_icon'));
 
 			operatorsCount++;
 
