@@ -575,7 +575,7 @@ function setButtonTextLabelIfInactive(chatSessionId, text) {
 	var buttonTextLabel = chatSessionIdToObject('#chat_sessionlistbutton_textlabel_', chatSessionId);
 
 	// if inactive
-	if (visibleChatSessionId !== chatSessionId) {
+	if (chatSessionId !== visibleChatSessionId && chatSessionId !== visibleChatSessionIdTarget) {
 		// set the label
 		buttonTextLabel.text(text);
 	} else {
@@ -780,6 +780,10 @@ var visibleChatSessionIdTarget = undefined;
 function setVisibleChatSessionId(chatSessionId) {
 	var alreadyBusy = (visibleChatSessionIdTarget !== undefined);
 	visibleChatSessionIdTarget = chatSessionId;
+
+	// reset the session button label to empty
+	// we also do this in followVisibleChatSessionIdTarget, but this way it happens instantly
+	setButtonTextLabelIfInactive(chatSessionId, '');
 
 	if (!alreadyBusy) {
 		followVisibleChatSessionIdTarget();
