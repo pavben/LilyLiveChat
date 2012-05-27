@@ -120,6 +120,7 @@ handleCreateSiteCommand handleStream = do
               sendMessageToService CSSASiteCreateMessage (
                 siteId,
                 LT.append "Site " siteId,
+                LT.empty, -- by default, no e-mail
                 adminPassword) serviceHandle
 
               createResponse <- receiveMessageFromService serviceHandle

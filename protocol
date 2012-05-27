@@ -75,7 +75,7 @@ Server to Admin
 SA to Server
 ================================================================
 41 - CSSALoginRequestMessage
-42 - CSSASiteCreateMessage [siteId, name, adminPassword]
+42 - CSSASiteCreateMessage [siteId, name, adminEmail, adminPassword]
 43 - CSSASiteDeleteMessage [siteId]
 59 - CSMTVisitorOnPage [visitorId, url]
 -44 - SAGetSiteInfoMessage [siteId]

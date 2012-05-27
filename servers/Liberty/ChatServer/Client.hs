@@ -156,7 +156,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
           atomically $ closeClientSocket clientDataTVar
     OCDClientSuperAdminData _ ->
       case messageType of
-        CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name,adminPassword) -> handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSaverChan siteMapTVar
+        CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name,adminEmail,adminPassword) -> handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar
         _ -> do
           putStrLn "Client (SuperAdmin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -610,11 +610,12 @@ handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
             )
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
 
-handleCSSASiteCreateMessage :: Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
-handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
+handleCSSASiteCreateMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
+handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
   ensureTextLengthLimitsIO [
       (siteId, maxSiteIdLength),
       (name, maxSiteNameLength),
+      (adminEmail, maxEmailLength),
       (adminPassword, maxAdminPasswordLength)
     ] clientDataTVar $ do
     -- first, we do a complete site lookup (including querying SDS, if needed)
@@ -627,7 +628,7 @@ handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSav
           Nothing -> do
             -- create the new site data
             -- TODO: allow the caller to specify adminEmail
-            siteDataTVar <- newTVar $ SiteData siteId name LT.empty 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
+            siteDataTVar <- newTVar $ SiteData siteId name adminEmail 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
 
             -- insert the site data to SiteMap and SDS
             createSite siteDataTVar siteMapTVar siteDataSaverChan
