@@ -667,9 +667,9 @@ handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSav
 
           -- disconnect all admins for this site
           forM_ (sdOnlineAdmins siteData) closeClientSocket
-      Left SLENotFound -> createAndSendMessage CSMTSASetSiteAdminPasswordFailedMessage () clientDataTVar
-      Left SLENotAuthoritative -> createAndSendMessage CSMTSASetSiteAdminPasswordFailedMessage () clientDataTVar
-      Left SLENotAvailable -> createAndSendMessage CSMTSASetSiteAdminPasswordFailedMessage () clientDataTVar
+      Left SLENotFound -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
+      Left SLENotAuthoritative -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
+      Left SLENotAvailable -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
