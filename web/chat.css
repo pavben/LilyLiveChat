@@ -8,10 +8,15 @@
 #chat_logo {
 	width:260px;
 	height:98px;
-	background-color:#ECECEC;
-	background-repeat:no-repeat;
 	border:1px solid #BBBBBB;
 	border-radius:5px;
+	vertical-align:middle;
+	background-color:#ECECEC;
+	background-repeat:no-repeat;
+}
+#chat_logo_text {
+	font-size:140%;
+	text-align:center;
 }
 #chat_inlineinfocell {
 	width:100px;

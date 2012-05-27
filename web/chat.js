@@ -15,6 +15,8 @@ function handleMessage(message) {
 			var siteName = message[0];
 			var isActive = message[1];
 
+			$('#chat_logo_text').text(siteName);
+
 			if (isActive === true) {
 				var visitorId = $.cookie(siteId + '.visitorId');
 				if (visitorId === null) {
@@ -48,7 +50,7 @@ function handleMessage(message) {
 
 			changeTabTo(chatTab);
 
-			replaceImageWith('/images/chat_logo1.png', $('#chat_logo'));
+			replaceImageWith('/images/chat_logo_bg.png', $('#chat_logo'));
 
 			writeWelcomeTextToChatlog();
 
