@@ -78,8 +78,8 @@ SA to Server
 42 - CSSASiteCreateMessage [siteId, name, adminEmail, adminPassword]
 43 - CSSASiteDeleteMessage [siteId]
 59 - CSMTVisitorOnPage [visitorId, url]
--44 - SAGetSiteInfoMessage [siteId]
--45 - SASetExpiryTimestampMessage [siteId]
+45 - CSMTSASetSiteAdminPassword [siteId, adminPassword]
+-44 - CSMTSAGetSiteInfoMessage [siteId]
 
 Server to SA
 ================================================================
@@ -90,6 +90,7 @@ Server to SA
 54 - CSSASiteCreateUnavailableMessage
 50 - CSSASiteDeleteSuccessMessage
 51 - CSSASiteDeleteFailedMessage
-52 - CSSASiteInfoMessage [siteId, name]
-53 - CSSASiteInfoFailedMessage
+52 - CSMTSASetSiteAdminPasswordSuccess
+53 - CSMTSASetSiteAdminPasswordFailedMessage
+-53 - CSSASiteInfoFailedMessage
 

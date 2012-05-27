@@ -112,7 +112,7 @@ handleCreateSiteCommand handleStream = do
         let chatServerConnectionData = getServiceConnectionDataForChatServer serverId
         serviceCallResult <- withServiceConnection chatServerConnectionData $ \serviceHandle -> do
           -- login as super admin
-          sendMessageToService CSSALoginRequestMessage () serviceHandle
+          sendMessageToService CSSALoginRequestMessage (LT.pack "ZGZqanZvaWVpc3VnaGRzZnJhZWhmcWgzcTRxcmZhd3dmMkAhIUBAIQoK") serviceHandle
 
           loginResponse <- receiveMessageFromService serviceHandle
           case loginResponse of

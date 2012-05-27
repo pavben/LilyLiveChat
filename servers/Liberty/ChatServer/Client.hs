@@ -116,7 +116,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
         Nothing ->
           case messageType of
             UnregisteredSelectSiteMessage -> unpackAndHandle $ \siteId -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
-            CSSALoginRequestMessage -> unpackAndHandle $ \() -> handleCSSALoginRequestMessage clientDataTVar
+            CSSALoginRequestMessage -> unpackAndHandle $ \(authToken) -> handleCSSALoginRequestMessage authToken clientDataTVar
             CSMTVisitorOnPage -> unpackAndHandle $ \(visitorId, currentPage) -> handleCSMTVisitorOnPage visitorId currentPage visitorClientMapTVar
             _ -> do
               putStrLn "Client (Unregistered) sent an unknown command"
@@ -157,6 +157,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
     OCDClientSuperAdminData _ ->
       case messageType of
         CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name,adminEmail,adminPassword) -> handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar
+        CSMTSASetSiteAdminPassword -> unpackAndHandle $ \(siteId,adminPassword) -> handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSaverChan siteMapTVar
         _ -> do
           putStrLn "Client (SuperAdmin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -185,10 +186,10 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
     Left SLENotAuthoritative -> createAndSendMessage CSMTWrongChatServer () clientDataTVar
     Left SLENotAvailable -> createAndSendMessage CSUnavailableMessage () clientDataTVar
 
-handleCSSALoginRequestMessage :: ClientDataTVar -> IO ()
-handleCSSALoginRequestMessage clientDataTVar =
+handleCSSALoginRequestMessage :: Text -> ClientDataTVar -> IO ()
+handleCSSALoginRequestMessage authToken clientDataTVar =
   atomically $ do
-    if True then do
+    if authToken == LT.pack "ZGZqanZvaWVpc3VnaGRzZnJhZWhmcWgzcTRxcmZhd3dmMkAhIUBAIQoK" then do
       -- login successful
       -- update the client as logged in
       clientData <- readTVar clientDataTVar
@@ -588,7 +589,7 @@ handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
           let siteDataTVar = cadSiteDataTVar clientAdminData
           siteData <- readTVar siteDataTVar
 
-          -- save siteDataTVar with the new name
+          -- save siteDataTVar with the new password
           writeTVar siteDataTVar $ siteData {
             sdAdminPasswordHash = hashTextWithSalt password
           }
@@ -640,6 +641,35 @@ handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar 
       Right _ -> createAndSendMessage CSSASiteCreateDuplicateIdMessage () clientDataTVar
       Left SLENotAuthoritative -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
       Left SLENotAvailable -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
+
+
+handleCSMTSASetSiteAdminPassword :: Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
+handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
+  ensureTextLengthLimitsIO [
+      (siteId, maxSiteIdLength),
+      (adminPassword, maxAdminPasswordLength)
+    ] clientDataTVar $ do
+    siteLookupResult <- lookupSite siteId siteMapTVar
+    atomically $ case siteLookupResult of
+      Right siteDataTVar -> do
+          siteData <- readTVar siteDataTVar
+
+          -- save siteDataTVar with the new password
+          writeTVar siteDataTVar $ siteData {
+            sdAdminPasswordHash = hashTextWithSalt adminPassword
+          }
+
+          -- save to the database
+          queueSaveSiteData siteDataTVar siteDataSaverChan
+
+          -- respond to the super admin who issued the set password command
+          createAndSendMessage CSMTSASetSiteAdminPasswordSuccess () clientDataTVar
+
+          -- disconnect all admins for this site
+          forM_ (sdOnlineAdmins siteData) closeClientSocket
+      Left SLENotFound -> createAndSendMessage CSMTSASetSiteAdminPasswordFailedMessage () clientDataTVar
+      Left SLENotAuthoritative -> createAndSendMessage CSMTSASetSiteAdminPasswordFailedMessage () clientDataTVar
+      Left SLENotAvailable -> createAndSendMessage CSMTSASetSiteAdminPasswordFailedMessage () clientDataTVar
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do

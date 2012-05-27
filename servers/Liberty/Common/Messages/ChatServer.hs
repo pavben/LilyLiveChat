@@ -52,14 +52,15 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSSALoginRequestMessage
                            | CSSASiteCreateMessage
                            | CSSASiteDeleteMessage
+                           | CSMTSASetSiteAdminPassword
                            | CSSALoginSuccessMessage
                            | CSSALoginFailedMessage
                            | CSSASiteCreateSuccessMessage
                            | CSSASiteCreateDuplicateIdMessage
                            | CSSASiteDeleteSuccessMessage
                            | CSSASiteDeleteFailedMessage
-                           | CSSASiteInfoMessage
-                           | CSSASiteInfoFailedMessage
+                           | CSMTSASetSiteAdminPasswordSuccess
+                           | CSMTSASetSiteAdminPasswordFailedMessage
                            | CSSASiteCreateUnavailableMessage
                            | AdminSetAdminPasswordMessage
                            | AdminSetAdminPasswordSuccessMessage
@@ -117,14 +118,15 @@ messageIdsAndTypes = [
     (41, CSSALoginRequestMessage),
     (42, CSSASiteCreateMessage),
     (43, CSSASiteDeleteMessage),
+    (45, CSMTSASetSiteAdminPassword),
     (46, CSSALoginSuccessMessage),
     (47, CSSALoginFailedMessage),
     (48, CSSASiteCreateSuccessMessage),
     (49, CSSASiteCreateDuplicateIdMessage),
     (50, CSSASiteDeleteSuccessMessage),
     (51, CSSASiteDeleteFailedMessage),
-    (52, CSSASiteInfoMessage),
-    (53, CSSASiteInfoFailedMessage),
+    (52, CSMTSASetSiteAdminPasswordSuccess),
+    (53, CSMTSASetSiteAdminPasswordFailedMessage),
     (54, CSSASiteCreateUnavailableMessage),
     (55, AdminSetAdminPasswordMessage),
     (56, AdminSetAdminPasswordSuccessMessage),
