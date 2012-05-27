@@ -3,12 +3,14 @@ module Liberty.ChatServer.ClientDispatcher (
 ) where
 import Control.Concurrent
 import Control.Exception
+import qualified Network.BSD as BSD
 import Network.Socket
 import Prelude hiding (catch)
 import Liberty.ChatServer.Client
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
 import Liberty.ChatServer.VisitorClientMap
+import Liberty.Common.Utils
 
 runClientDispatcher :: SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
 runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar = do
@@ -18,8 +20,8 @@ runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.102"
-          initializeListenerSocket listenerSocket hostAddress 9800
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "anivia"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9800
           acceptLoop listenerSocket siteMapTVar siteDataSaverChan visitorClientMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -29,7 +31,7 @@ runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)

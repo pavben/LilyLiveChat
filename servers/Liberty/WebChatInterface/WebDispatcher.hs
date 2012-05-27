@@ -20,6 +20,7 @@ import Data.Maybe (isJust)
 import Data.Ord
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
+import qualified Network.BSD as BSD
 import Network.HTTP
 import Network.Socket
 import Network.Socket.ByteString.Lazy (sendAll)
@@ -27,6 +28,7 @@ import Prelude hiding (catch)
 import Liberty.WebChatInterface.MessageFormatConverter
 import Liberty.WebChatInterface.Sessions
 import Liberty.Common.Timeouts
+import Liberty.Common.Utils
 
 runWebDispatcher :: SessionMapTVar -> IO ()
 runWebDispatcher sessionMapTVar = do
@@ -36,8 +38,8 @@ runWebDispatcher sessionMapTVar = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.102"
-          initializeListenerSocket listenerSocket hostAddress 9700
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "anivia"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9700
           acceptLoop listenerSocket sessionMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -47,7 +49,7 @@ runWebDispatcher sessionMapTVar = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)

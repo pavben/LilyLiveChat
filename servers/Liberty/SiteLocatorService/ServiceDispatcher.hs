@@ -3,10 +3,12 @@ module Liberty.SiteLocatorService.ServiceDispatcher (
 ) where
 import Control.Concurrent
 import Control.Exception
+import qualified Network.BSD as BSD
 import Network.Socket
 import Prelude hiding (catch)
 import Liberty.SiteLocatorService.ServiceHandlers
 import Liberty.SiteLocatorService.SiteMap
+import Liberty.Common.Utils
 
 runServiceDispatcher :: SiteMapTVar -> IO ()
 runServiceDispatcher siteMapTVar = do
@@ -16,8 +18,8 @@ runServiceDispatcher siteMapTVar = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.100"
-          initializeListenerSocket listenerSocket hostAddress 9800
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "sl"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9800
           acceptLoop listenerSocket siteMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -27,7 +29,7 @@ runServiceDispatcher siteMapTVar = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)

@@ -473,7 +473,7 @@ function handleMessage(message) {
 			});
 
 			// Auto-login
-			$('#login_btn_ok').click();
+			//$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen

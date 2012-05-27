@@ -3,10 +3,12 @@ module Liberty.SiteDataService.ClientDispatcher (
 ) where
 import Control.Concurrent
 import Control.Exception
+import qualified Network.BSD as BSD
 import Network.Socket
 import Prelude hiding (catch)
 import Liberty.SiteDataService.Client
 import Liberty.SiteDataService.DatabaseManager
+import Liberty.Common.Utils
 
 runClientDispatcher :: DatabaseHandleTVar -> IO ()
 runClientDispatcher databaseHandleTVar = do
@@ -16,8 +18,8 @@ runClientDispatcher databaseHandleTVar = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.101"
-          initializeListenerSocket listenerSocket hostAddress 9800
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "sds"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9800
           acceptLoop listenerSocket databaseHandleTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -27,7 +29,7 @@ runClientDispatcher databaseHandleTVar = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)

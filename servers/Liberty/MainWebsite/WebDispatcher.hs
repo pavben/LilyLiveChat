@@ -13,6 +13,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
 import qualified Data.Text.Lazy as LT
+import qualified Network.BSD as BSD
 import Network.HTTP
 import Network.Socket
 import Network.URI
@@ -31,8 +32,8 @@ runWebDispatcher = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.103"
-          initializeListenerSocket listenerSocket hostAddress 9700
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "mainweb"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9700
           acceptLoop listenerSocket
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -42,7 +43,7 @@ runWebDispatcher = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)

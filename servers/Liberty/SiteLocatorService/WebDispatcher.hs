@@ -9,12 +9,14 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
 import qualified Data.Text.Lazy as LT
+import qualified Network.BSD as BSD
 import Network.HTTP
 import Network.Socket
 import Network.URI
 import Prelude hiding (catch)
 import Safe
 import Liberty.SiteLocatorService.SiteMap
+import Liberty.Common.Utils
 
 runWebDispatcher :: SiteMapTVar -> IO ()
 runWebDispatcher siteMapTVar = do
@@ -24,8 +26,8 @@ runWebDispatcher siteMapTVar = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.100"
-          initializeListenerSocket listenerSocket hostAddress 9700
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "sl"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9700
           acceptLoop listenerSocket siteMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -35,7 +37,7 @@ runWebDispatcher siteMapTVar = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)

@@ -4,7 +4,8 @@ module Liberty.Common.Utils (
   fromIntegerCheckBounds,
   eitherToMaybe,
   parseUriQueryString,
-  runWithRetry
+  runWithRetry,
+  getLocalServiceHost
 ) where
 import Control.Arrow (second)
 import Data.ByteString.Lazy (ByteString)
@@ -44,4 +45,7 @@ runWithRetry numAttempts functionToRun = runWithRetry' numAttempts
       case runResult of
         True -> return True
         False -> runWithRetry' (attemptsRemaining - 1)
+
+getLocalServiceHost :: String -> String
+getLocalServiceHost serviceName = serviceName ++ ".local.lilylivechat.net"
 

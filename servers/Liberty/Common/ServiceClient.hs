@@ -21,6 +21,7 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Liberty.Common.Messages
+import Liberty.Common.Utils
 
 -- TODO: Make it IPv6 instead
 data ServiceConnectionData = ServiceConnectionData {
@@ -30,7 +31,7 @@ data ServiceConnectionData = ServiceConnectionData {
 getLocalServiceConnectionData :: String -> ServiceConnectionData
 getLocalServiceConnectionData serviceName =
   let
-    hostName = serviceName ++ ".local.lilylivechat.net"
+    hostName = getLocalServiceHost serviceName
   in
     ServiceConnectionData hostName
 

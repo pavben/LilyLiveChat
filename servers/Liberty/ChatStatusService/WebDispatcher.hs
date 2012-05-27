@@ -13,6 +13,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as C8
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
+import qualified Network.BSD as BSD
 import Network.HTTP
 import Network.Socket
 import Network.URI
@@ -21,6 +22,7 @@ import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Messages.SiteLocatorService
 import Liberty.Common.ServiceClient
+import Liberty.Common.Utils
 
 runWebDispatcher :: IO ()
 runWebDispatcher = do
@@ -30,8 +32,8 @@ runWebDispatcher = do
       catch
       (finally
         (do
-          hostAddress <- inet_addr "192.168.1.104"
-          initializeListenerSocket listenerSocket hostAddress 9700
+          hostEntry <- BSD.getHostByName $ getLocalServiceHost "css"
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9700
           acceptLoop listenerSocket
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
@@ -41,7 +43,7 @@ runWebDispatcher = do
   where
     handleException :: SomeException -> IO ()
     handleException ex = do
-      putStrLn $ "Error in listen/bind/accept: " ++ show ex
+      putStrLn $ "Error in resolve/listen/bind/accept: " ++ show ex
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
