@@ -149,7 +149,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
         AdminOperatorCreateMessage -> unpackAndHandle $ \(username,password,name,color,title,iconUrl) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar siteDataSaverChan
         AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,username,password,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) username password name color title iconUrl clientDataTVar siteDataSaverChan
         AdminOperatorDeleteMessage -> unpackAndHandle $ \(operatorId :: Int) -> handleAdminOperatorDeleteMessage (toInteger operatorId) clientDataTVar siteDataSaverChan
-        AdminSetSiteNameMessage -> unpackAndHandle $ \(name) -> handleAdminSetSiteNameMessage name clientDataTVar siteDataSaverChan
+        CSMTAdminSetSiteInfoMessage -> unpackAndHandle $ \(siteName, adminEmail) -> handleCSMTAdminSetSiteInfoMessage siteName adminEmail clientDataTVar siteDataSaverChan
         AdminSetAdminPasswordMessage -> unpackAndHandle $ \(password) -> handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
@@ -549,30 +549,34 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar siteDataSaverChan =
           createAndSendMessage AdminOperatorDeleteFailedMessage () clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorDeleteMessage" ()
 
-handleAdminSetSiteNameMessage :: Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
-handleAdminSetSiteNameMessage name clientDataTVar siteDataSaverChan =
+handleCSMTAdminSetSiteInfoMessage :: Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleCSMTAdminSetSiteInfoMessage siteName adminEmail clientDataTVar siteDataSaverChan =
   atomically $ do
-    ensureTextLengthLimits [(name, maxSiteNameLength)] clientDataTVar $ do
+    ensureTextLengthLimits [
+        (siteName, maxSiteNameLength),
+        (adminEmail, maxEmailLength)
+      ] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
       case cdOtherData clientData of
         OCDClientAdminData clientAdminData -> do
           let siteDataTVar = cadSiteDataTVar clientAdminData
           siteData <- readTVar siteDataTVar
 
-          -- save siteDataTVar with the new name
+          -- save siteDataTVar with the new site name
           writeTVar siteDataTVar $ siteData {
-            sdName = name
+            sdName = siteName,
+            sdAdminEmail = adminEmail
           }
 
           -- save to the database
           queueSaveSiteData siteDataTVar siteDataSaverChan
 
           -- respond to the admin who issued the delete command
-          createAndSendMessage AdminSetSiteNameSuccessMessage () clientDataTVar
+          createAndSendMessage CSMTAdminSetSiteInfoSuccessMessage () clientDataTVar
 
           -- notify the admins of the new site name
           sendSiteInfoToAdmins siteDataTVar
-        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetSiteNameMessage" ()
+        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleCSMTAdminSetSiteInfoMessage" ()
 
 handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
 handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
@@ -622,7 +626,8 @@ handleCSSASiteCreateMessage siteId name adminPassword clientDataTVar siteDataSav
         case maybeSiteDataTVar of
           Nothing -> do
             -- create the new site data
-            siteDataTVar <- newTVar $ SiteData siteId name 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
+            -- TODO: allow the caller to specify adminEmail
+            siteDataTVar <- newTVar $ SiteData siteId name LT.empty 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
 
             -- insert the site data to SiteMap and SDS
             createSite siteDataTVar siteMapTVar siteDataSaverChan
@@ -673,7 +678,7 @@ sendSiteInfoToAdmins siteDataTVar = do
   forM_ (sdOnlineAdmins siteData) $ sendSiteInfoToAdmin siteData
 
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
-sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, sdName siteData) adminClientDataTVar
+sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, sdName siteData, sdAdminEmail siteData) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> VisitorClientMapTVar -> IO ()
 handleClientExitEvent clientDataTVar visitorClientMapTVar = do

@@ -49,15 +49,15 @@ Admin to Server
 25 - AdminOperatorCreateMessage [username, password, name, color, title, iconUrl]
 26 - AdminOperatorReplaceMessage [i:operatorId, username, password, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [i:operatorId]
-38 - AdminSetSiteNameMessage [name]
+38 - CSMTAdminSetSiteInfoMessage [siteName, adminEmail]
 55 - AdminSetAdminPasswordMessage [password]
 
 Server to Admin
 ================================================================
 28 - AdminLoginSuccessMessage
 29 - AdminLoginFailedMessage
-30 - AdminSiteInfoMessage [siteId, name]
-39 - AdminSetSiteNameSuccessMessage
+30 - AdminSiteInfoMessage [siteId, siteName, adminEmail]
+39 - CSMTAdminSetSiteInfoSuccessMessage
 31 - AdminOperatorDetailsStartMessage
 32 - AdminOperatorDetailsMessage [i:operatorId, username, name, color, title, iconUrl]
 33 - AdminOperatorDetailsEndMessage

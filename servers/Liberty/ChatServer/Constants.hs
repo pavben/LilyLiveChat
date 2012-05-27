@@ -11,6 +11,9 @@ maxSiteIdLength = 20
 maxSiteNameLength :: Int64
 maxSiteNameLength = 20
 
+maxEmailLength :: Int64
+maxEmailLength = 256
+
 maxOperatorUsernameLength :: Int64
 maxOperatorUsernameLength = 30
 

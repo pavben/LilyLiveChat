@@ -64,38 +64,49 @@ $(window).bind('load', function() {
 	});
 
 	// general subtab
-	// site name
-	{
-		function onSiteNameChange(field) {
-			if (!field[0].unsaved) {
-				field[0].unsaved = true;
+	// site info
+	(function() {
+		var unsaved = false;
 
-				$('#main_general_sitename_savedlabel').fadeTo(0, 0);
-				$('#main_general_sitename_savediv').animate({height:'32px'}, 350);
+		function onSiteInfoChange() {
+			if (!unsaved) {
+				unsaved = true;
+
+				$('#main_general_siteinfo_savedlabel').fadeTo(0, 0);
+				$('#main_general_siteinfo_savediv').animate({height:'32px'}, 350);
 			}
 		}
 
-		function siteNameSaveHandler() {
+		function siteInfoSaveHandler() {
 			var siteName = $('#main_general_sitename');
+			var adminEmail = $('#main_general_adminemail');
 
 			// only send if currently not saved (this also prevents double-clicking the Save button)
-			if (siteName[0].unsaved) {
-				siteName[0].unsaved = false;
-				queueAjaxCommand([Messages.AdminSetSiteNameMessage, $.trim(siteName.val())]);
+			if (unsaved) {
+				unsaved = false;
+				queueAjaxCommand([Messages.CSMTAdminSetSiteInfoMessage, $.trim(siteName.val()), $.trim(adminEmail.val())]);
 
-				$('#main_general_sitename_savedlabel').fadeTo(500, 1);
-				$('#main_general_sitename_savediv').delay(1800).animate({height:'0px'}, 400);
+				$('#main_general_siteinfo_savedlabel').fadeTo(500, 1);
+				$('#main_general_siteinfo_savediv').delay(1800).animate({height:'0px'}, 400);
 			}
 		}
 
-		onChangeToFieldValue($('#main_general_sitename'), onSiteNameChange);
-		$('#main_general_sitename_btn_save').click(siteNameSaveHandler);
+		onChangeToFieldValue($('#main_general_sitename'), onSiteInfoChange);
 		$('#main_general_sitename').keypress(function(e) {
 			if (e.which == 13) { // enter
-				siteNameSaveHandler();
+				siteInfoSaveHandler();
 			}
 		});
-	}
+
+		onChangeToFieldValue($('#main_general_adminemail'), onSiteInfoChange);
+		$('#main_general_adminemail').keypress(function(e) {
+			if (e.which == 13) { // enter
+				siteInfoSaveHandler();
+			}
+		});
+
+		$('#main_general_siteinfo_btn_save').click(siteInfoSaveHandler);
+	})();
 
 	// operators subtab
 	$('#main_operators_addnew').click(function() {
@@ -356,7 +367,7 @@ function onNameOrTitleEdited(nameOrTitleStr) {
 function updateInstallCodeMain(siteId) {
 	$('#install_code_main').val(
 		[
-'<script type="text/javascript" src="//lilylivechat.net/lilycode/' + siteId + '"></script>'
+'<script async="async" type="text/javascript" src="//lilylivechat.net/lilycode/' + siteId + '"></script>'
 		].join('\n')
 	);
 }
@@ -489,15 +500,17 @@ function handleMessage(message) {
 		case Messages.AdminSiteInfoMessage:
 			var siteId = message[0];
 			var siteName = message[1];
+			var adminEmail = message[2];
 
 			$('#main_general_siteid').text(siteId);
-			{
-				var operatorsLoginUrl = 'http://lilylivechat.net/operator/' + siteId;
-				$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
-			}
+
+			var operatorsLoginUrl = 'http://lilylivechat.net/operator/' + siteId;
+			$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
+
 			setFieldValue($('#main_general_sitename'), siteName);
+			setFieldValue($('#main_general_adminemail'), adminEmail);
 			break;
-		case Messages.AdminSetSiteNameSuccessMessage:
+		case Messages.CSMTAdminSetSiteInfoSuccessMessage:
 			// site name set successfully
 			break;
 		case Messages.AdminOperatorDetailsStartMessage:

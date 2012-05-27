@@ -83,8 +83,8 @@ lookupSiteLocal siteId siteMapTVar = do
     Just siteMapEntryTMVar -> readTMVar siteMapEntryTMVar >>= (return . eitherToMaybe)
     Nothing -> return Nothing
 
-getSiteDataFromRaw :: (SiteId, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> SiteData
-getSiteDataFromRaw (siteId, name, nextOperatorId, rawOperators, adminPasswordHash) =
+getSiteDataFromRaw :: (Text, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> SiteData
+getSiteDataFromRaw (siteId, name, adminEmail, nextOperatorId, rawOperators, adminPasswordHash) =
   let
     operatorsToSiteData = flip map rawOperators $ \(
       operatorId,
@@ -97,5 +97,5 @@ getSiteDataFromRaw (siteId, name, nextOperatorId, rawOperators, adminPasswordHas
       ) ->
       SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash  operatorName  operatorColor  operatorTitle  operatorIconUrl
   in
-    SiteData siteId name (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
+    SiteData siteId name adminEmail (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
 

@@ -47,8 +47,8 @@ data ChatServerMessageType = CustomerJoinMessage
                            | AdminOperatorReplaceSuccessMessage
                            | AdminOperatorReplaceDuplicateUsernameMessage
                            | AdminOperatorReplaceInvalidIdMessage
-                           | AdminSetSiteNameMessage
-                           | AdminSetSiteNameSuccessMessage
+                           | CSMTAdminSetSiteInfoMessage
+                           | CSMTAdminSetSiteInfoSuccessMessage
                            | CSSALoginRequestMessage
                            | CSSASiteCreateMessage
                            | CSSASiteDeleteMessage
@@ -111,8 +111,8 @@ messageIdsAndTypes = [
     (35, AdminOperatorCreateDuplicateUsernameMessage),
     (36, AdminOperatorReplaceSuccessMessage),
     (37, AdminOperatorReplaceDuplicateUsernameMessage),
-    (38, AdminSetSiteNameMessage),
-    (39, AdminSetSiteNameSuccessMessage),
+    (38, CSMTAdminSetSiteInfoMessage),
+    (39, CSMTAdminSetSiteInfoSuccessMessage),
     (40, AdminOperatorReplaceInvalidIdMessage),
     (41, CSSALoginRequestMessage),
     (42, CSSASiteCreateMessage),

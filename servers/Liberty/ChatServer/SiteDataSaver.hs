@@ -48,6 +48,7 @@ siteDataSaverWorker siteDataSaverChan maybeRetrySiteData = do
     siteDataToMessage siteData = (
       sdSiteId siteData,
       sdName siteData,
+      sdAdminEmail siteData,
       (fromInteger $ sdNextOperatorId siteData :: Int),
       map operatorToMessage (sdOperators siteData),
       sdAdminPasswordHash siteData)

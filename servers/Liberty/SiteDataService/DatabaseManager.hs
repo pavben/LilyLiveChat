@@ -124,14 +124,15 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
     Just maybeSiteDoc ->
       case maybeSiteDoc of
         Just siteDoc ->
-          case (,,,,) <$>
+          case (,,,,,) <$>
             (asMaybeText $ lookup "siteId" siteDoc) <*>
             (asMaybeText $ lookup "name" siteDoc) <*>
+            (asMaybeText $ lookup "adminEmail" siteDoc) <*>
             (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
             (lookup "operators" siteDoc :: Maybe [Document]) <*>
             (asMaybeText $ lookup "adminPasswordHash" siteDoc)
           of
-            Just (siteId, name, nextOperatorId, operators, adminPasswordHash) ->
+            Just (siteId, name, adminEmail, nextOperatorId, operators, adminPasswordHash) ->
               let
                 maybeOperatorDatas = mapM (\operatorDoc ->
                   SiteOperatorData <$>
@@ -145,7 +146,7 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
                   ) operators
               in
                 case maybeOperatorDatas of
-                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId name nextOperatorId siteOperatorDatas adminPasswordHash
+                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId name adminEmail nextOperatorId siteOperatorDatas adminPasswordHash
                   Nothing -> return GSDRNotAvailable -- can't read operators
             Nothing -> return GSDRNotAvailable -- can't read site data
         Nothing -> return GSDRNotFound -- that siteId doesn't exist
@@ -164,6 +165,7 @@ saveSiteDataToDb currentSiteId siteData databaseHandleTVar = do
       [
         "siteId" := (asStringValue $ sdSiteId siteData),
         "name" := (asStringValue $ sdName siteData),
+        "adminEmail" := (asStringValue $ sdAdminEmail siteData),
         "nextOperatorId" := Int32 (fromInteger $ sdNextOperatorId siteData),
         "operators" := Array (map (\siteOperatorData ->
           Doc [

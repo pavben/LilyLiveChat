@@ -43,7 +43,7 @@ instance MessageType SiteDataServiceMessageType where
 siteDataServiceConnectionData :: ServiceConnectionData
 siteDataServiceConnectionData = getLocalServiceConnectionData "sds"
 
-data GSDResult = GSDSuccess (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text)
+data GSDResult = GSDSuccess (Text, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text)
                | GSDNotFound
                | GSDNotAuthoritative
                | GSDNotAvailable
@@ -70,7 +70,7 @@ getSiteDataFromSDS siteId = do
 
 data SSDResult = SSDSuccess | SSDNotAuthoritative | SSDNotAvailable
 
-saveSiteDataToSDS :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> IO (SSDResult)
+saveSiteDataToSDS :: Text -> (Text, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> IO (SSDResult)
 saveSiteDataToSDS currentSiteId siteData = do
   serviceRequestResult <- serviceRequest siteDataServiceConnectionData SaveSiteDataMessage (currentSiteId, siteData, LT.pack "anivia")
   case serviceRequestResult of

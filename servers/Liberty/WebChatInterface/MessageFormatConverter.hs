@@ -70,8 +70,8 @@ jsonToMP AdminOperatorReplaceMessage [J.Number (DAN.I operatorId), J.String user
 jsonToMP AdminOperatorDeleteMessage [J.Number (DAN.I operatorId)] =
   createMessage AdminOperatorDeleteMessage (fromInteger operatorId :: Int)
 
-jsonToMP AdminSetSiteNameMessage [J.String name] =
-  createMessage AdminSetSiteNameMessage (name)
+jsonToMP CSMTAdminSetSiteInfoMessage [J.String siteName, J.String adminEmail] =
+  createMessage CSMTAdminSetSiteInfoMessage (siteName, adminEmail)
 
 jsonToMP AdminSetAdminPasswordMessage [J.String password] =
   createMessage AdminSetAdminPasswordMessage (password)
@@ -150,10 +150,10 @@ messageToJson AdminLoginFailedMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginFailedMessage)]
 
 messageToJson AdminSiteInfoMessage encodedParams =
-  unpackAndHandle encodedParams $ \(siteId :: Text, name :: Text) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON name]
+  unpackAndHandle encodedParams $ \(siteId :: Text, siteName :: Text, adminEmail :: Text) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON siteName, J.toJSON adminEmail]
 
-messageToJson AdminSetSiteNameSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminSetSiteNameSuccessMessage)]
+messageToJson CSMTAdminSetSiteInfoSuccessMessage encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTAdminSetSiteInfoSuccessMessage)]
 
 messageToJson AdminOperatorDetailsStartMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsStartMessage)]

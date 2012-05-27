@@ -124,6 +124,7 @@ handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleT
         siteDataToMessage siteData = (
           sdSiteId siteData,
           sdName siteData,
+          sdAdminEmail siteData,
           (fromInteger $ sdNextOperatorId siteData :: Int),
           map operatorToMessage (sdOperators siteData),
           sdAdminPasswordHash siteData)
@@ -138,8 +139,8 @@ handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleT
     SLSuccess _ -> atomically $ createAndSendMessage NonAuthoritativeServerMessage () clientSendChan
     SLNotAvailable -> atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
 
-handleSaveSiteDataMessage :: Text -> (Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> Text -> ClientSendChan -> DatabaseHandleTVar -> IO ()
-handleSaveSiteDataMessage currentSiteId (siteId, name, nextOperatorId, operators, adminPasswordHash) requesterServerId clientSendChan databaseHandleTVar = do
+handleSaveSiteDataMessage :: Text -> (Text, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> Text -> ClientSendChan -> DatabaseHandleTVar -> IO ()
+handleSaveSiteDataMessage currentSiteId (siteId, name, adminEmail, nextOperatorId, operators, adminPasswordHash) requesterServerId clientSendChan databaseHandleTVar = do
   -- Make sure requesterServerId is authoritative for siteId
   siteLocateResult <- locateSite siteId
   case siteLocateResult of
@@ -150,7 +151,7 @@ handleSaveSiteDataMessage currentSiteId (siteId, name, nextOperatorId, operators
         False -> atomically $ createAndSendMessage SiteDataSaveFailedMessage () clientSendChan
 
       where
-        siteData = SiteData siteId name (toInteger nextOperatorId) operatorsToSiteData adminPasswordHash
+        siteData = SiteData siteId name adminEmail (toInteger nextOperatorId) operatorsToSiteData adminPasswordHash
         operatorsToSiteData = flip map operators $ \(
           operatorId,
           operatorUsername,
