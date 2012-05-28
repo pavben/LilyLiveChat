@@ -1,0 +1,4 @@
+Import('buildBasicHaskellServer')
+
+buildBasicHaskellServer('SiteLocatorService')
+
