@@ -166,6 +166,10 @@ a:hover, a:active {
 }
 #watchvideo_tab {
 }
+#watchvideo_tab p {
+	line-height:145%;
+	margin:0px 0px 9px 0px;
+}
 #learnmore_tab {
 	padding:0px 2px 0px 2px;
 }

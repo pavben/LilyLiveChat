@@ -22,19 +22,22 @@ else:
 	variantDir = os.path.join(variantDir, 'debug')
 
 def buildBasicHaskellServer(name):
-	return env.Command(name, [
-		Glob('Liberty/' + name + '/*.hs'),
-		Glob('Liberty/Common/*.hs'),
-		Glob('Liberty/Common/Messages/*.hs')
-	],
-	'cd ' + env.Dir('.').abspath + ' && ' +
-	'export HOME=/home/`whoami` && ' +
-	'ghc Liberty/' + name + '/Main.hs -o ' + name
-)
+	env.Command(name, [
+			Glob('Liberty/' + name + '/*.hs'),
+			Glob('Liberty/Common/*.hs'),
+			Glob('Liberty/Common/Messages/*.hs')
+		],
+		'cd ' + env.Dir('.').abspath + ' && ' +
+		'export HOME=/home/`whoami` && ' +
+		'ghc Liberty/' + name + '/Main.hs -o ' + name
+	)
+	env.Install('../output/', name)
 
+Export('env')
 Export('buildBasicHaskellServer')
 
 sconscripts = [
+	'mainweb.scons',
 	'servers/ChatServer.scons',
 	'servers/ChatStatusService.scons',
 	'servers/MainWebsite.scons',
@@ -43,6 +46,13 @@ sconscripts = [
 	'servers/WebChatInterface.scons'
 ]
 
-for sconscript in sconscripts:
-	SConscript(sconscript, variant_dir=variantDir, duplicate=1)
+SConscript('mainweb.scons', variant_dir=variantDir, duplicate=1)
+SConscript('chatweb.scons', variant_dir=variantDir, duplicate=1)
+
+SConscript('servers/ChatServer.scons', variant_dir=variantDir + '/servers', duplicate=1)
+SConscript('servers/ChatStatusService.scons', variant_dir=variantDir + '/servers', duplicate=1)
+SConscript('servers/MainWebsite.scons', variant_dir=variantDir + '/servers', duplicate=1)
+SConscript('servers/SiteDataService.scons', variant_dir=variantDir + '/servers', duplicate=1)
+SConscript('servers/SiteLocatorService.scons', variant_dir=variantDir + '/servers', duplicate=1)
+SConscript('servers/WebChatInterface.scons', variant_dir=variantDir + '/servers', duplicate=1)
 

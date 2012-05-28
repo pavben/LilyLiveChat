@@ -1,0 +1,2 @@
+runhaskell -Wall Liberty/ChatStatusService/Main
+

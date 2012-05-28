@@ -1,0 +1,6 @@
+Import('env')
+
+env.Install('output/mainweb', Glob('#mainweb/*'))
+env.Install('output/mainweb/images', Glob('#mainweb/images/*'))
+env.Install('output/mainweb/jquery', Glob('#mainweb/jquery/*'))
+
