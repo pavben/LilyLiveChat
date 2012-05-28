@@ -1,0 +1,32 @@
+Import('env')
+
+def installMinifiedJavaScriptFile(file):
+	return env.Command('output/' + file,
+		'#' + file,
+		'java -jar tools/google-closure-compiler.jar ' + File('#' + file).path + ' > ' + File('output/' + file).path
+	)
+
+# build chatWebRootFiles
+chatWebRootFiles = Glob('#chatweb/*')
+
+# exclude and minify chat.js
+chatWebRootFiles.remove(File('#chatweb/chat.js'))
+installMinifiedJavaScriptFile('chatweb/chat.js')
+
+# exclude and minify operator.js
+chatWebRootFiles.remove(File('#chatweb/operator.js'))
+installMinifiedJavaScriptFile('chatweb/operator.js')
+
+# exclude and minify admin.js
+chatWebRootFiles.remove(File('#chatweb/admin.js'))
+installMinifiedJavaScriptFile('chatweb/admin.js')
+
+# exclude and minify lilycode.js
+chatWebRootFiles.remove(File('#chatweb/lilycode.js'))
+installMinifiedJavaScriptFile('chatweb/lilycode.js')
+
+env.Install('output/chatweb', chatWebRootFiles)
+env.Install('output/chatweb/audio', Glob('#chatweb/audio/*'))
+env.Install('output/chatweb/images', Glob('#chatweb/images/*'))
+env.Install('output/chatweb/jquery', Glob('#chatweb/jquery/*'))
+

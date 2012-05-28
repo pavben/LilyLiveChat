@@ -1,6 +1,19 @@
 Import('env')
 
-env.Install('output/mainweb', Glob('#mainweb/*'))
+def installMinifiedJavaScriptFile(file):
+	return env.Command('output/' + file,
+		'#' + file,
+		'java -jar tools/google-closure-compiler.jar ' + File('#' + file).path + ' > ' + File('output/' + file).path
+	)
+
+# build mainWebRootFiles
+mainWebRootFiles = Glob('#mainweb/*')
+
+# exclude and minify main.js
+mainWebRootFiles.remove(File('#mainweb/main.js'))
+installMinifiedJavaScriptFile('mainweb/main.js')
+
+env.Install('output/mainweb', mainWebRootFiles)
 env.Install('output/mainweb/images', Glob('#mainweb/images/*'))
 env.Install('output/mainweb/jquery', Glob('#mainweb/jquery/*'))
 
