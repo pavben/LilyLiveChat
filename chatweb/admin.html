@@ -8,6 +8,8 @@
 	<script src='/jquery/jquery.min.js'></script>
 	<script src='/common.js'></script>
 	<script src='/admin.js'></script>
+	<!-- Surprise! We use Lily too! -->
+	<script async="async" type="text/javascript" src="//lilylivechat.net/lilycode/31871"></script>
 </head>
 <body>
 	<div class="skybgdiv">
@@ -92,6 +94,16 @@
 											</div>
 										</div>
 									</div>
+									<!-- BEGIN LilyLiveChat button code -->
+									<div class="lilylivechat_online" style="display:none;">
+										<div class="main_rightcell_vspacer"></div>
+										<a href="http://www.lilylivechat.net" title="Live Chat" onclick="lilyLiveChat_launch(); return false;">
+											<img src="//lilylivechat.net/chatbuttons/2_on.png" alt="Live Chat" style="display:block; margin:0px auto 0px auto;" />
+										</a>
+									</div>
+									<div class="lilylivechat_offline" style="display:none;">
+									</div>
+									<!-- END LilyLiveChat button code -->
 								</div>
 								<div id="main_rightcell_operators" class="tab">
 									<div class="main_title">Your Operators</div>
@@ -217,6 +229,13 @@
 									<div class="main_title">Connecting Your Site to LilyLiveChat</div>
 									<div class="main_contentbox" style="text-align:left;">
 										<p>To set up LilyLiveChat, you need to have access to the source code for your website.</p>
+										<!-- BEGIN LilyLiveChat button code -->
+										<div class="lilylivechat_online" style="display:none;">
+											<p>Before you get started, you should know that we are available right now and would be more than happy to walk you through this step. <a href="http://www.lilylivechat.net" title="Live Chat" onclick="lilyLiveChat_launch(); return false;">Chat with a LilyLiveChat representative</a>.</p>
+										</div>
+										<div class="lilylivechat_offline" style="display:none;">
+										</div>
+										<!-- END LilyLiveChat button code -->
 										<h2>Linking the main code</h2>
 										<p>Add this code to your site's main template immediately before the closing &lt;/head&gt; tag. For accurate visitor tracking, verify that it's loaded onto all pages.</p>
 										<textarea id="install_code_main" rows="2" wrap="on" readonly="readonly" class="install_code">
@@ -255,7 +274,15 @@
 										<textarea id="install_code_button" rows="9" wrap="off" readonly="readonly" class="install_code">
 
 										</textarea>
-										<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, congratulations!</p>
+										<!-- BEGIN LilyLiveChat button code -->
+										<div class="lilylivechat_online" style="display:none;">
+											<p>Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, congratulations!</p>
+											<p class="lastp">If not, you're in luck! We're online right now and would be more than happy to help. <a href="http://www.lilylivechat.net" title="Live Chat" onclick="lilyLiveChat_launch(); return false;">Chat with a LilyLiveChat representative</a> and they'll get you up and running in no time :-)</p>
+										</div>
+										<div class="lilylivechat_offline" style="display:none;">
+											<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, congratulations!</p>
+										</div>
+										<!-- END LilyLiveChat button code -->
 									</div>
 								</div>
 								<div id="main_rightcell_adminpassword" class="tab">

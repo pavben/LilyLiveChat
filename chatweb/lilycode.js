@@ -100,9 +100,6 @@ var lilyLiveChat_launch;
 	// BEGIN code to display the appropriate buttons by class name
 	// Parts adapted from jQuery
 
-	// set to true/false and call setChatStatus when the chat status is known
-	var g_chatStatus;
-
 	var domContentLoadedCallback;
 
 	// Cleanup functions for the document ready method
@@ -122,12 +119,10 @@ var lilyLiveChat_launch;
 	}
 
 	function setChatStatus(chatStatus) {
-		g_chatStatus = chatStatus;
-
 		// Catch cases where $(document).ready() is called after the
 		// browser event has already occurred.
 		if (document.readyState === "complete") {
-			displayChatElements();
+			displayChatElements(chatStatus);
 		}
 		// Mozilla, Opera and webkit nightlies currently support this event
 		else if (document.addEventListener) {
@@ -135,7 +130,7 @@ var lilyLiveChat_launch;
 			document.addEventListener("DOMContentLoaded", domContentLoadedCallback, false);
 
 			// A fallback to window.onload, that will always work
-			window.addEventListener("load", displayChatElements, false);
+			window.addEventListener("load", function() { displayChatElements(chatStatus); }, false);
 
 		// If IE event model is used
 		} else if (document.attachEvent) {
@@ -145,15 +140,19 @@ var lilyLiveChat_launch;
 
 			// A fallback to window.onload, that will always work
 			window.attachEvent("onload", function() {
-				displayChatElements();
+				displayChatElements(chatStatus);
 			});
 		}
 	}
 
-	function displayChatElements() {
-		var elementsToDisplay = getElementsByClassName('lilylivechat_' + (g_chatStatus ? 'online' : 'offline'));
+	function displayChatElements(chatStatus) {
+		var elementsToDisplay = getElementsByClassName('lilylivechat_' + (chatStatus ? 'online' : 'offline'));
 		for (var i = 0; i < elementsToDisplay.length; i++) {
 			elementsToDisplay[i].style.display = 'block';
+		}
+
+		if (lilyLiveChat_ready !== undefined) {
+			lilyLiveChat_ready(chatStatus);
 		}
 	}
 
