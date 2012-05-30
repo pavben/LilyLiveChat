@@ -124,15 +124,16 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
     Just maybeSiteDoc ->
       case maybeSiteDoc of
         Just siteDoc ->
-          case (,,,,,) <$>
+          case (,,,,,,) <$>
             (asMaybeText $ lookup "siteId" siteDoc) <*>
+            (ifNothingThenJustZero $ lookup "planId" siteDoc :: Maybe Int) <*>
             (asMaybeText $ lookup "name" siteDoc) <*>
             (asMaybeText $ lookup "adminEmail" siteDoc) <*>
             (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
             (lookup "operators" siteDoc :: Maybe [Document]) <*>
             (asMaybeText $ lookup "adminPasswordHash" siteDoc)
           of
-            Just (siteId, name, adminEmail, nextOperatorId, operators, adminPasswordHash) ->
+            Just (siteId, planId, name, adminEmail, nextOperatorId, operators, adminPasswordHash) ->
               let
                 maybeOperatorDatas = mapM (\operatorDoc ->
                   SiteOperatorData <$>
@@ -146,7 +147,7 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
                   ) operators
               in
                 case maybeOperatorDatas of
-                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId name adminEmail nextOperatorId siteOperatorDatas adminPasswordHash
+                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId planId name adminEmail nextOperatorId siteOperatorDatas adminPasswordHash
                   Nothing -> return GSDRNotAvailable -- can't read operators
             Nothing -> return GSDRNotAvailable -- can't read site data
         Nothing -> return GSDRNotFound -- that siteId doesn't exist
@@ -154,6 +155,10 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
 
 asMaybeText :: Maybe String -> Maybe Text
 asMaybeText maybeString = fmap LT.pack maybeString
+
+ifNothingThenJustZero :: Maybe Int -> Maybe Int
+ifNothingThenJustZero Nothing = Just 0
+ifNothingThenJustZero justX = justX
 
 saveSiteDataToDb :: SiteId -> SiteData -> DatabaseHandleTVar -> IO Bool
 saveSiteDataToDb currentSiteId siteData databaseHandleTVar = do
@@ -164,6 +169,7 @@ saveSiteDataToDb currentSiteId siteData databaseHandleTVar = do
         "sites")
       [
         "siteId" := (asStringValue $ sdSiteId siteData),
+        "planId" := Int32 (fromIntegral $ sdPlanId siteData),
         "name" := (asStringValue $ sdName siteData),
         "adminEmail" := (asStringValue $ sdAdminEmail siteData),
         "nextOperatorId" := Int32 (fromInteger $ sdNextOperatorId siteData),

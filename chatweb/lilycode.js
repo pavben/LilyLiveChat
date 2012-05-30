@@ -2,7 +2,7 @@ var lilyLiveChat_launch;
 
 (function() {
 	// if the main code was loaded multiple times on the same page, ignore the second time
-	if (lilyLiveChat_launch !== undefined) {
+	if (typeof lilyLiveChat_launch !== 'undefined') {
 		return;
 	}
 
@@ -151,7 +151,7 @@ var lilyLiveChat_launch;
 			elementsToDisplay[i].style.display = 'block';
 		}
 
-		if (lilyLiveChat_ready !== undefined) {
+		if (typeof lilyLiveChat_ready !== 'undefined') {
 			lilyLiveChat_ready(chatStatus);
 		}
 	}

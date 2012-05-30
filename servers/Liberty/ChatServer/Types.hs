@@ -79,6 +79,7 @@ type ClientDataTVar = TVar ClientData
 type SiteId = Text
 data SiteData = SiteData {
   sdSiteId :: SiteId,
+  sdPlanId :: Int,
   sdName :: Text,
   sdAdminEmail :: Text,
   sdNextOperatorId :: Integer,

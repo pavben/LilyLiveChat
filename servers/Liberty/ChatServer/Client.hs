@@ -629,7 +629,7 @@ handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar 
           Nothing -> do
             -- create the new site data
             -- TODO: allow the caller to specify adminEmail
-            siteDataTVar <- newTVar $ SiteData siteId name adminEmail 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
+            siteDataTVar <- newTVar $ SiteData siteId 0 name adminEmail 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
 
             -- insert the site data to SiteMap and SDS
             createSite siteDataTVar siteMapTVar siteDataSaverChan
