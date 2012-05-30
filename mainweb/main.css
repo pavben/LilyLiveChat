@@ -50,6 +50,21 @@ input {
 	height:1px;
 	background-color:#BBBBBB;
 }
+.inputboxwrapper {
+	height:21px;
+	padding:3px 3px 3px 3px;
+	border:1px solid #BBBBBB;
+	border-radius:5px;
+	background-color:#F4F4F4;
+}
+.inputbox {
+	width:100%;
+	height:100%;
+	margin:0px auto 0px auto;
+	color:#404040;
+	font-size:18px;
+	background-color:#F4F4F4;
+}
 .basicbutton {
 	padding:0px 0px 1px 0px;
 	border:1px solid #BBBBBB;
@@ -196,11 +211,19 @@ a:hover, a:active {
 	margin:0;
 	text-align:center;
 }
-.tryitout_table {
-	margin-top:18px;
+.tryitout_buttontable {
+	margin:17px 0px 13px 0px;
+}
+.tryitout_table_label_cell {
+	display:table-cell;
+	text-align:center;
+	font-size:120%;
+	line-height:29px;
 }
 #newaccount_tab p {
 	margin:2px 0px 11px 5px;
+}
+.newaccount_infotable {
 }
 .newaccount_tablekey {
 	width:140px;
