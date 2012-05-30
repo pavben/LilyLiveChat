@@ -621,7 +621,7 @@ function showLoginFailedScreen() {
 	showMiscMessageTab('No match...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
 			$('<div/>').text('Try again. If you can\'t remember your password, contact us at ').append(
-				$('<a/>').attr('href', 'mailto:info@virtivia.com').text('info@virtivia.com')
+				$('<a/>').attr('href', 'mailto:support@lilylivechat.net').text('support@lilylivechat.net')
 			).append(
 				' or create a new account, whichever is easier.'
 			)
