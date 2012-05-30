@@ -122,13 +122,7 @@ function loginTabOkHandler() {
 		var password = $.trim($('#login_password').val());
 
 		if (username.length == 0) {
-			/*
 			$('#login_username').focus();
-			*/
-			// TODO: REMOVE THIS DEV CODE
-			$('#login_username').val('mike');
-			$('#login_password').val('mike');
-			loginTabOkHandler();
 		} else if (password.length == 0) {
 			$('#login_password').focus();
 		} else {
@@ -177,8 +171,6 @@ function handleMessage(message) {
 				$('#login_username').focus();
 			});
 
-			// Auto-login
-			$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen

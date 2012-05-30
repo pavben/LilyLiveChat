@@ -21,6 +21,10 @@ installMinifiedJavaScriptFile('chatweb/operator.js')
 chatWebRootFiles.remove(File('#chatweb/admin.js'))
 installMinifiedJavaScriptFile('chatweb/admin.js')
 
+# exclude and minify common.js
+chatWebRootFiles.remove(File('#chatweb/common.js'))
+installMinifiedJavaScriptFile('chatweb/common.js')
+
 # exclude and minify lilycode.js
 chatWebRootFiles.remove(File('#chatweb/lilycode.js'))
 installMinifiedJavaScriptFile('chatweb/lilycode.js')

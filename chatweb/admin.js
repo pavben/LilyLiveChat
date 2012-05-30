@@ -439,12 +439,7 @@ function loginTabOkHandler() {
 		var password = $.trim($('#login_password').val());
 
 		if (password.length == 0) {
-			/*
 			$('#login_password').focus();
-			*/
-			// TODO: REMOVE THIS DEV CODE
-			$('#login_password').val('mike');
-			loginTabOkHandler();
 		} else {
 			// disable the login handler to prevent double-clicks
 			loginTabOkHandlerEnabled = false;
@@ -472,8 +467,6 @@ function handleMessage(message) {
 				$('#login_password').focus();
 			});
 
-			// Auto-login
-			//$('#login_btn_ok').click();
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
 			// display the invalid site screen
