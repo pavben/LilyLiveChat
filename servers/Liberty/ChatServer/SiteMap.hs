@@ -10,6 +10,7 @@ import Control.Concurrent.STM.TMVar
 import Control.Concurrent.STM.TVar
 import Control.Monad.STM
 import Data.Map (Map)
+import Data.Maybe
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import Liberty.Common.Messages.SiteDataService
@@ -97,5 +98,5 @@ getSiteDataFromRaw (siteId, planId, name, adminEmail, nextOperatorId, rawOperato
       ) ->
       SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash  operatorName  operatorColor  operatorTitle  operatorIconUrl
   in
-    SiteData siteId (getPlanByIdOrFreePlan planId) name adminEmail (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
+    SiteData siteId (fromMaybe FreePlan $ getPlanById planId) name adminEmail (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
 

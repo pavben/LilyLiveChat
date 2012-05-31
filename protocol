@@ -19,11 +19,8 @@ Server to Customer
 2  - CustomerInLinePositionMessage [i:position]
 3  - CustomerNowTalkingToMessage [name, color, iconUrl]
 5  - CustomerReceiveChatMessage [text]
-7  - SomethingWentWrongMessage
 19 - CustomerChatEndedMessage
 23 - CustomerNoOperatorsAvailableMessage
-58 - CSUnavailableMessage
-61 - CSMTWrongChatServer
 
 Operator to Server
 ================================================================
@@ -69,8 +66,6 @@ Server to Admin
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
 56 - AdminSetAdminPasswordSuccessMessage
--64 - AdminAdminDeleteSuccessMessage
--65 - AdminAdminDeleteFailedMessage
 
 SA to Server
 ================================================================
@@ -79,7 +74,8 @@ SA to Server
 43 - CSSASiteDeleteMessage [siteId]
 59 - CSMTVisitorOnPage [visitorId, url]
 45 - CSMTSASetSiteAdminPassword [siteId, adminPassword]
--44 - CSMTSAGetSiteInfoMessage [siteId]
+44 - CSMTSAGetSiteInfo [siteId]
+66 - CSMTSASetSitePlan [siteId, planId]
 
 Server to SA
 ================================================================
@@ -92,5 +88,13 @@ Server to SA
 51 - CSSASiteDeleteFailedMessage
 52 - CSMTSASetSiteAdminPasswordSuccess
 53 - CSMTSASetSiteAdminPasswordFailedMessage
--53 - CSSASiteInfoFailedMessage
+64 - CSMTSASiteInfo [siteId, planId, adminEmail]
+65 - CSMTInvalidSiteId
 
+Other Messages
+================================================================
+7  - SomethingWentWrongMessage
+58 - CSUnavailableMessage
+61 - CSMTWrongChatServer
+67 - CSMTSuccess
+68 - CSMTFailure

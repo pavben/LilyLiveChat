@@ -18,7 +18,7 @@ module Liberty.ChatServer.Types (
   SiteOperatorData(..),
   SiteDataTVar,
   Plan(..),
-  getPlanByIdOrFreePlan,
+  getPlanById,
   getPlanIdForPlan,
   getMaxOperatorsForPlan,
   ClientSendChanMessage(..),
@@ -110,9 +110,9 @@ type SiteDataTVar = TVar SiteData
 data Plan = FreePlan
   deriving (Show)
 
-getPlanByIdOrFreePlan :: Int -> Plan
-getPlanByIdOrFreePlan 0 = FreePlan
-getPlanByIdOrFreePlan _ = FreePlan -- default to free plan
+getPlanById :: Int -> Maybe Plan
+getPlanById 0 = Just $ FreePlan
+getPlanById _ = Nothing
 
 getPlanIdForPlan :: Plan -> Int
 getPlanIdForPlan FreePlan = 0

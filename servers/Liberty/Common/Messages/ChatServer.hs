@@ -52,6 +52,7 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSSALoginRequestMessage
                            | CSSASiteCreateMessage
                            | CSSASiteDeleteMessage
+                           | CSMTSAGetSiteInfo
                            | CSMTSASetSiteAdminPassword
                            | CSSALoginSuccessMessage
                            | CSSALoginFailedMessage
@@ -71,6 +72,11 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSMTWrongChatServer
                            | AdminOperatorDeleteSuccessMessage
                            | AdminOperatorDeleteFailedMessage
+                           | CSMTSASiteInfo
+                           | CSMTInvalidSiteId
+                           | CSMTSASetSitePlan
+                           | CSMTSuccess
+                           | CSMTFailure
   deriving (Show, Eq, Ord)
 
 messageIdsAndTypes :: [(Int, ChatServerMessageType)]
@@ -118,6 +124,7 @@ messageIdsAndTypes = [
     (41, CSSALoginRequestMessage),
     (42, CSSASiteCreateMessage),
     (43, CSSASiteDeleteMessage),
+    (44, CSMTSAGetSiteInfo),
     (45, CSMTSASetSiteAdminPassword),
     (46, CSSALoginSuccessMessage),
     (47, CSSALoginFailedMessage),
@@ -136,7 +143,12 @@ messageIdsAndTypes = [
     (60, CSMTOperatorCustomerOnPage),
     (61, CSMTWrongChatServer),
     (62, AdminOperatorDeleteSuccessMessage),
-    (63, AdminOperatorDeleteFailedMessage)
+    (63, AdminOperatorDeleteFailedMessage),
+    (64, CSMTSASiteInfo),
+    (65, CSMTInvalidSiteId),
+    (66, CSMTSASetSitePlan),
+    (67, CSMTSuccess),
+    (68, CSMTFailure)
   ]
 
 instance MessageType ChatServerMessageType where

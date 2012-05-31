@@ -156,8 +156,10 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
           atomically $ closeClientSocket clientDataTVar
     OCDClientSuperAdminData _ ->
       case messageType of
+        CSMTSAGetSiteInfo -> unpackAndHandle $ \(siteId) -> handleCSMTSAGetSiteInfo siteId clientDataTVar siteMapTVar
         CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name,adminEmail,adminPassword) -> handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar
         CSMTSASetSiteAdminPassword -> unpackAndHandle $ \(siteId,adminPassword) -> handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSaverChan siteMapTVar
+        CSMTSASetSitePlan -> unpackAndHandle $ \(siteId,planId) -> handleCSMTSASetSitePlan siteId planId clientDataTVar siteDataSaverChan siteMapTVar
         _ -> do
           putStrLn "Client (SuperAdmin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -616,6 +618,13 @@ handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
             )
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
 
+handleCSMTSAGetSiteInfo :: Text -> ClientDataTVar -> SiteMapTVar -> IO ()
+handleCSMTSAGetSiteInfo siteId clientDataTVar siteMapTVar =
+  withSiteDataTVar siteId siteMapTVar clientDataTVar $ \siteDataTVar -> atomically $ do
+    siteData <- readTVar siteDataTVar
+
+    createAndSendMessage CSMTSASiteInfo (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdAdminEmail siteData) clientDataTVar
+
 handleCSSASiteCreateMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
 handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
   ensureTextLengthLimitsIO [
@@ -671,9 +680,43 @@ handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSav
 
           -- disconnect all admins for this site
           forM_ (sdOnlineAdmins siteData) closeClientSocket
+      -- TODO: change the failed message to a general CSMTInvalidSiteId and then use withSiteDataTVar
       Left SLENotFound -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
       Left SLENotAuthoritative -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
       Left SLENotAvailable -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
+
+handleCSMTSASetSitePlan :: Text -> Int -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
+handleCSMTSASetSitePlan siteId planId clientDataTVar siteDataSaverChan siteMapTVar =
+  withSiteDataTVar siteId siteMapTVar clientDataTVar $ \siteDataTVar -> atomically $ do
+    siteData <- readTVar siteDataTVar
+
+    case getPlanById planId of
+      Just plan -> do
+        -- save siteDataTVar with the new plan
+        writeTVar siteDataTVar $ siteData {
+          sdPlan = plan
+        }
+
+        -- save to the database
+        queueSaveSiteData siteDataTVar siteDataSaverChan
+
+        -- TODO: decide what to do about sites that downgrade and are no longer within their maxOperators limit
+
+        -- respond to the super admin who issued the set plan command
+        createAndSendMessage CSMTSuccess () clientDataTVar
+
+        -- update all admins with the new plan
+        sendSiteInfoToAdmins siteDataTVar
+      Nothing -> createAndSendMessage CSMTInvalidSiteId () clientDataTVar
+
+withSiteDataTVar :: SiteId -> SiteMapTVar -> ClientDataTVar -> (SiteDataTVar -> IO ()) -> IO ()
+withSiteDataTVar siteId siteMapTVar clientDataTVar f = do
+  siteLookupResult <- lookupSite siteId siteMapTVar
+  case siteLookupResult of
+    Right siteDataTVar -> f siteDataTVar
+    Left SLENotFound -> atomically $ createAndSendMessage CSMTInvalidSiteId () clientDataTVar
+    Left SLENotAuthoritative -> atomically $ createAndSendMessage CSMTWrongChatServer () clientDataTVar
+    Left SLENotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
 
 sendOperatorsListToAdmins :: SiteDataTVar -> STM ()
 sendOperatorsListToAdmins siteDataTVar = do
