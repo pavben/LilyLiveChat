@@ -56,7 +56,7 @@ Server to Admin
 ================================================================
 28 - AdminLoginSuccessMessage
 29 - AdminLoginFailedMessage
-30 - AdminSiteInfoMessage [siteId, siteName, adminEmail]
+30 - AdminSiteInfoMessage [siteId, planId, siteName, adminEmail]
 39 - CSMTAdminSetSiteInfoSuccessMessage
 31 - AdminOperatorDetailsStartMessage
 32 - AdminOperatorDetailsMessage [i:operatorId, username, name, color, title, iconUrl]

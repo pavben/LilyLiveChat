@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Liberty.ChatServer.Types (
   ClientData(..),
@@ -16,6 +17,10 @@ module Liberty.ChatServer.Types (
   SiteData(..),
   SiteOperatorData(..),
   SiteDataTVar,
+  Plan(..),
+  getPlanByIdOrFreePlan,
+  getPlanIdForPlan,
+  getMaxOperatorsForPlan,
   ClientSendChanMessage(..),
   ClientSendChan,
   SiteDataSaverChanMessage(..),
@@ -79,7 +84,7 @@ type ClientDataTVar = TVar ClientData
 type SiteId = Text
 data SiteData = SiteData {
   sdSiteId :: SiteId,
-  sdPlanId :: Int,
+  sdPlan :: Plan,
   sdName :: Text,
   sdAdminEmail :: Text,
   sdNextOperatorId :: Integer,
@@ -101,6 +106,19 @@ data SiteOperatorData = SiteOperatorData {
 } deriving (Show)
 
 type SiteDataTVar = TVar SiteData
+
+data Plan = FreePlan
+  deriving (Show)
+
+getPlanByIdOrFreePlan :: Int -> Plan
+getPlanByIdOrFreePlan 0 = FreePlan
+getPlanByIdOrFreePlan _ = FreePlan -- default to free plan
+
+getPlanIdForPlan :: Plan -> Int
+getPlanIdForPlan FreePlan = 0
+
+getMaxOperatorsForPlan :: Plan -> Int
+getMaxOperatorsForPlan FreePlan = 1
 
 -- ClientSendChan
 data ClientSendChanMessage = SendMessage ByteString | CloseSocket

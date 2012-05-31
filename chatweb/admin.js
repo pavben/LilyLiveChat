@@ -10,8 +10,8 @@ var installSubtab = null;
 var installButtonSubtab = null;
 var adminPasswordSubtab = null;
 
-// Person object representing the operator
-var me = null;
+// current price plan
+var myPlan = null;
 
 // current icon visible on the edit operator subtab
 var editOperatorCurrentIcon = null;
@@ -110,7 +110,11 @@ $(window).bind('load', function() {
 
 	// operators subtab
 	$('#main_operators_addnew').click(function() {
-		addOrEditOperatorHandler(null);
+		if (myPlan.maxOperators - operatorsCount > 0) {
+			addOrEditOperatorHandler(null);
+		} else {
+			showAtMaxOperatorsScreen();
+		}
 	});
 
 	// edit operator subtab
@@ -492,10 +496,13 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminSiteInfoMessage:
 			var siteId = message[0];
-			var siteName = message[1];
-			var adminEmail = message[2];
+			var planId = message[1];
+			var siteName = message[2];
+			var adminEmail = message[3];
 
-			$('#main_general_siteid').text(siteId);
+			myPlan = plans[planId];
+
+			$('#main_general_planname').text(myPlan.name);
 
 			var operatorsLoginUrl = 'http://lilylivechat.net/operator/' + siteId;
 			$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
@@ -704,6 +711,35 @@ function showEditOperatorDuplicateUsernameScreen() {
 		)
 	);
 }
+
+function showAtMaxOperatorsScreen() {
+	showMiscMessageTab('Can\'t add more...',
+		$('<div/>').addClass('miscmessage_content_textwrapper').append(
+			$('<div/>').text('Your ' + myPlan.name + ' allows ' + (myPlan.maxOperators > 1 ? 'up to ' + myPlan.maxOperators + ' operators' : 'only one operator') + '.')
+		).append(
+			$('<div/>').text('To add more, consider upgrading your plan.')
+		),
+		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
+			$('<div/>').addClass('tablerow').append(
+				$('<div/>').addClass('cell')
+			).append(
+				$('<div/>').addClass('cell').css('width', '80px').append(
+					$('<div/>').addClass('basicbutton').text('Back').click(function() {
+						changeTabTo(mainTab);
+					})
+				)
+			)
+		)
+	);
+}
+
+// plans
+var plans = [];
+
+plans[0] = {
+	name: 'Free Plan',
+	maxOperators: 1
+};
 
 function onResize() {
 	if (currentTab == loginTab) {

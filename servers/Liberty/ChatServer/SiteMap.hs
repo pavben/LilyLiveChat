@@ -97,5 +97,5 @@ getSiteDataFromRaw (siteId, planId, name, adminEmail, nextOperatorId, rawOperato
       ) ->
       SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash  operatorName  operatorColor  operatorTitle  operatorIconUrl
   in
-    SiteData siteId planId name adminEmail (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
+    SiteData siteId (getPlanByIdOrFreePlan planId) name adminEmail (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
 

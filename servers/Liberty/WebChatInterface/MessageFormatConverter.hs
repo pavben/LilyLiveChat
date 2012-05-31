@@ -150,7 +150,7 @@ messageToJson AdminLoginFailedMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginFailedMessage)]
 
 messageToJson AdminSiteInfoMessage encodedParams =
-  unpackAndHandle encodedParams $ \(siteId :: Text, siteName :: Text, adminEmail :: Text) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON siteName, J.toJSON adminEmail]
+  unpackAndHandle encodedParams $ \(siteId :: Text, planId :: Int, siteName :: Text, adminEmail :: Text) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON planId, J.toJSON siteName, J.toJSON adminEmail]
 
 messageToJson CSMTAdminSetSiteInfoSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTAdminSetSiteInfoSuccessMessage)]

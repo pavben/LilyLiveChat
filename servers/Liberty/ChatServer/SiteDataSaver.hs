@@ -47,7 +47,7 @@ siteDataSaverWorker siteDataSaverChan maybeRetrySiteData = do
   where
     siteDataToMessage siteData = (
       sdSiteId siteData,
-      sdPlanId siteData,
+      getPlanIdForPlan (sdPlan siteData),
       sdName siteData,
       sdAdminEmail siteData,
       (fromInteger $ sdNextOperatorId siteData :: Int),

@@ -452,21 +452,26 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
         OCDClientAdminData clientAdminData -> do
           let siteDataTVar = cadSiteDataTVar clientAdminData
           siteData <- readTVar siteDataTVar
-          if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
-            let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username (hashTextWithSalt password) name color title iconUrl
-            -- save siteDataTVar with the new operator and sdNextOperatorId
-            writeTVar siteDataTVar $ siteData {
-              sdOperators = newSiteOperatorData : sdOperators siteData,
-              sdNextOperatorId = sdNextOperatorId siteData + 1
-            }
-            -- save to the database
-            queueSaveSiteData siteDataTVar siteDataSaverChan
-            -- respond to the admin who issued the create command
-            createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
-            -- notify the admins with the new list
-            sendOperatorsListToAdmins siteDataTVar
+          -- if there is still room for more operators under this plan
+          if getMaxOperatorsForPlan (sdPlan siteData) - (length $ sdOperators siteData) > 0 then
+            if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
+              let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username (hashTextWithSalt password) name color title iconUrl
+              -- save siteDataTVar with the new operator and sdNextOperatorId
+              writeTVar siteDataTVar $ siteData {
+                sdOperators = newSiteOperatorData : sdOperators siteData,
+                sdNextOperatorId = sdNextOperatorId siteData + 1
+              }
+              -- save to the database
+              queueSaveSiteData siteDataTVar siteDataSaverChan
+              -- respond to the admin who issued the create command
+              createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
+              -- notify the admins with the new list
+              sendOperatorsListToAdmins siteDataTVar
+            else
+              createAndSendMessage AdminOperatorCreateDuplicateUsernameMessage () clientDataTVar
           else
-            createAndSendMessage AdminOperatorCreateDuplicateUsernameMessage () clientDataTVar
+            -- if this would mean going over the plan limits, the JS should have enforced this limit (unless dual login... unlikely)
+            closeClientSocket clientDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
@@ -628,8 +633,7 @@ handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar 
         case maybeSiteDataTVar of
           Nothing -> do
             -- create the new site data
-            -- TODO: allow the caller to specify adminEmail
-            siteDataTVar <- newTVar $ SiteData siteId 0 name adminEmail 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
+            siteDataTVar <- newTVar $ SiteData siteId FreePlan name adminEmail 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
 
             -- insert the site data to SiteMap and SDS
             createSite siteDataTVar siteMapTVar siteDataSaverChan
@@ -709,7 +713,7 @@ sendSiteInfoToAdmins siteDataTVar = do
   forM_ (sdOnlineAdmins siteData) $ sendSiteInfoToAdmin siteData
 
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
-sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, sdName siteData, sdAdminEmail siteData) adminClientDataTVar
+sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdName siteData, sdAdminEmail siteData) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> VisitorClientMapTVar -> IO ()
 handleClientExitEvent clientDataTVar visitorClientMapTVar = do
