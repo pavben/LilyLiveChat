@@ -23,7 +23,8 @@ $(window).bind('load', function() {
 	}
 
 	$('#menubutton_tryitout').click(tryItOutHandler);
-	$('#learnmore_createaccount').click(tryItOutHandler);
+	$('#learnmore_createaccount1').click(tryItOutHandler);
+	$('#learnmore_createaccount2').click(tryItOutHandler);
 
 	// pricing tooltip
 	var tooltip = $('<div/>').attr('id', 'tooltip');
