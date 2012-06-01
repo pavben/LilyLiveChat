@@ -707,7 +707,7 @@ handleCSMTSASetSitePlan siteId planId clientDataTVar siteDataSaverChan siteMapTV
 
         -- update all admins with the new plan
         sendSiteInfoToAdmins siteDataTVar
-      Nothing -> createAndSendMessage CSMTInvalidSiteId () clientDataTVar
+      Nothing -> createAndSendMessage CSMTFailure () clientDataTVar
 
 withSiteDataTVar :: SiteId -> SiteMapTVar -> ClientDataTVar -> (SiteDataTVar -> IO ()) -> IO ()
 withSiteDataTVar siteId siteMapTVar clientDataTVar f = do

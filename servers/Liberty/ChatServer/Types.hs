@@ -107,18 +107,27 @@ data SiteOperatorData = SiteOperatorData {
 
 type SiteDataTVar = TVar SiteData
 
-data Plan = FreePlan
+data Plan = FreePlan | SilverPlan | GoldPlan | PlatinumPlan
   deriving (Show)
 
 getPlanById :: Int -> Maybe Plan
 getPlanById 0 = Just $ FreePlan
+getPlanById 1 = Just $ SilverPlan
+getPlanById 2 = Just $ GoldPlan
+getPlanById 3 = Just $ PlatinumPlan
 getPlanById _ = Nothing
 
 getPlanIdForPlan :: Plan -> Int
 getPlanIdForPlan FreePlan = 0
+getPlanIdForPlan SilverPlan = 1
+getPlanIdForPlan GoldPlan = 2
+getPlanIdForPlan PlatinumPlan = 3
 
 getMaxOperatorsForPlan :: Plan -> Int
 getMaxOperatorsForPlan FreePlan = 1
+getMaxOperatorsForPlan SilverPlan = 1
+getMaxOperatorsForPlan GoldPlan = 4
+getMaxOperatorsForPlan PlatinumPlan = 7
 
 -- ClientSendChan
 data ClientSendChanMessage = SendMessage ByteString | CloseSocket

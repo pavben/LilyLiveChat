@@ -207,6 +207,47 @@ a:hover, a:active {
 #learnmore_tab .lastp {
 	margin:0;
 }
+.pricingtable {
+	display:table;
+	padding:2px;
+	border:1px solid #E0E0E0;
+	border-radius:5px;
+	margin:0px auto 9px auto;
+	background:#F4F4F4;
+}
+.pt_featurecell, .pt_cell, .pt_cellright {
+	display:table-cell;
+	padding:0px 2px 0px 2px;
+	text-align:center;
+	vertical-align:middle;
+}
+.pt_featurecell {
+	width:165px;
+	border-right:1px solid #E0E0E0;
+	text-decoration:underline;
+}
+.pt_cell {
+	border-right:1px solid #E0E0E0;
+	width:80px;
+}
+.pt_cellright {
+	width:80px;
+}
+.pt_incell, .pt_incellbottom {
+	height:29px;
+	padding-top:2px;
+	line-height:29px;
+}
+.pt_incell {
+	border-bottom:1px solid #E0E0E0;
+}
+.pt_incell_check {
+	background: url('/images/check.png');
+	background-repeat:no-repeat;
+	background-position:center center;
+}
+.pt_incellbottom {
+}
 #tryitout_tab p {
 	margin:0;
 	text-align:center;
@@ -233,4 +274,18 @@ a:hover, a:active {
 .newaccount_tablesep {
 	width:10px;
 	text-align:center;
+}
+#tooltip {
+	position:absolute;
+	padding:9px 9px 9px 9px;
+	border:1px solid #BBBBBB;
+	line-height:140%;
+	border-radius:5px;
+	background-color:#ECECEC;
+}
+#tooltip img {
+	display:block;
+	margin-top:6px;
+	border:1px solid #BBBBBB;
+	border-radius:4px;
 }

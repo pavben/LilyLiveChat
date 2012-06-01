@@ -25,6 +25,57 @@ $(window).bind('load', function() {
 	$('#menubutton_tryitout').click(tryItOutHandler);
 	$('#learnmore_createaccount').click(tryItOutHandler);
 
+	// pricing tooltip
+	var tooltip = $('<div/>').attr('id', 'tooltip');
+	$('body').append(tooltip);
+
+	tooltip.hide();
+
+	function addTooltipTo(element, content, width) {
+		width = typeof width !== 'undefined' ? width : 250;
+
+		element.mouseenter(function() {
+			tooltip.empty();
+			tooltip.css('width', width);
+			tooltip.append(content);
+			tooltip.show();
+		}).mousemove(function(e) {
+			var maxRight = $(window).width() - 9;
+			var right = e.pageX + tooltip.outerWidth() / 2;
+			if (right > maxRight) {
+				right = maxRight;
+			}
+			var newLeft = right - tooltip.outerWidth();
+			if (newLeft < 10) {
+				newLeft = 10;
+			}
+			tooltip.css({
+				left: newLeft,
+				top: e.pageY + 10
+			});
+		}).mouseleave(function() {
+			tooltip.hide();
+		});
+	}
+
+	/*
+	 * processReferrer('http://www.google.ca/?q=furry+pink+leather+handbag', 2);
+	 * writeCustomerOnPageMessage(2, 'http://www.pricelesshandbags.ca/item/27801', 'currently');
+	 */
+
+	addTooltipTo($('#pricing_operatorallowancelabel'), 'Each plan allows adding up to this many operators. Operators are people who can answer chats from your customers.');
+	addTooltipTo($('#pricing_customermonitoringlabel'),
+		$('<div/>').append(
+			$('<div/>').text('The LilyLiveChat customer monitoring system keeps your operators informed on the actions of the customer as they are browsing your website.')
+		).append(
+			$('<img/>').attr('src', '/images/customermonitoring.png').attr('alt', '')
+		),
+		709);
+	addTooltipTo($('#pricing_customeroriginlabel'), 'Want to know where your customers are coming from? Now you can! See the search keywords they use or the site that linked them to you and use this knowledge to your advantage!', 340);
+	addTooltipTo($('#pricing_tlssecuritylabel'), 'We hate to say it, but there are a few bad apples on the Internet. LilyLiveChat protects its customers with the latest and greatest TLS encryption (the successor to SSL) to ensure that your conversations are completely private.', 400);
+	addTooltipTo($('#pricing_assistedinstallationlabel'), 'No matter how technical you are, our developers will gladly walk you through setting up LilyLiveChat to integrate smoothly with your website. No one gets left behind!', 250);
+	addTooltipTo($('#pricing_exceptionalsupportlabel'), 'You can travel the world, meet all kinds of great people, but you\'ll have a hard time finding a live chat service that lets you talk to the developers who know LilyLiveChat as well as they know their own keyboard!', 390);
+
 	$('#tryitout_btn_newaccount').click(function() {
 		$.ajax({
 			url: '/cmd/createsite',

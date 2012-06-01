@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Liberty.Misc.SetSiteAdminPassword.Main
+module Main
 where
 import Control.Monad.IO.Class
 import Data.Text.Lazy (Text)

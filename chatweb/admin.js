@@ -741,6 +741,21 @@ plans[0] = {
 	maxOperators: 1
 };
 
+plans[1] = {
+	name: 'Silver Plan',
+	maxOperators: 1
+};
+
+plans[2] = {
+	name: 'Gold Plan',
+	maxOperators: 4
+};
+
+plans[3] = {
+	name: 'Platinum Plan',
+	maxOperators: 7
+};
+
 function onResize() {
 	if (currentTab == loginTab) {
 		onBasicVCenterResize('login', 600);

@@ -56,3 +56,5 @@ SConscript('servers/SiteDataService.scons', variant_dir=variantDir + '/servers',
 SConscript('servers/SiteLocatorService.scons', variant_dir=variantDir + '/servers', duplicate=1)
 SConscript('servers/WebChatInterface.scons', variant_dir=variantDir + '/servers', duplicate=1)
 
+SConscript('servers/Tools.scons', variant_dir=variantDir + '/servers', duplicate=1)
+
