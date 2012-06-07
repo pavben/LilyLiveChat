@@ -62,7 +62,7 @@ var lilyLiveChat_launch;
 	function setPrefixedCookie(name, val) {
 		var d = new Date();
 		d.setTime(d.getTime() + 24 * 60 * 60 * 1000);
-		document.cookie = cookiePrefix + name + '=' + encodeURIComponent(val) + '; expires=' + d.toGMTString() + '; path=/';
+		document.cookie = cookiePrefix + name + '=' + encodeURIComponent(val) + '; domain=lilylivechat.net; path=/; expires=' + d.toGMTString() + ';';
 	}
 	// END cookie get/set code
 	

@@ -1,20 +1,22 @@
 module Liberty.Common.RandomString (
-  getRandomText128
+  getRandomAlphanumericText
 ) where
+import Control.Monad
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
-import Data.Word
-import Numeric
 import System.Random
 
-getRandomText128 :: IO Text
-getRandomText128 = 
+getRandomAlphanumericText :: Int -> IO Text
+getRandomAlphanumericText len =
   let
-    randomWord64AsHex = do
-      ri <- randomRIO (0 :: Integer, 2 ^ (64 :: Int))
-      return $ LT.pack $ showHex (fromIntegral ri :: Word64) ""
+    getRandomChar :: IO Char
+    getRandomChar = do
+      typeOfChar <- randomRIO (1 :: Int,3)
+      randomRIO $ case typeOfChar of
+        1 -> ('A', 'Z')
+        2 -> ('a', 'z')
+        _ -> ('0', '9')
   in do
-    r1 <- randomWord64AsHex
-    r2 <- randomWord64AsHex
-    return $ LT.concat [r1, r2]
+    listOfChars <- replicateM len $ getRandomChar
+    return $ LT.pack listOfChars
 

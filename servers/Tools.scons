@@ -1,0 +1,17 @@
+Import('env')
+
+def buildBasicHaskellTool(name):
+	env.Command(name, [
+			Glob('Liberty/Tools/' + name + '/*.hs'),
+			Glob('Liberty/Common/*.hs'),
+			Glob('Liberty/Common/Messages/*.hs')
+		],
+		'cd ' + env.Dir('.').abspath + ' && ' +
+		'export HOME=/home/`whoami` && ' +
+		'ghc Liberty/Tools/' + name + '/Main.hs -o ' + name
+	)
+	env.Install('../output/', name)
+
+buildBasicHaskellTool('SetSiteAdminPassword')
+buildBasicHaskellTool('SetSitePlan')
+

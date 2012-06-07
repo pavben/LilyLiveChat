@@ -128,7 +128,7 @@ handleReceivedProxyMessage messageType encodedParams sessionDataTVar =
 
 tryCreateSessionUntilSuccess :: SessionMapTVar -> Socket -> IO (SessionId, SessionDataTVar)
 tryCreateSessionUntilSuccess sessionMapTVar proxySocket = do
-  newSessionId <- getRandomText128
+  newSessionId <- getRandomAlphanumericText 32
   maybeSessionDataTVar <- atomically $ do
     sessionMap <- readTVar sessionMapTVar
     case Map.lookup newSessionId sessionMap of

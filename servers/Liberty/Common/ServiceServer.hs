@@ -1,7 +1,9 @@
 module Liberty.Common.ServiceServer(
   ClientSendChanMessage(..),
   ClientSendChan,
-  runServiceDispatcher
+  runServiceDispatcher,
+  createAndSendMessage,
+  closeClientSocket
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TChan
