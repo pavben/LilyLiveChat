@@ -92,6 +92,12 @@
 .centertext {
 	text-align:center;
 }
+.general_nonactivatedaccount_leftcol {
+	width:60px;
+}
+.general_nonactivatedaccount_rightcol {
+	line-height:135%;
+}
 .main_settings_label {
 	display:table-cell;
 	text-align:center;

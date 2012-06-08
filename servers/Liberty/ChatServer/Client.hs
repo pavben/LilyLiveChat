@@ -286,11 +286,12 @@ handleCSMTUnregisteredActivateAdmin sessionId clientDataTVar siteDataTVar siteDa
           }
           -- save to the database
           queueSaveSiteData siteDataTVar siteDataSaverChan
-          -- respond with success
-          createAndSendMessage CSMTUnregisteredActivateAdminSuccess () clientDataTVar
           -- notify the admins of the change
           sendSiteInfoToAdmins siteDataTVar
+          -- TODO: kick all other admins (add userId to the online admin structure)
           -- TODO: send an e-mail to the admin
+          -- respond with success
+          createAndSendMessage CSMTUnregisteredActivateAdminSuccess () clientDataTVar
         _ -> createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
     VSFailure -> atomically $ createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
     VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
@@ -372,14 +373,14 @@ handleOperatorLoginRequestMessage sessionId clientDataTVar siteDataTVar = do
       atomically $ createAndSendMessage OperatorLoginFailedMessage () clientDataTVar
     VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
 
-handleAdminLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleAdminLoginRequestMessage sessionId clientDataTVar siteDataTVar = do
-  verifySessionIdResult <- verifySessionId sessionId
-  case verifySessionIdResult of
-    VSSuccess userId email -> atomically $ do
+handleAdminLoginRequestMessage :: Maybe Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleAdminLoginRequestMessage maybeSessionId clientDataTVar siteDataTVar =
+  let
+    performLogin :: Maybe Text -> STM ()
+    performLogin maybeUserId = do
       -- read the site data
       siteData <- readTVar siteDataTVar
-      if userId `elem` (sdAdminUserIds siteData) then do
+      if verifyMaybeUserId maybeUserId siteData then do
         -- Admin login successful
         -- update the site, adding the admin to it
         let newOnlineAdmins = clientDataTVar : sdOnlineAdmins siteData
@@ -400,10 +401,27 @@ handleAdminLoginRequestMessage sessionId clientDataTVar siteDataTVar = do
         -- Admin login failed: Invalid sessionId or userId not authorized for this site
         createAndSendMessage AdminLoginFailedMessage () clientDataTVar
         closeClientSocket clientDataTVar
-    VSFailure ->
-      -- invalid sessionId
-      atomically $ createAndSendMessage AdminLoginFailedMessage () clientDataTVar
-    VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+    verifyMaybeUserId maybeUserId siteData =
+      case sdAdminUserIds siteData of
+        [] -> True -- non-activated site, login is open to all
+        adminUserIds ->
+          case maybeUserId of
+            Just userId -> userId `elem` adminUserIds -- true if userId is in adminUserIds
+            Nothing -> False -- activated site and no sessionId provided
+  in
+    case maybeSessionId of
+      Just sessionId -> do
+        verifySessionIdResult <- verifySessionId sessionId
+        case verifySessionIdResult of
+          VSSuccess userId email -> atomically $ performLogin (Just userId)
+          VSFailure ->
+            -- invalid sessionId
+            -- TODO: use a special "session expired" message here and for operator login
+            atomically $ createAndSendMessage AdminLoginFailedMessage () clientDataTVar
+          VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+      Nothing ->
+        -- if no sessionId provided, try to perform a non-activated login
+        atomically $ performLogin Nothing
 
 handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
 handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar =

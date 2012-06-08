@@ -68,7 +68,10 @@ jsonToMP OperatorEndingChatMessage [J.Number (DAN.I sessionId)] =
   createMessage OperatorEndingChatMessage (fromInteger sessionId :: Int)
 
 jsonToMP AdminLoginRequestMessage [J.String sessionId] =
-  createMessage AdminLoginRequestMessage (sessionId)
+  let
+    maybeSessionId = if not $ T.null sessionId then Just sessionId else Nothing
+  in
+    createMessage AdminLoginRequestMessage (maybeSessionId)
 
 jsonToMP AdminOperatorCreateMessage [J.String name, J.String color, J.String title, J.String iconUrl, J.String email] =
   createMessage AdminOperatorCreateMessage (name, color, title, iconUrl, email)

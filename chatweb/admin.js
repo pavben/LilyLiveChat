@@ -78,6 +78,10 @@ $(window).bind('load', function() {
 		$('#main_general_siteinfo_btn_save').click(siteInfoSaveHandler);
 	})();
 
+	$('#general_nonactivatedaccount_reserve').click(function() {
+		window.location = 'https://lilylivechat.net/activateadmin/' + siteId;
+	});
+
 	// operators subtab
 	$('#main_operators_addnew').click(function() {
 		if (myPlan.maxOperators - operatorsCount > 0) {
@@ -369,8 +373,8 @@ function handleMessage(message) {
 			var isActive = message[1]; // we don't care if it's active or not for admins
 			var isActivated = message[2];
 
-			// if the account is not yet activated, login with an empty sessionId
 			if (!isActivated) {
+				// if the account is not yet activated, login with an empty sessionId
 				queueAjaxCommand([Messages.AdminLoginRequestMessage, '']);
 			} else {
 				var sessionId = $.cookie('sessionId');
@@ -410,7 +414,11 @@ function handleMessage(message) {
 			var siteName = message[2];
 			var isActivated = message[3];
 
-			// TODO: show a message about activation if needed
+			if (isActivated) {
+				$('#general_nonactivatedaccount_wrapper').hide();
+			} else {
+				$('#general_nonactivatedaccount_wrapper').show();
+			}
 
 			myPlan = plans[planId];
 
@@ -490,10 +498,6 @@ function handleMessage(message) {
 		case Messages.AdminOperatorDeleteSuccessMessage:
 			changeSubtabTo(operatorsSubtab);
 			break;
-		case Messages.AdminOperatorCreateDuplicateUsernameMessage:
-		case Messages.AdminOperatorReplaceDuplicateUsernameMessage:
-			showEditOperatorDuplicateUsernameScreen();
-			break;
 		case Messages.AdminSetAdminPasswordSuccessMessage:
 			// these are success messages for which success was already assumed, so nothing needs to be done
 			break;
@@ -535,13 +539,9 @@ function generatePersonColor() {
 }
 
 function showLoginFailedScreen() {
-	showMiscMessageTab('No match...',
+	showMiscMessageTab('No access...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('Try again. If you can\'t remember your password, contact us at ').append(
-				$('<a/>').attr('href', 'mailto:support@lilylivechat.net').text('support@lilylivechat.net')
-			).append(
-				' or create a new account, whichever is easier.'
-			)
+			$('<div/>').text('You don\'t seem to have permission to access the Admin Panel for this site. Did you login to the correct account?')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(
@@ -549,7 +549,7 @@ function showLoginFailedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
-						refreshThroughSiteLocator();
+						redirectToLoginAndBack();
 					})
 				)
 			)
@@ -596,25 +596,6 @@ function showCantConnectScreen() {
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
 						refreshThroughSiteLocator();
-					})
-				)
-			)
-		)
-	);
-}
-
-function showEditOperatorDuplicateUsernameScreen() {
-	showMiscMessageTab('Duplicate username',
-		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('You\'ve already used that username for another operator.')
-		),
-		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
-			$('<div/>').addClass('tablerow').append(
-				$('<div/>').addClass('cell')
-			).append(
-				$('<div/>').addClass('cell').css('width', '80px').append(
-					$('<div/>').addClass('basicbutton').text('Back').click(function() {
-						changeTabTo(mainTab);
 					})
 				)
 			)
