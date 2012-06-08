@@ -170,7 +170,7 @@ function editOperatorSetCurrentColor(color) {
 	$('#main_editoperator_name').css('color', editOperatorCurrentColor);
 }
 
-function addOrEditOperatorHandler(operatorId, username, name, color, title, iconUrl) {
+function addOrEditOperatorHandler(operatorId, name, color, title, iconUrl, isActivated) {
 	var edit = (operatorId !== null);
 
 	$('#main_editoperator_name').val(edit ? name : 'Name');
@@ -190,9 +190,8 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 
 	replaceImageWith(editOperatorCurrentIcon, $('#main_editoperator_icon'));
 
-	$('#main_editoperator_username').val(edit ? username : '');
-
-	$('#main_editoperator_password').val('');
+	$('#main_editoperator_create_email').val('');
+	$('#main_editoperator_edit_email').val('');
 
 	var buttonsTableRow = $('<div/>').addClass('tablerow');
 
@@ -236,38 +235,31 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 					onNameOrTitleEdited('title');
 					return;
 				}
-				var newUsername = $.trim($('#main_editoperator_username').val());
-				if (newUsername === '') {
-					$('#main_editoperator_username').val('Username');
-					$('#main_editoperator_username').focus();
-					return;
-				}
-				var newPassword = $.trim($('#main_editoperator_password').val());
-				if (!edit && newPassword === '') {
-					$('#main_editoperator_password').focus();
-					return;
-				}
 
 				if (edit) {
 					queueAjaxCommand([
 						Messages.AdminOperatorReplaceMessage,
 						operatorId,
-						newUsername,
-						newPassword,
 						newName,
 						editOperatorCurrentColor,
 						newTitle,
 						editOperatorCurrentIcon
 					]);
 				} else {
+					// creating a new operator
+					var email = $.trim($('#main_editoperator_create_email').val());
+					if (email === '') {
+						$('#main_editoperator_create_email').focus();
+						return;
+					}
+
 					queueAjaxCommand([
 						Messages.AdminOperatorCreateMessage,
-						newUsername,
-						newPassword,
 						newName,
 						editOperatorCurrentColor,
 						newTitle,
-						editOperatorCurrentIcon
+						editOperatorCurrentIcon,
+						email
 					]);
 				}
 			})
@@ -278,10 +270,30 @@ function addOrEditOperatorHandler(operatorId, username, name, color, title, icon
 		$('<div/>').addClass('fixedtable').append(buttonsTableRow)
 	);
 
+	$('#editoperator_email_wrapper_create').hide();
+	$('#editoperator_email_wrapper_edit').hide();
+	$('#editoperator_email_sent_wrapper').hide();
+
 	if (edit) {
-		$('#main_editoperator_passwordnote').text('If empty, it will remain unchanged.');
+		if (!isActivated) {
+			$('#main_editoperator_btn_sendemail').off('click').click(function() {
+				var email = $.trim($('#main_editoperator_edit_email').val());
+				if (email === '') {
+					$('#main_editoperator_edit_email').focus();
+					return;
+				}
+
+				queueAjaxCommand([Messages.CSMTAdminSendOperatorWelcomeEmail, operatorId, email]);
+
+				$('#editoperator_email_wrapper_edit').slideUp(300, onResize);
+				$('#editoperator_email_sent_address').text(email);
+				$('#editoperator_email_sent_wrapper').slideDown();
+			});
+
+			$('#editoperator_email_wrapper_edit').show();
+		}
 	} else {
-		$('#main_editoperator_passwordnote').text('Pick one that\'s hard to guess!');
+		$('#editoperator_email_wrapper_create').show();
 	}
 
 	changeSubtabTo(editOperatorSubtab);
@@ -444,6 +456,7 @@ function handleMessage(message) {
 			var color = message[2];
 			var title = message[3];
 			var iconUrl = message[4];
+			var isActivated = message[5];
 
 			var listbox = $('#main_operators_listbox');
 
@@ -474,7 +487,7 @@ function handleMessage(message) {
 						)
 					)
 				).click(function() {
-					addOrEditOperatorHandler(operatorId, username, name, color, title, iconUrl);
+					addOrEditOperatorHandler(operatorId, name, color, title, iconUrl, isActivated);
 				})
 			);
 
@@ -505,6 +518,8 @@ function handleMessage(message) {
 		case Messages.AdminOperatorDeleteFailedMessage: // the operator being deleted is already deleted
 			// these are cases when something very unexpected happens which can likely be fixed with a refresh
 			refreshThroughSiteLocator();
+			break;
+		case Messages.CSMTAdminSendOperatorWelcomeEmailSuccess:
 			break;
 		default:
 			log("Received an unknown message!");

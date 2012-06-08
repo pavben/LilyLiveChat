@@ -793,7 +793,6 @@ sendSiteInfoToAdmins siteDataTVar = do
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
 sendSiteInfoToAdmin siteData adminClientDataTVar = do
   let isActivated = not $ null $ sdAdminUserIds siteData
-  createAndSendMessage AdminSiteInfoMessage () adminClientDataTVar
   createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdName siteData, isActivated) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> VisitorClientMapTVar -> IO ()

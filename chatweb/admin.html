@@ -172,34 +172,57 @@
 										</div>
 									</div>
 									<div class="main_rightcell_vspacer"></div>
-									<div class="main_contentbox">
-										<div class="fixedtable">
-											<div class="tablerow">
-												<div class="main_settings_label">Username</div>
-												<div class="cell">
-													<div class="inputboxwrapper">
-														<input id="main_editoperator_username" class="inputbox" type="text" maxlength="30" autocomplete="off" />
+									<div id="editoperator_email_wrapper_create">
+										<div class="main_contentbox">
+											<div class="fixedtable">
+												<div class="tablerow">
+													<div class="main_settings_label">E-mail</div>
+													<div class="cell">
+														<div class="inputboxwrapper">
+															<input id="main_editoperator_create_email" class="inputbox" type="text" maxlength="256" autocomplete="off" />
+														</div>
+													</div>
+												</div>
+												<div class="tablerow">
+													<div class="main_rightcell_vspacer cell"></div>
+												</div>
+												<div class="tablerow">
+													<div class="cell"></div>
+													<div class="main_tablenote">We'll send them a welcome e-mail with a link to set up their account.</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div id="editoperator_email_wrapper_edit">
+										<div class="main_contentbox">
+											<div class="centertext">This operator hasn't set up their account yet.</div>
+											<div class="main_rightcell_vspacer"></div>
+											<div class="fixedtable">
+												<div class="tablerow">
+													<div class="main_settings_label">E-mail</div>
+													<div class="cell">
+														<div class="inputboxwrapper">
+															<input id="main_editoperator_edit_email" class="inputbox" type="text" maxlength="256" autocomplete="off" />
+														</div>
+													</div>
+												</div>
+												<div class="tablerow">
+													<div class="main_rightcell_vspacer cell"></div>
+												</div>
+												<div class="tablerow">
+													<div class="main_settings_label"></div>
+													<div class="cell vmiddle">
+														<div id="main_editoperator_btn_sendemail" class="basicbutton">Send Activation E-mail</div>
 													</div>
 												</div>
 											</div>
-											<div class="tablerow">
-												<div class="main_rightcell_vspacer cell"></div>
-											</div>
-											<div class="tablerow">
-												<div class="main_settings_label">Password</div>
-												<div class="cell">
-													<div class="inputboxwrapper">
-														<input id="main_editoperator_password" class="inputbox" type="password" maxlength="100" autocomplete="off" />
-													</div>
-												</div>
-											</div>
-											<div class="tablerow">
-												<div class="main_rightcell_vspacer cell"></div>
-											</div>
-											<div class="tablerow">
-												<div class="cell"></div>
-												<div class="main_tablenote" id="main_editoperator_passwordnote"></div>
-											</div>
+										</div>
+									</div>
+									<div id="editoperator_email_sent_wrapper">
+										<div class="main_contentbox">
+											<div class="centertext">A welcome e-mail has been sent to:</div>
+											<div class="main_rightcell_vspacer"></div>
+											<div id="editoperator_email_sent_address" class="darktext centertext"></div>
 										</div>
 									</div>
 									<div class="main_rightcell_vspacer"></div>

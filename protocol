@@ -55,7 +55,7 @@ Admin to Server
 26 - AdminOperatorReplaceMessage [i:operatorId, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [i:operatorId]
 38 - CSMTAdminSetSiteInfoMessage [siteName]
-55 - CSMTAdminSendOperatorWelcomeEmail [operatorId, email]
+55 - CSMTAdminSendOperatorWelcomeEmail [i:operatorId, email]
 
 Server to Admin
 ================================================================

@@ -85,8 +85,8 @@ jsonToMP AdminOperatorDeleteMessage [J.Number (DAN.I operatorId)] =
 jsonToMP CSMTAdminSetSiteInfoMessage [J.String siteName] =
   createMessage CSMTAdminSetSiteInfoMessage (siteName)
 
-jsonToMP CSMTAdminSendOperatorWelcomeEmail [J.String operatorId, J.String email] =
-  createMessage CSMTAdminSendOperatorWelcomeEmail (operatorId, email)
+jsonToMP CSMTAdminSendOperatorWelcomeEmail [J.Number (DAN.I operatorId), J.String email] =
+  createMessage CSMTAdminSendOperatorWelcomeEmail (fromInteger operatorId :: Int, email)
 
 jsonToMP _ _ = Nothing
 
@@ -186,7 +186,7 @@ messageToJson AdminOperatorDetailsStartMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsStartMessage)]
 
 messageToJson AdminOperatorDetailsMessage encodedParams =
-  unpackAndHandle encodedParams $ \(operatorId :: Int, name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId AdminOperatorDetailsMessage), J.toJSON operatorId, J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
+  unpackAndHandle encodedParams $ \(operatorId :: Int, name :: Text, color :: Text, title :: Text, iconUrl :: Text, isActivated :: Bool) -> [J.toJSON (messageTypeToId AdminOperatorDetailsMessage), J.toJSON operatorId, J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl, J.toJSON isActivated]
 
 messageToJson AdminOperatorDetailsEndMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsEndMessage)]
