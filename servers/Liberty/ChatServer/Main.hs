@@ -10,7 +10,7 @@ import Liberty.ChatServer.VisitorClientMap
 
 main :: IO ()
 main = do
-  putStrLn "Server starting..."
+  putStrLn "ChatServer starting..."
   -- site map
   siteMapTVar <- initializeSiteMap
   -- site data saver

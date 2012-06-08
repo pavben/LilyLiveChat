@@ -86,23 +86,22 @@ data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdPlan :: Plan,
   sdName :: Text,
-  sdAdminEmail :: Text,
   sdNextOperatorId :: Integer,
   sdOperators :: [SiteOperatorData],
-  sdSessionsWaiting :: [ChatSessionTVar],
   sdOnlineOperators :: [ClientDataTVar],
-  sdAdminPasswordHash :: Text,
+  sdAdminUserIds :: [Text],
   sdOnlineAdmins :: [ClientDataTVar],
-  sdNextSessionId :: Integer
+  sdNextSessionId :: Integer,
+  sdSessionsWaiting :: [ChatSessionTVar]
 } deriving (Show)
 data SiteOperatorData = SiteOperatorData {
   sodOperatorId :: Integer,
-  sodUsername :: Text,
-  sodPasswordHash :: Text,
   sodName :: Text,
   sodColor :: Text,
   sodTitle :: Text,
-  sodIconUrl :: Text
+  sodIconUrl :: Text,
+  sodUserId :: Maybe Text,
+  sodActivationToken :: Maybe Text
 } deriving (Show)
 
 type SiteDataTVar = TVar SiteData

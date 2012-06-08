@@ -94,10 +94,9 @@ receiveHttpRequestLoop handleStream = do
 
 handleCreateSiteCommand :: HandleStream ByteString -> IO ()
 handleCreateSiteCommand handleStream = do
-  adminPassword <- liftM (LT.pack . show) $ randomRIO (10 ^ (6 :: Int) :: Integer, 10 ^ (10 :: Int))
   -- the retry is only for the case where we generate a site id that is already in use
   -- all other cases will not retry
-  -- TODO PL: should still return a response, even if this fails
+  -- TODO LOW: should still return a response, even if this fails
   _ <- runWithRetry 5 $ do
     -- generate a site id
     --siteId <- liftM (LT.pack . show) $ randomRIO (0 :: Integer, 5)
@@ -120,17 +119,12 @@ handleCreateSiteCommand handleStream = do
               -- execute the create site command
               sendMessageToService CSSASiteCreateMessage (
                 siteId,
-                LT.append "Site " siteId,
-                LT.empty, -- by default, no e-mail
-                adminPassword) serviceHandle
+                LT.append "Site " siteId) serviceHandle
 
               createResponse <- receiveMessageFromService serviceHandle
               case createResponse of
                 (CSSASiteCreateSuccessMessage,_) -> do
-                  liftIO $ sendJsonResponse handleStream $ J.object [
-                    ("siteId", J.toJSON siteId),
-                    ("adminPassword", J.toJSON adminPassword)
-                    ]
+                  liftIO $ sendJsonResponse handleStream $ J.object [("siteId", J.toJSON siteId)]
                   return True
                 (CSSASiteCreateDuplicateIdMessage,_) -> do
                   liftIO $ putStrLn "Generated site id is not unique."

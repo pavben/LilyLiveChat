@@ -229,20 +229,43 @@ var Messages = {
 	AdminOperatorDetailsMessage : 32,
 	AdminOperatorDetailsEndMessage : 33,
 	AdminOperatorCreateSuccessMessage : 34,
-	AdminOperatorCreateDuplicateUsernameMessage : 35,
+	CSMTAdminSendOperatorWelcomeEmailSuccess : 35,
 	AdminOperatorReplaceSuccessMessage : 36,
-	AdminOperatorReplaceDuplicateUsernameMessage : 37,
+	CSMTUnregisteredActivateOperator : 37,
 	CSMTAdminSetSiteInfoMessage : 38,
 	CSMTAdminSetSiteInfoSuccessMessage : 39,
 	AdminOperatorReplaceInvalidIdMessage : 40,
-	AdminSetAdminPasswordMessage : 55,
-	AdminSetAdminPasswordSuccessMessage : 56,
+	CSSALoginRequestMessage : 41,
+	CSSASiteCreateMessage : 42,
+	CSSASiteDeleteMessage : 43,
+	CSMTSAGetSiteInfo : 44,
+	CSMTUnregisteredActivateOperatorSuccess : 45,
+	CSSALoginSuccessMessage : 46,
+	CSSALoginFailedMessage : 47,
+	CSSASiteCreateSuccessMessage : 48,
+	CSSASiteCreateDuplicateIdMessage : 49,
+	CSSASiteDeleteSuccessMessage : 50,
+	CSSASiteDeleteFailedMessage : 51,
+	CSMTUnregisteredActivateOperatorFailure : 52,
+	CSMTUnregisteredActivateAdminSuccess : 53,
+	CSSASiteCreateUnavailableMessage : 54,
+	CSMTAdminSendOperatorWelcomeEmail : 55,
+	CSMTUnregisteredActivateAdminFailure : 56,
 	CustomerJoinSuccessMessage : 57,
 	CSUnavailableMessage : 58,
+	CSMTVisitorOnPage : 59,
 	CSMTOperatorCustomerOnPage : 60,
 	CSMTWrongChatServer : 61,
 	AdminOperatorDeleteSuccessMessage : 62,
-	AdminOperatorDeleteFailedMessage : 63
+	AdminOperatorDeleteFailedMessage : 63,
+	CSMTSASiteInfo : 64,
+	CSMTInvalidSiteId : 65,
+	CSMTSASetSitePlan : 66,
+	CSMTSuccess : 67,
+	CSMTFailure : 68,
+	CSMTUnregisteredIsOperatorActivated : 69,
+	CSMTUnregisteredIsOperatorActivatedResponse : 70,
+	CSMTUnregisteredActivateAdmin : 71
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {
@@ -642,6 +665,10 @@ function getUrlParameter(name, queryString) {
 
 function refreshThroughSiteLocator() {
 	window.location = 'http://lilylivechat.net' + window.location.pathname + window.location.search;
+}
+
+function redirectToLoginAndBack() {
+	window.location = 'https://lilylivechat.net/auth/google/' + encodeURIComponent(window.location);
 }
 
 function stripPx(text) {

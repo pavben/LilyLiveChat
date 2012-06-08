@@ -14,7 +14,6 @@ import Network.HTTP
 import Network.Socket
 import Network.URI
 import Prelude hiding (catch)
-import Safe
 import Liberty.SiteLocatorService.SiteMap
 import Liberty.Common.Utils
 
@@ -71,8 +70,8 @@ receiveHttpRequestLoop handleStream siteMapTVar = do
       putStrLn "Request:"
       print request
       let requestUriPath = C8.pack $ uriPath $ rqURI request
-      case headMay $ filter (not . LBS.null) $ C8.split '/' $ requestUriPath of
-        Just (LT.pack . C8.unpack -> siteId) -> do
+      case filter (not . LBS.null) $ C8.split '/' $ requestUriPath of
+        [_, LT.pack . C8.unpack -> siteId] -> do
           maybeServerId <- lookupServerForSite siteId siteMapTVar
           case maybeServerId of
             Just serverId -> do
@@ -82,7 +81,7 @@ receiveHttpRequestLoop handleStream siteMapTVar = do
             Nothing -> do
               putStrLn "No servers available"
               respondHTTP handleStream (Response (2,0,0) "OK" [] noServersAvailableBody)
-        Nothing -> do
+        _ -> do
           putStrLn "Invalid request"
           respondHTTP handleStream (Response (4,0,0) "Bad Request" [] badRequestBody)
     Left connError -> do

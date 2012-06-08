@@ -23,6 +23,8 @@ import Liberty.Common.Messages.SiteLocatorService
 import Liberty.SiteDataService.DatabaseManager
 import Liberty.SiteDataService.Types
 
+-- TODO: Move SDS to ServiceServer
+
 initializeClient :: Socket -> DatabaseHandleTVar -> IO ()
 initializeClient clientSocket databaseHandleTVar = do
   clientSendChan <- atomically $ newTChan
@@ -125,23 +127,22 @@ handleGetSiteDataMessage siteId requesterServerId clientSendChan databaseHandleT
           sdSiteId siteData,
           sdPlanId siteData,
           sdName siteData,
-          sdAdminEmail siteData,
           (fromInteger $ sdNextOperatorId siteData :: Int),
           map operatorToMessage (sdOperators siteData),
-          sdAdminPasswordHash siteData)
+          sdAdminUserIds siteData)
         operatorToMessage siteOperatorData = (
           (fromInteger $ sodOperatorId siteOperatorData :: Int),
-          sodUsername siteOperatorData,
-          sodPasswordHash siteOperatorData,
           sodName siteOperatorData,
           sodColor siteOperatorData,
           sodTitle siteOperatorData,
-          sodIconUrl siteOperatorData)
+          sodIconUrl siteOperatorData,
+          sodUserId siteOperatorData,
+          sodActivationToken siteOperatorData)
     SLSuccess _ -> atomically $ createAndSendMessage NonAuthoritativeServerMessage () clientSendChan
     SLNotAvailable -> atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
 
-handleSaveSiteDataMessage :: Text -> (Text, Int, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> Text -> ClientSendChan -> DatabaseHandleTVar -> IO ()
-handleSaveSiteDataMessage currentSiteId (siteId, planId, name, adminEmail, nextOperatorId, operators, adminPasswordHash) requesterServerId clientSendChan databaseHandleTVar = do
+handleSaveSiteDataMessage :: Text -> SiteDataForMessage -> Text -> ClientSendChan -> DatabaseHandleTVar -> IO ()
+handleSaveSiteDataMessage currentSiteId (siteId, planId, name, nextOperatorId, operators, adminUserIds) requesterServerId clientSendChan databaseHandleTVar = do
   -- Make sure requesterServerId is authoritative for siteId
   siteLocateResult <- locateSite siteId
   case siteLocateResult of
@@ -152,17 +153,17 @@ handleSaveSiteDataMessage currentSiteId (siteId, planId, name, adminEmail, nextO
         False -> atomically $ createAndSendMessage SiteDataSaveFailedMessage () clientSendChan
 
       where
-        siteData = SiteData siteId planId name adminEmail (toInteger nextOperatorId) operatorsToSiteData adminPasswordHash
+        siteData = SiteData siteId planId name (toInteger nextOperatorId) operatorsToSiteData adminUserIds
         operatorsToSiteData = flip map operators $ \(
           operatorId,
-          operatorUsername,
-          operatorPasswordHash,
           operatorName,
           operatorColor,
           operatorTitle,
-          operatorIconUrl
+          operatorIconUrl,
+          operatorUserId,
+          operatorActivationToken
           ) ->
-          SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash operatorName operatorColor operatorTitle operatorIconUrl
+          SiteOperatorData (toInteger operatorId) operatorName operatorColor operatorTitle operatorIconUrl operatorUserId operatorActivationToken
     SLSuccess _ -> atomically $ createAndSendMessage NonAuthoritativeServerMessage () clientSendChan
     SLNotAvailable -> atomically $ createAndSendMessage DataNotAvailableMessage () clientSendChan
 

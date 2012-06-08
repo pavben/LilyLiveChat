@@ -32,6 +32,15 @@ jsonToMP :: ChatServerMessageType -> [J.Value] -> Maybe ByteString
 jsonToMP UnregisteredSelectSiteMessage [J.String siteId] =
   createMessage UnregisteredSelectSiteMessage (siteId)
 
+jsonToMP CSMTUnregisteredActivateOperator [J.String sessionId, J.Number (DAN.I operatorId), J.String activationToken] =
+  createMessage CSMTUnregisteredActivateOperator (sessionId, fromInteger operatorId :: Int, activationToken)
+
+jsonToMP CSMTUnregisteredActivateAdmin [J.String sessionId] =
+  createMessage CSMTUnregisteredActivateAdmin (sessionId)
+
+jsonToMP CSMTUnregisteredIsOperatorActivated [J.Number (DAN.I operatorId)] =
+  createMessage CSMTUnregisteredIsOperatorActivated (fromInteger operatorId :: Int)
+
 jsonToMP CustomerJoinMessage [J.String visitorId, J.String currentPage, J.String referrer] =
   let
     maybeVisitorId = if not $ T.null visitorId then Just visitorId else Nothing
@@ -46,8 +55,8 @@ jsonToMP CustomerSendChatMessage [J.String text] =
 jsonToMP CustomerEndingChatMessage [] =
   createMessage CustomerEndingChatMessage ()
 
-jsonToMP OperatorLoginRequestMessage [J.String username, J.String password] =
-  createMessage OperatorLoginRequestMessage (username, password)
+jsonToMP OperatorLoginRequestMessage [J.String sessionId] =
+  createMessage OperatorLoginRequestMessage (sessionId)
 
 jsonToMP OperatorAcceptNextChatSessionMessage [] =
   createMessage OperatorAcceptNextChatSessionMessage ()
@@ -58,23 +67,23 @@ jsonToMP OperatorSendChatMessage [J.Number (DAN.I sessionId), J.String text] =
 jsonToMP OperatorEndingChatMessage [J.Number (DAN.I sessionId)] =
   createMessage OperatorEndingChatMessage (fromInteger sessionId :: Int)
 
-jsonToMP AdminLoginRequestMessage [J.String password] =
-  createMessage AdminLoginRequestMessage (password)
+jsonToMP AdminLoginRequestMessage [J.String sessionId] =
+  createMessage AdminLoginRequestMessage (sessionId)
 
-jsonToMP AdminOperatorCreateMessage [J.String username, J.String password, J.String name, J.String color, J.String title, J.String iconUrl] =
-  createMessage AdminOperatorCreateMessage (username, password, name, color, title, iconUrl)
+jsonToMP AdminOperatorCreateMessage [J.String name, J.String color, J.String title, J.String iconUrl, J.String email] =
+  createMessage AdminOperatorCreateMessage (name, color, title, iconUrl, email)
 
-jsonToMP AdminOperatorReplaceMessage [J.Number (DAN.I operatorId), J.String username, J.String password, J.String name, J.String color, J.String title, J.String iconUrl] =
-  createMessage AdminOperatorReplaceMessage (fromInteger operatorId :: Int, username, password, name, color, title, iconUrl)
+jsonToMP AdminOperatorReplaceMessage [J.Number (DAN.I operatorId), J.String name, J.String color, J.String title, J.String iconUrl] =
+  createMessage AdminOperatorReplaceMessage (fromInteger operatorId :: Int, name, color, title, iconUrl)
 
 jsonToMP AdminOperatorDeleteMessage [J.Number (DAN.I operatorId)] =
   createMessage AdminOperatorDeleteMessage (fromInteger operatorId :: Int)
 
-jsonToMP CSMTAdminSetSiteInfoMessage [J.String siteName, J.String adminEmail] =
-  createMessage CSMTAdminSetSiteInfoMessage (siteName, adminEmail)
+jsonToMP CSMTAdminSetSiteInfoMessage [J.String siteName] =
+  createMessage CSMTAdminSetSiteInfoMessage (siteName)
 
-jsonToMP AdminSetAdminPasswordMessage [J.String password] =
-  createMessage AdminSetAdminPasswordMessage (password)
+jsonToMP CSMTAdminSendOperatorWelcomeEmail [J.String operatorId, J.String email] =
+  createMessage CSMTAdminSendOperatorWelcomeEmail (operatorId, email)
 
 jsonToMP _ _ = Nothing
 
@@ -82,10 +91,25 @@ jsonToMP _ _ = Nothing
 messageToJson :: ChatServerMessageType -> ByteString -> Maybe [J.Value]
 
 messageToJson UnregisteredSiteSelectedMessage encodedParams =
-  unpackAndHandle encodedParams $ \(siteName :: Text, isActive :: Bool) -> [J.toJSON (messageTypeToId UnregisteredSiteSelectedMessage), J.toJSON siteName, J.toJSON isActive]
+  unpackAndHandle encodedParams $ \(siteName :: Text, isActive :: Bool, hasAuthentication :: Bool) -> [J.toJSON (messageTypeToId UnregisteredSiteSelectedMessage), J.toJSON siteName, J.toJSON isActive, J.toJSON hasAuthentication]
 
 messageToJson UnregisteredSiteInvalidMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId UnregisteredSiteInvalidMessage)]
+
+messageToJson CSMTUnregisteredActivateOperatorSuccess encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTUnregisteredActivateOperatorSuccess)]
+
+messageToJson CSMTUnregisteredActivateOperatorFailure encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTUnregisteredActivateOperatorFailure)]
+
+messageToJson CSMTUnregisteredActivateAdminSuccess encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTUnregisteredActivateAdminSuccess)]
+
+messageToJson CSMTUnregisteredActivateAdminFailure encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTUnregisteredActivateAdminFailure)]
+
+messageToJson CSMTUnregisteredIsOperatorActivatedResponse encodedParams =
+  unpackAndHandle encodedParams $ \(isActivated :: Bool) -> [J.toJSON (messageTypeToId CSMTUnregisteredIsOperatorActivatedResponse), J.toJSON isActivated]
 
 messageToJson CustomerJoinSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \(color :: Text) -> [J.toJSON (messageTypeToId CustomerJoinSuccessMessage), J.toJSON color]
@@ -150,7 +174,7 @@ messageToJson AdminLoginFailedMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginFailedMessage)]
 
 messageToJson AdminSiteInfoMessage encodedParams =
-  unpackAndHandle encodedParams $ \(siteId :: Text, planId :: Int, siteName :: Text, adminEmail :: Text) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON planId, J.toJSON siteName, J.toJSON adminEmail]
+  unpackAndHandle encodedParams $ \(siteId :: Text, planId :: Int, siteName :: Text, isActivated :: Bool) -> [J.toJSON (messageTypeToId AdminSiteInfoMessage), J.toJSON siteId, J.toJSON planId, J.toJSON siteName, J.toJSON isActivated]
 
 messageToJson CSMTAdminSetSiteInfoSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTAdminSetSiteInfoSuccessMessage)]
@@ -159,7 +183,7 @@ messageToJson AdminOperatorDetailsStartMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsStartMessage)]
 
 messageToJson AdminOperatorDetailsMessage encodedParams =
-  unpackAndHandle encodedParams $ \(operatorId :: Int, username :: Text, name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId AdminOperatorDetailsMessage), J.toJSON operatorId, J.toJSON username, J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
+  unpackAndHandle encodedParams $ \(operatorId :: Int, name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId AdminOperatorDetailsMessage), J.toJSON operatorId, J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
 
 messageToJson AdminOperatorDetailsEndMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDetailsEndMessage)]
@@ -167,14 +191,11 @@ messageToJson AdminOperatorDetailsEndMessage encodedParams =
 messageToJson AdminOperatorCreateSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorCreateSuccessMessage)]
 
-messageToJson AdminOperatorCreateDuplicateUsernameMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorCreateDuplicateUsernameMessage)]
+messageToJson CSMTAdminSendOperatorWelcomeEmailSuccess encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTAdminSendOperatorWelcomeEmailSuccess)]
 
 messageToJson AdminOperatorReplaceSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorReplaceSuccessMessage)]
-
-messageToJson AdminOperatorReplaceDuplicateUsernameMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorReplaceDuplicateUsernameMessage)]
 
 messageToJson AdminOperatorReplaceInvalidIdMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorReplaceInvalidIdMessage)]
@@ -184,9 +205,6 @@ messageToJson AdminOperatorDeleteSuccessMessage encodedParams =
 
 messageToJson AdminOperatorDeleteFailedMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminOperatorDeleteFailedMessage)]
-
-messageToJson AdminSetAdminPasswordSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminSetAdminPasswordSuccessMessage)]
 
 messageToJson _ _ = Nothing
 

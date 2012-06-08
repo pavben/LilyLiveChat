@@ -18,20 +18,19 @@ data SiteData = SiteData {
   sdSiteId :: SiteId,
   sdPlanId :: Int,
   sdName :: Text,
-  sdAdminEmail :: Text,
   sdNextOperatorId :: Integer,
   sdOperators :: [SiteOperatorData],
-  sdAdminPasswordHash :: Text
+  sdAdminUserIds :: [Text]
 } deriving (Show)
 
 data SiteOperatorData = SiteOperatorData {
   sodOperatorId :: Integer,
-  sodUsername :: Text,
-  sodPasswordHash :: Text,
   sodName :: Text,
   sodColor :: Text,
   sodTitle :: Text,
-  sodIconUrl :: Text
+  sodIconUrl :: Text,
+  sodUserId :: Maybe Text,
+  sodActivationToken :: Maybe Text
 } deriving (Show)
 
 -- ClientSendChan

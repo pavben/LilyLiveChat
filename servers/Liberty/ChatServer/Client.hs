@@ -14,21 +14,24 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Int
 import Data.List
+import Data.Maybe
 import qualified Data.MessagePack as MP
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Debug.Trace
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
+import Prelude hiding (catch)
+import Safe
 import Liberty.Common.Messages
+import Liberty.Common.Messages.AuthServer
 import Liberty.Common.Messages.ChatServer
+import Liberty.Common.RandomString
 import Liberty.ChatServer.SiteDataSaver
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
 import Liberty.ChatServer.Utils
 import Liberty.ChatServer.VisitorClientMap
-import Prelude hiding (catch)
-import Safe
 
 initializeClient :: Socket -> SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
 initializeClient clientSocket siteMapTVar siteDataSaverChan visitorClientMapTVar = do
@@ -123,9 +126,12 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
               atomically $ closeClientSocket clientDataTVar
         Just siteDataTVar ->
           case messageType of
+            CSMTUnregisteredActivateOperator -> unpackAndHandle $ \(sessionId, operatorId :: Int, activationToken) -> handleCSMTUnregisteredActivateOperator sessionId (toInteger operatorId) activationToken clientDataTVar siteDataTVar siteDataSaverChan
+            CSMTUnregisteredActivateAdmin -> unpackAndHandle $ \(sessionId) -> handleCSMTUnregisteredActivateAdmin sessionId clientDataTVar siteDataTVar siteDataSaverChan
+            CSMTUnregisteredIsOperatorActivated -> unpackAndHandle $ \(operatorId :: Int) -> handleCSMTUnregisteredIsOperatorActivated (toInteger operatorId) clientDataTVar siteDataTVar
             CustomerJoinMessage -> unpackAndHandle $ \(maybeVisitorId, maybeCurrentPage, maybeReferrer) -> handleCustomerJoinMessage maybeVisitorId maybeCurrentPage maybeReferrer clientDataTVar siteDataTVar visitorClientMapTVar
-            OperatorLoginRequestMessage -> unpackAndHandle $ \(username, password) -> handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar
-            AdminLoginRequestMessage -> unpackAndHandle $ \password -> handleAdminLoginRequestMessage password clientDataTVar siteDataTVar
+            OperatorLoginRequestMessage -> unpackAndHandle $ \(sessionId) -> handleOperatorLoginRequestMessage sessionId clientDataTVar siteDataTVar
+            AdminLoginRequestMessage -> unpackAndHandle $ \sessionId -> handleAdminLoginRequestMessage sessionId clientDataTVar siteDataTVar
             _ -> do
               putStrLn "Client (Unregistered, with site selected) sent an unknown command"
               atomically $ closeClientSocket clientDataTVar
@@ -146,19 +152,18 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
           atomically $ closeClientSocket clientDataTVar
     OCDClientAdminData _ ->
       case messageType of
-        AdminOperatorCreateMessage -> unpackAndHandle $ \(username,password,name,color,title,iconUrl) -> handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar siteDataSaverChan
-        AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,username,password,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) username password name color title iconUrl clientDataTVar siteDataSaverChan
+        AdminOperatorCreateMessage -> unpackAndHandle $ \(name,color,title,iconUrl,email) -> handleAdminOperatorCreateMessage name color title iconUrl email clientDataTVar siteDataSaverChan
+        AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) name color title iconUrl clientDataTVar siteDataSaverChan
         AdminOperatorDeleteMessage -> unpackAndHandle $ \(operatorId :: Int) -> handleAdminOperatorDeleteMessage (toInteger operatorId) clientDataTVar siteDataSaverChan
-        CSMTAdminSetSiteInfoMessage -> unpackAndHandle $ \(siteName, adminEmail) -> handleCSMTAdminSetSiteInfoMessage siteName adminEmail clientDataTVar siteDataSaverChan
-        AdminSetAdminPasswordMessage -> unpackAndHandle $ \(password) -> handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan
+        CSMTAdminSetSiteInfoMessage -> unpackAndHandle $ \(siteName) -> handleCSMTAdminSetSiteInfoMessage siteName clientDataTVar siteDataSaverChan
+        CSMTAdminSendOperatorWelcomeEmail -> unpackAndHandle $ \(operatorId :: Int, email) -> handleCSMTAdminSendOperatorWelcomeEmail (toInteger operatorId) email clientDataTVar
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
     OCDClientSuperAdminData _ ->
       case messageType of
         CSMTSAGetSiteInfo -> unpackAndHandle $ \(siteId) -> handleCSMTSAGetSiteInfo siteId clientDataTVar siteMapTVar
-        CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name,adminEmail,adminPassword) -> handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar
-        CSMTSASetSiteAdminPassword -> unpackAndHandle $ \(siteId,adminPassword) -> handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSaverChan siteMapTVar
+        CSSASiteCreateMessage -> unpackAndHandle $ \(siteId,name) -> handleCSSASiteCreateMessage siteId name clientDataTVar siteDataSaverChan siteMapTVar
         CSMTSASetSitePlan -> unpackAndHandle $ \(siteId,planId) -> handleCSMTSASetSitePlan siteId planId clientDataTVar siteDataSaverChan siteMapTVar
         _ -> do
           putStrLn "Client (SuperAdmin) sent an unknown command"
@@ -183,7 +188,8 @@ handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
       -- send the appropriate message depending on whether or not there are any operators online
       siteData <- readTVar siteDataTVar
       let isActive = not $ null $ sdOnlineOperators siteData
-      createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive) clientDataTVar
+      let isActivated = not $ null $ sdAdminUserIds siteData
+      createAndSendMessage UnregisteredSiteSelectedMessage (sdName siteData, isActive, isActivated) clientDataTVar
     Left SLENotFound -> createAndSendMessage UnregisteredSiteInvalidMessage () clientDataTVar
     Left SLENotAuthoritative -> createAndSendMessage CSMTWrongChatServer () clientDataTVar
     Left SLENotAvailable -> createAndSendMessage CSUnavailableMessage () clientDataTVar
@@ -225,6 +231,80 @@ handleCSMTVisitorOnPage visitorId currentPage visitorClientMapTVar = do
               return ()
         _ -> return ()
 
+handleCSMTUnregisteredActivateOperator :: Text -> Integer -> Text -> ClientDataTVar -> SiteDataTVar -> SiteDataSaverChan -> IO ()
+handleCSMTUnregisteredActivateOperator sessionId operatorId activationToken clientDataTVar siteDataTVar siteDataSaverChan = do
+  verifySessionIdResult <- verifySessionId sessionId
+  case verifySessionIdResult of
+    VSSuccess userId email -> atomically $ do
+      siteData <- readTVar siteDataTVar
+      -- find operators matching operatorId
+      case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
+        ([oldSiteOperatorData], remainingOperators) ->
+          -- check if the activation token matches the operator with the given operatorId
+          case sodActivationToken oldSiteOperatorData of
+            Just expectedActivationToken | activationToken == expectedActivationToken ->
+              if null $ filter (\siteOperatorData -> maybe False (== userId) (sodUserId siteOperatorData)) (sdOperators siteData) then do
+                let newSiteOperatorData = oldSiteOperatorData {
+                  sodUserId = Just userId,
+                  sodActivationToken = Nothing
+                }
+                -- save siteDataTVar with the updated operator
+                writeTVar siteDataTVar $ siteData {
+                  sdOperators = newSiteOperatorData : remainingOperators
+                }
+                -- save to the database
+                queueSaveSiteData siteDataTVar siteDataSaverChan
+                -- respond with success
+                createAndSendMessage CSMTUnregisteredActivateOperatorSuccess () clientDataTVar
+                -- notify the admins with the new list
+                sendOperatorsListToAdmins siteDataTVar
+                -- TODO: send an e-mail to the operator
+              else
+                -- TODO: this is a "This account is already connected to another operator for this site" error
+                createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+            _ ->
+              -- activation token does not match
+              createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+        _ ->
+          -- operator with that id does not exist
+          createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+    VSFailure ->
+      -- invalid sessionId
+      atomically $ createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+    VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+
+handleCSMTUnregisteredActivateAdmin :: Text -> ClientDataTVar -> SiteDataTVar -> SiteDataSaverChan -> IO ()
+handleCSMTUnregisteredActivateAdmin sessionId clientDataTVar siteDataTVar siteDataSaverChan = do
+  verifySessionIdResult <- verifySessionId sessionId
+  case verifySessionIdResult of
+    VSSuccess userId email -> atomically $ do
+      siteData <- readTVar siteDataTVar
+      case sdAdminUserIds siteData of
+        [] -> do
+          writeTVar siteDataTVar $ siteData {
+            sdAdminUserIds = [userId]
+          }
+          -- save to the database
+          queueSaveSiteData siteDataTVar siteDataSaverChan
+          -- respond with success
+          createAndSendMessage CSMTUnregisteredActivateAdminSuccess () clientDataTVar
+          -- notify the admins of the change
+          sendSiteInfoToAdmins siteDataTVar
+          -- TODO: send an e-mail to the admin
+        _ -> createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
+    VSFailure -> atomically $ createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
+    VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+
+handleCSMTUnregisteredIsOperatorActivated :: Integer -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleCSMTUnregisteredIsOperatorActivated operatorId clientDataTVar siteDataTVar =
+  atomically $ do
+    siteData <- readTVar siteDataTVar
+    case filter (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
+      [siteOperatorData] ->
+        createAndSendMessage CSMTUnregisteredIsOperatorActivatedResponse (isJust $ sodUserId siteOperatorData) clientDataTVar
+      _ ->
+        createAndSendMessage CSMTFailure () clientDataTVar
+
 handleCustomerJoinMessage :: Maybe Text -> Maybe Text -> Maybe Text -> ClientDataTVar -> SiteDataTVar -> VisitorClientMapTVar -> IO ()
 handleCustomerJoinMessage maybeVisitorId maybeCurrentPage maybeReferrer clientDataTVar siteDataTVar visitorClientMapTVar = do
   -- generate a color for this customer (we do it out here since it's IO)
@@ -255,54 +335,51 @@ handleCustomerJoinMessage maybeVisitorId maybeCurrentPage maybeReferrer clientDa
       createAndSendMessage CustomerNoOperatorsAvailableMessage () clientDataTVar
       closeClientSocket clientDataTVar
 
-handleOperatorLoginRequestMessage :: Text -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleOperatorLoginRequestMessage username password clientDataTVar siteDataTVar =
-  let
-    matchSiteOperatorCredentials siteOperatorData = (sodUsername siteOperatorData == username) && (sodPasswordHash siteOperatorData == hashTextWithSalt password)
-  in
-    atomically $ do
-      ensureTextLengthLimits [(username, maxOperatorUsernameLength), (password, maxOperatorPasswordLength)] clientDataTVar $ do
-        -- read the site data
-        siteData <- readTVar siteDataTVar
-        -- see if any operators match the given credentials
-        maybeSiteOperatorData <- case filter matchSiteOperatorCredentials $ sdOperators siteData of
-          [siteOperatorData] -> do
-            -- Successful match
-            return $ Just siteOperatorData
-          [] -> do
-            -- No match
-            return Nothing
-          _ -> do
-            -- Multiple match -- data integrity error
-            return Nothing
-
-        case maybeSiteOperatorData of
-          Just (SiteOperatorData operatorId _ _ name color title iconUrl) -> do
-            -- Operator login successful
-            -- update the site, adding the operator to it
-            let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
-            writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
-
-            -- update the client, associating it with the site
-            clientData <- readTVar clientDataTVar
-            writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData operatorId name color title iconUrl siteDataTVar [] }
-            createAndSendMessage OperatorLoginSuccessMessage (name, color, title, iconUrl) clientDataTVar
-
-            -- send the line status
-            lineStatusInfo <- getLineStatusInfo siteDataTVar
-            sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
-          Nothing -> do
-            -- Operator login failed: Invalid credentials
-            createAndSendMessage OperatorLoginFailedMessage () clientDataTVar
-            closeClientSocket clientDataTVar
-
-handleAdminLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
-handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
-  atomically $ do
-    ensureTextLengthLimits [(password, maxOperatorPasswordLength)] clientDataTVar $ do
+handleOperatorLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleOperatorLoginRequestMessage sessionId clientDataTVar siteDataTVar = do
+  verifySessionIdResult <- verifySessionId sessionId
+  case verifySessionIdResult of
+    VSSuccess userId email -> atomically $ do
       -- read the site data
       siteData <- readTVar siteDataTVar
-      if hashTextWithSalt password == sdAdminPasswordHash siteData then do
+      -- see if any operators match this userId
+      case filter (\siteOperatorData -> maybe False (== userId) (sodUserId siteOperatorData)) $ sdOperators siteData of
+        [(SiteOperatorData operatorId name color title iconUrl _ _)] -> do
+          -- Operator login successful
+          -- update the site, adding the operator to it
+          let newOnlineOperators = clientDataTVar : sdOnlineOperators siteData
+          writeTVar siteDataTVar $ siteData { sdOnlineOperators = newOnlineOperators }
+
+          -- update the client, associating it with the site
+          clientData <- readTVar clientDataTVar
+          writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientOperatorData $ ClientOperatorData operatorId name color title iconUrl siteDataTVar [] }
+          createAndSendMessage OperatorLoginSuccessMessage (name, color, title, iconUrl) clientDataTVar
+
+          -- send the line status
+          lineStatusInfo <- getLineStatusInfo siteDataTVar
+          sendLineStatusInfoToOperator lineStatusInfo clientDataTVar
+        [] -> do
+          -- Operator login failed: No operators match this userId
+          createAndSendMessage OperatorLoginFailedMessage () clientDataTVar
+          closeClientSocket clientDataTVar
+        _ -> do
+          -- Multiple operators match this userId (ASSERT)
+          trace ("ASSERT: Multiple operators matching the same userId for siteId = " ++ show (sdSiteId siteData)) $ return ()
+          createAndSendMessage OperatorLoginFailedMessage () clientDataTVar
+          closeClientSocket clientDataTVar
+    VSFailure ->
+      -- invalid sessionId
+      atomically $ createAndSendMessage OperatorLoginFailedMessage () clientDataTVar
+    VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+
+handleAdminLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleAdminLoginRequestMessage sessionId clientDataTVar siteDataTVar = do
+  verifySessionIdResult <- verifySessionId sessionId
+  case verifySessionIdResult of
+    VSSuccess userId email -> atomically $ do
+      -- read the site data
+      siteData <- readTVar siteDataTVar
+      if userId `elem` (sdAdminUserIds siteData) then do
         -- Admin login successful
         -- update the site, adding the admin to it
         let newOnlineAdmins = clientDataTVar : sdOnlineAdmins siteData
@@ -311,17 +388,22 @@ handleAdminLoginRequestMessage password clientDataTVar siteDataTVar =
         -- update the client, associating it with the site
         clientData <- readTVar clientDataTVar
         writeTVar clientDataTVar $ clientData { cdOtherData = OCDClientAdminData $ ClientAdminData siteDataTVar }
+
         createAndSendMessage AdminLoginSuccessMessage () clientDataTVar
 
-        -- send the site info (siteId, name, expiryTimestamp)
+        -- send the site info
         sendSiteInfoToAdmin siteData clientDataTVar
 
         -- send the operators list
         sendOperatorsListToAdmin siteData clientDataTVar
       else do
-        -- Admin login failed: Invalid credentials
+        -- Admin login failed: Invalid sessionId or userId not authorized for this site
         createAndSendMessage AdminLoginFailedMessage () clientDataTVar
         closeClientSocket clientDataTVar
+    VSFailure ->
+      -- invalid sessionId
+      atomically $ createAndSendMessage AdminLoginFailedMessage () clientDataTVar
+    VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
 
 handleCustomerSendChatMessage :: Text -> ClientCustomerData -> ClientDataTVar -> IO ()
 handleCustomerSendChatMessage messageText clientCustomerData clientDataTVar =
@@ -438,12 +520,11 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars visitorClientMapT
       [chatSessionTVar] -> endChatSession chatSessionTVar visitorClientMapTVar
       _ -> return () -- if no match or too many matches, do nothing (most likely, the session ended)
 
-handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
-handleAdminOperatorCreateMessage username password name color title iconUrl clientDataTVar siteDataSaverChan =
+handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminOperatorCreateMessage name color title iconUrl email clientDataTVar siteDataSaverChan = do
+  activationToken <- getRandomAlphanumericText 16
   atomically $ do
     ensureTextLengthLimits [
-        (username, maxOperatorUsernameLength),
-        (password, maxOperatorPasswordLength),
         (name, maxPersonNameLength),
         (color, maxColorLength),
         (title, maxOperatorTitleLength),
@@ -455,33 +536,29 @@ handleAdminOperatorCreateMessage username password name color title iconUrl clie
           let siteDataTVar = cadSiteDataTVar clientAdminData
           siteData <- readTVar siteDataTVar
           -- if there is still room for more operators under this plan
-          if getMaxOperatorsForPlan (sdPlan siteData) - (length $ sdOperators siteData) > 0 then
-            if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) (sdOperators siteData) then do
-              let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) username (hashTextWithSalt password) name color title iconUrl
-              -- save siteDataTVar with the new operator and sdNextOperatorId
-              writeTVar siteDataTVar $ siteData {
-                sdOperators = newSiteOperatorData : sdOperators siteData,
-                sdNextOperatorId = sdNextOperatorId siteData + 1
-              }
-              -- save to the database
-              queueSaveSiteData siteDataTVar siteDataSaverChan
-              -- respond to the admin who issued the create command
-              createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
-              -- notify the admins with the new list
-              sendOperatorsListToAdmins siteDataTVar
-            else
-              createAndSendMessage AdminOperatorCreateDuplicateUsernameMessage () clientDataTVar
+          if getMaxOperatorsForPlan (sdPlan siteData) - (length $ sdOperators siteData) > 0 then do
+            let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) name color title iconUrl Nothing (Just activationToken)
+            -- save siteDataTVar with the new operator and sdNextOperatorId
+            writeTVar siteDataTVar $ siteData {
+              sdOperators = newSiteOperatorData : sdOperators siteData,
+              sdNextOperatorId = sdNextOperatorId siteData + 1
+            }
+            -- save to the database
+            queueSaveSiteData siteDataTVar siteDataSaverChan
+            -- respond to the admin who issued the create command
+            createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
+            -- notify the admins with the new list
+            sendOperatorsListToAdmins siteDataTVar
+            -- TODO: send an e-mail to 'email' with instructions for signing up
           else
             -- if this would mean going over the plan limits, the JS should have enforced this limit (unless dual login... unlikely)
             closeClientSocket clientDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
 
-handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
-handleAdminOperatorReplaceMessage operatorId username password name color title iconUrl clientDataTVar siteDataSaverChan =
+handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleAdminOperatorReplaceMessage operatorId name color title iconUrl clientDataTVar siteDataSaverChan =
   atomically $ do
     ensureTextLengthLimits [
-        (username, maxOperatorUsernameLength),
-        (password, maxOperatorPasswordLength),
         (name, maxPersonNameLength),
         (color, maxColorLength),
         (title, maxOperatorTitleLength),
@@ -493,26 +570,24 @@ handleAdminOperatorReplaceMessage operatorId username password name color title 
           let siteDataTVar = cadSiteDataTVar clientAdminData
           siteData <- readTVar siteDataTVar
           case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
-            ([oldSiteOperatorData], remainingOperators) ->
+            ([oldSiteOperatorData], remainingOperators) -> do
               -- exactly 1 operator matched the search
-              if null $ filter (\siteOperatorData -> sodUsername siteOperatorData == username) remainingOperators then do
-                -- the new password hash is either the same as the old (if no new password given) or a hash of the new password
-                let newPasswordHash = if LT.null password then sodPasswordHash oldSiteOperatorData else hashTextWithSalt password
-                -- the new username does not collide with any other operators
-                let newSiteOperatorData = SiteOperatorData operatorId username newPasswordHash name color title iconUrl
-                -- save siteDataTVar with the new operator
-                writeTVar siteDataTVar $ siteData {
-                  sdOperators = newSiteOperatorData : remainingOperators
-                }
-                -- save to the database
-                queueSaveSiteData siteDataTVar siteDataSaverChan
-                -- respond to the admin who issued the replace command
-                createAndSendMessage AdminOperatorReplaceSuccessMessage () clientDataTVar
-                -- notify the admins with the new list
-                sendOperatorsListToAdmins siteDataTVar
-              else
-                -- an operator with that username already exists
-                createAndSendMessage AdminOperatorReplaceDuplicateUsernameMessage () clientDataTVar
+              let newSiteOperatorData = oldSiteOperatorData {
+                sodName = name,
+                sodColor = color,
+                sodTitle = title,
+                sodIconUrl = iconUrl
+              }
+              -- save siteDataTVar with the new operator
+              writeTVar siteDataTVar $ siteData {
+                sdOperators = newSiteOperatorData : remainingOperators
+              }
+              -- save to the database
+              queueSaveSiteData siteDataTVar siteDataSaverChan
+              -- respond to the admin who issued the replace command
+              createAndSendMessage AdminOperatorReplaceSuccessMessage () clientDataTVar
+              -- notify the admins with the new list
+              sendOperatorsListToAdmins siteDataTVar
             _ ->
               -- operator with the given operatorId does not exist (or duplicate? shouldn't be possible)
               createAndSendMessage AdminOperatorReplaceInvalidIdMessage () clientDataTVar
@@ -557,12 +632,11 @@ handleAdminOperatorDeleteMessage operatorId clientDataTVar siteDataSaverChan =
           createAndSendMessage AdminOperatorDeleteFailedMessage () clientDataTVar
       _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorDeleteMessage" ()
 
-handleCSMTAdminSetSiteInfoMessage :: Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
-handleCSMTAdminSetSiteInfoMessage siteName adminEmail clientDataTVar siteDataSaverChan =
+handleCSMTAdminSetSiteInfoMessage :: Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
+handleCSMTAdminSetSiteInfoMessage siteName clientDataTVar siteDataSaverChan =
   atomically $ do
     ensureTextLengthLimits [
-        (siteName, maxSiteNameLength),
-        (adminEmail, maxEmailLength)
+        (siteName, maxSiteNameLength)
       ] clientDataTVar $ do
       clientData <- readTVar clientDataTVar
       case cdOtherData clientData of
@@ -572,66 +646,38 @@ handleCSMTAdminSetSiteInfoMessage siteName adminEmail clientDataTVar siteDataSav
 
           -- save siteDataTVar with the new site name
           writeTVar siteDataTVar $ siteData {
-            sdName = siteName,
-            sdAdminEmail = adminEmail
+            sdName = siteName
           }
 
           -- save to the database
           queueSaveSiteData siteDataTVar siteDataSaverChan
 
-          -- respond to the admin who issued the delete command
+          -- respond to the sender
           createAndSendMessage CSMTAdminSetSiteInfoSuccessMessage () clientDataTVar
 
           -- notify the admins of the new site name
           sendSiteInfoToAdmins siteDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleCSMTAdminSetSiteInfoMessage" ()
 
-handleAdminSetAdminPasswordMessage :: Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
-handleAdminSetAdminPasswordMessage password clientDataTVar siteDataSaverChan =
-  atomically $ do
-    ensureTextLengthLimits [(password, maxAdminPasswordLength)] clientDataTVar $ do
-      clientData <- readTVar clientDataTVar
-      case cdOtherData clientData of
-        OCDClientAdminData clientAdminData -> do
-          let siteDataTVar = cadSiteDataTVar clientAdminData
-          siteData <- readTVar siteDataTVar
+handleCSMTAdminSendOperatorWelcomeEmail :: Integer -> Text -> ClientDataTVar -> IO ()
+handleCSMTAdminSendOperatorWelcomeEmail operatorId email clientDataTVar = do
+  -- TODO: Send an operator welcome e-mail to 'email'
+  atomically $ createAndSendMessage CSMTAdminSendOperatorWelcomeEmailSuccess () clientDataTVar
+  return ()
 
-          -- save siteDataTVar with the new password
-          writeTVar siteDataTVar $ siteData {
-            sdAdminPasswordHash = hashTextWithSalt password
-          }
-
-          -- save to the database
-          queueSaveSiteData siteDataTVar siteDataSaverChan
-
-          -- respond to the admin who issued the set password command
-          createAndSendMessage AdminSetAdminPasswordSuccessMessage () clientDataTVar
-
-          -- disconnect all other admins
-          forM_ (sdOnlineAdmins siteData) (\targetAdminClientDataTVar -> do
-            -- if the admin we're looping through is not the same as the admin who issued the command
-            if targetAdminClientDataTVar /= clientDataTVar then
-              -- disconnect the target admin
-              closeClientSocket targetAdminClientDataTVar
-            else
-              return ()
-            )
-        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminSetAdminPasswordMessage" ()
-
+-- Note: Nobody uses this message yet
 handleCSMTSAGetSiteInfo :: Text -> ClientDataTVar -> SiteMapTVar -> IO ()
 handleCSMTSAGetSiteInfo siteId clientDataTVar siteMapTVar =
   withSiteDataTVar siteId siteMapTVar clientDataTVar $ \siteDataTVar -> atomically $ do
     siteData <- readTVar siteDataTVar
 
-    createAndSendMessage CSMTSASiteInfo (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdAdminEmail siteData) clientDataTVar
+    createAndSendMessage CSMTSASiteInfo (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdName siteData) clientDataTVar
 
-handleCSSASiteCreateMessage :: Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
-handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
+handleCSSASiteCreateMessage :: Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
+handleCSSASiteCreateMessage siteId name clientDataTVar siteDataSaverChan siteMapTVar =
   ensureTextLengthLimitsIO [
       (siteId, maxSiteIdLength),
-      (name, maxSiteNameLength),
-      (adminEmail, maxEmailLength),
-      (adminPassword, maxAdminPasswordLength)
+      (name, maxSiteNameLength)
     ] clientDataTVar $ do
     -- first, we do a complete site lookup (including querying SDS, if needed)
     siteLookupResult <- lookupSite siteId siteMapTVar
@@ -642,7 +688,7 @@ handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar 
         case maybeSiteDataTVar of
           Nothing -> do
             -- create the new site data
-            siteDataTVar <- newTVar $ SiteData siteId FreePlan name adminEmail 0 [] [] [] (hashTextWithSalt adminPassword) [] 0
+            siteDataTVar <- newTVar $ SiteData siteId FreePlan name 0 [] [] [] [] 0 []
 
             -- insert the site data to SiteMap and SDS
             createSite siteDataTVar siteMapTVar siteDataSaverChan
@@ -654,36 +700,6 @@ handleCSSASiteCreateMessage siteId name adminEmail adminPassword clientDataTVar 
       Right _ -> createAndSendMessage CSSASiteCreateDuplicateIdMessage () clientDataTVar
       Left SLENotAuthoritative -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
       Left SLENotAvailable -> createAndSendMessage CSSASiteCreateUnavailableMessage () clientDataTVar
-
-
-handleCSMTSASetSiteAdminPassword :: Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
-handleCSMTSASetSiteAdminPassword siteId adminPassword clientDataTVar siteDataSaverChan siteMapTVar =
-  ensureTextLengthLimitsIO [
-      (siteId, maxSiteIdLength),
-      (adminPassword, maxAdminPasswordLength)
-    ] clientDataTVar $ do
-    siteLookupResult <- lookupSite siteId siteMapTVar
-    atomically $ case siteLookupResult of
-      Right siteDataTVar -> do
-          siteData <- readTVar siteDataTVar
-
-          -- save siteDataTVar with the new password
-          writeTVar siteDataTVar $ siteData {
-            sdAdminPasswordHash = hashTextWithSalt adminPassword
-          }
-
-          -- save to the database
-          queueSaveSiteData siteDataTVar siteDataSaverChan
-
-          -- respond to the super admin who issued the set password command
-          createAndSendMessage CSMTSASetSiteAdminPasswordSuccess () clientDataTVar
-
-          -- disconnect all admins for this site
-          forM_ (sdOnlineAdmins siteData) closeClientSocket
-      -- TODO: change the failed message to a general CSMTInvalidSiteId and then use withSiteDataTVar
-      Left SLENotFound -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
-      Left SLENotAuthoritative -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
-      Left SLENotAvailable -> createAndSendMessage CSMTSASetSiteAdminPasswordFailed () clientDataTVar
 
 handleCSMTSASetSitePlan :: Text -> Int -> ClientDataTVar -> SiteDataSaverChan -> SiteMapTVar -> IO ()
 handleCSMTSASetSitePlan siteId planId clientDataTVar siteDataSaverChan siteMapTVar =
@@ -736,11 +752,12 @@ sendOperatorsListToAdmin siteData adminClientDataTVar = do
     createAndSendMessage AdminOperatorDetailsMessage
       (
         fromIntegral $ sodOperatorId siteOperatorData :: Int,
-        sodUsername siteOperatorData,
         sodName siteOperatorData,
         sodColor siteOperatorData,
         sodTitle siteOperatorData,
-        sodIconUrl siteOperatorData
+        sodIconUrl siteOperatorData,
+        -- isActivated
+        isJust $ sodUserId siteOperatorData
       )
       adminClientDataTVar
     )
@@ -756,7 +773,10 @@ sendSiteInfoToAdmins siteDataTVar = do
   forM_ (sdOnlineAdmins siteData) $ sendSiteInfoToAdmin siteData
 
 sendSiteInfoToAdmin :: SiteData -> ClientDataTVar -> STM ()
-sendSiteInfoToAdmin siteData adminClientDataTVar = createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdName siteData, sdAdminEmail siteData) adminClientDataTVar
+sendSiteInfoToAdmin siteData adminClientDataTVar = do
+  let isActivated = not $ null $ sdAdminUserIds siteData
+  createAndSendMessage AdminSiteInfoMessage () adminClientDataTVar
+  createAndSendMessage AdminSiteInfoMessage (sdSiteId siteData, getPlanIdForPlan (sdPlan siteData), sdName siteData, isActivated) adminClientDataTVar
 
 handleClientExitEvent :: ClientDataTVar -> VisitorClientMapTVar -> IO ()
 handleClientExitEvent clientDataTVar visitorClientMapTVar = do

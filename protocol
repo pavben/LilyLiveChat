@@ -1,11 +1,19 @@
 Unregistered to Server
 ================================================================
 20 - UnregisteredSelectSiteMessage [siteId]
+37 - CSMTUnregisteredActivateOperator [sessionId, i:operatorId, activationToken]
+71 - CSMTUnregisteredActivateAdmin [sessionId]
+69 - CSMTUnregisteredIsOperatorActivated [i:operatorId]
 
 Server to Unregistered
 ================================================================
-21 - UnregisteredSiteSelectedMessage [siteName, b:isActive]
+21 - UnregisteredSiteSelectedMessage [siteName, b:isActive, b:isActivated]
 22 - UnregisteredSiteInvalidMessage
+45 - CSMTUnregisteredActivateOperatorSuccess
+52 - CSMTUnregisteredActivateOperatorFailure
+53 - CSMTUnregisteredActivateAdminSuccess
+56 - CSMTUnregisteredActivateAdminFailure
+70 - CSMTUnregisteredIsOperatorActivatedResponse [b:isActivated]
 
 Customer to Server
 ================================================================
@@ -24,7 +32,7 @@ Server to Customer
 
 Operator to Server
 ================================================================
-8  - OperatorLoginRequestMessage [username, password]
+8  - OperatorLoginRequestMessage [sessionId]
 13 - OperatorAcceptNextChatSessionMessage
 16 - OperatorSendChatMessage [sessionId, text]
 17 - OperatorEndingChatMessage [sessionId]
@@ -42,38 +50,35 @@ Server to Operator
 
 Admin to Server
 ================================================================
-24 - AdminLoginRequestMessage [password]
-25 - AdminOperatorCreateMessage [username, password, name, color, title, iconUrl]
-26 - AdminOperatorReplaceMessage [i:operatorId, username, password, name, color, title, iconUrl]
+24 - AdminLoginRequestMessage [sessionId]
+25 - AdminOperatorCreateMessage [name, color, title, iconUrl, email]
+26 - AdminOperatorReplaceMessage [i:operatorId, name, color, title, iconUrl]
 27 - AdminOperatorDeleteMessage [i:operatorId]
-38 - CSMTAdminSetSiteInfoMessage [siteName, adminEmail]
-55 - AdminSetAdminPasswordMessage [password]
+38 - CSMTAdminSetSiteInfoMessage [siteName]
+55 - CSMTAdminSendOperatorWelcomeEmail [operatorId, email]
 
 Server to Admin
 ================================================================
 28 - AdminLoginSuccessMessage
 29 - AdminLoginFailedMessage
-30 - AdminSiteInfoMessage [siteId, planId, siteName, adminEmail]
+30 - AdminSiteInfoMessage [siteId, planId, siteName, b:isActivated]
 39 - CSMTAdminSetSiteInfoSuccessMessage
 31 - AdminOperatorDetailsStartMessage
-32 - AdminOperatorDetailsMessage [i:operatorId, username, name, color, title, iconUrl]
+32 - AdminOperatorDetailsMessage [i:operatorId, name, color, title, iconUrl, b:isActivated]
 33 - AdminOperatorDetailsEndMessage
 34 - AdminOperatorCreateSuccessMessage
-35 - AdminOperatorCreateDuplicateUsernameMessage
+35 - CSMTAdminSendOperatorWelcomeEmailSuccess
 36 - AdminOperatorReplaceSuccessMessage
-37 - AdminOperatorReplaceDuplicateUsernameMessage
 40 - AdminOperatorReplaceInvalidIdMessage
 62 - AdminOperatorDeleteSuccessMessage
 63 - AdminOperatorDeleteFailedMessage
-56 - AdminSetAdminPasswordSuccessMessage
 
 SA to Server
 ================================================================
 41 - CSSALoginRequestMessage
-42 - CSSASiteCreateMessage [siteId, name, adminEmail, adminPassword]
+42 - CSSASiteCreateMessage [siteId, name]
 43 - CSSASiteDeleteMessage [siteId]
 59 - CSMTVisitorOnPage [visitorId, url]
-45 - CSMTSASetSiteAdminPassword [siteId, adminPassword]
 44 - CSMTSAGetSiteInfo [siteId]
 66 - CSMTSASetSitePlan [siteId, planId]
 
@@ -86,9 +91,7 @@ Server to SA
 54 - CSSASiteCreateUnavailableMessage
 50 - CSSASiteDeleteSuccessMessage
 51 - CSSASiteDeleteFailedMessage
-52 - CSMTSASetSiteAdminPasswordSuccess
-53 - CSMTSASetSiteAdminPasswordFailedMessage
-64 - CSMTSASiteInfo [siteId, planId, adminEmail]
+64 - CSMTSASiteInfo [siteId, planId, siteName]
 65 - CSMTInvalidSiteId
 
 Other Messages

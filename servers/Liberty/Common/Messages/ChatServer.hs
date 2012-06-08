@@ -43,9 +43,9 @@ data ChatServerMessageType = CustomerJoinMessage
                            | AdminOperatorDetailsMessage
                            | AdminOperatorDetailsEndMessage
                            | AdminOperatorCreateSuccessMessage
-                           | AdminOperatorCreateDuplicateUsernameMessage
+                           | CSMTAdminSendOperatorWelcomeEmailSuccess
                            | AdminOperatorReplaceSuccessMessage
-                           | AdminOperatorReplaceDuplicateUsernameMessage
+                           | CSMTUnregisteredActivateOperator
                            | AdminOperatorReplaceInvalidIdMessage
                            | CSMTAdminSetSiteInfoMessage
                            | CSMTAdminSetSiteInfoSuccessMessage
@@ -53,18 +53,18 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSSASiteCreateMessage
                            | CSSASiteDeleteMessage
                            | CSMTSAGetSiteInfo
-                           | CSMTSASetSiteAdminPassword
+                           | CSMTUnregisteredActivateOperatorSuccess
                            | CSSALoginSuccessMessage
                            | CSSALoginFailedMessage
                            | CSSASiteCreateSuccessMessage
                            | CSSASiteCreateDuplicateIdMessage
                            | CSSASiteDeleteSuccessMessage
                            | CSSASiteDeleteFailedMessage
-                           | CSMTSASetSiteAdminPasswordSuccess
-                           | CSMTSASetSiteAdminPasswordFailed
+                           | CSMTUnregisteredActivateOperatorFailure
+                           | CSMTUnregisteredActivateAdminSuccess
                            | CSSASiteCreateUnavailableMessage
-                           | AdminSetAdminPasswordMessage
-                           | AdminSetAdminPasswordSuccessMessage
+                           | CSMTAdminSendOperatorWelcomeEmail
+                           | CSMTUnregisteredActivateAdminFailure
                            | CustomerJoinSuccessMessage
                            | CSUnavailableMessage
                            | CSMTVisitorOnPage
@@ -77,6 +77,9 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSMTSASetSitePlan
                            | CSMTSuccess
                            | CSMTFailure
+                           | CSMTUnregisteredIsOperatorActivated
+                           | CSMTUnregisteredIsOperatorActivatedResponse
+                           | CSMTUnregisteredActivateAdmin
   deriving (Show, Eq, Ord)
 
 messageIdsAndTypes :: [(Int, ChatServerMessageType)]
@@ -115,9 +118,9 @@ messageIdsAndTypes = [
     (32, AdminOperatorDetailsMessage),
     (33, AdminOperatorDetailsEndMessage),
     (34, AdminOperatorCreateSuccessMessage),
-    (35, AdminOperatorCreateDuplicateUsernameMessage),
+    (35, CSMTAdminSendOperatorWelcomeEmailSuccess),
     (36, AdminOperatorReplaceSuccessMessage),
-    (37, AdminOperatorReplaceDuplicateUsernameMessage),
+    (37, CSMTUnregisteredActivateOperator),
     (38, CSMTAdminSetSiteInfoMessage),
     (39, CSMTAdminSetSiteInfoSuccessMessage),
     (40, AdminOperatorReplaceInvalidIdMessage),
@@ -125,18 +128,18 @@ messageIdsAndTypes = [
     (42, CSSASiteCreateMessage),
     (43, CSSASiteDeleteMessage),
     (44, CSMTSAGetSiteInfo),
-    (45, CSMTSASetSiteAdminPassword),
+    (45, CSMTUnregisteredActivateOperatorSuccess),
     (46, CSSALoginSuccessMessage),
     (47, CSSALoginFailedMessage),
     (48, CSSASiteCreateSuccessMessage),
     (49, CSSASiteCreateDuplicateIdMessage),
     (50, CSSASiteDeleteSuccessMessage),
     (51, CSSASiteDeleteFailedMessage),
-    (52, CSMTSASetSiteAdminPasswordSuccess),
-    (53, CSMTSASetSiteAdminPasswordFailed),
+    (52, CSMTUnregisteredActivateOperatorFailure),
+    (53, CSMTUnregisteredActivateAdminSuccess),
     (54, CSSASiteCreateUnavailableMessage),
-    (55, AdminSetAdminPasswordMessage),
-    (56, AdminSetAdminPasswordSuccessMessage),
+    (55, CSMTAdminSendOperatorWelcomeEmail),
+    (56, CSMTUnregisteredActivateAdminFailure),
     (57, CustomerJoinSuccessMessage),
     (58, CSUnavailableMessage),
     (59, CSMTVisitorOnPage),
@@ -148,7 +151,10 @@ messageIdsAndTypes = [
     (65, CSMTInvalidSiteId),
     (66, CSMTSASetSitePlan),
     (67, CSMTSuccess),
-    (68, CSMTFailure)
+    (68, CSMTFailure),
+    (69, CSMTUnregisteredIsOperatorActivated),
+    (70, CSMTUnregisteredIsOperatorActivatedResponse),
+    (71, CSMTUnregisteredActivateAdmin)
   ]
 
 instance MessageType ChatServerMessageType where

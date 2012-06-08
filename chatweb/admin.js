@@ -1,5 +1,4 @@
 // these will be set onload
-var loginTab = null;
 var mainTab = null;
 var miscMessageTab = null;
 
@@ -8,7 +7,6 @@ var operatorsSubtab = null;
 var editOperatorSubtab = null;
 var installSubtab = null;
 var installButtonSubtab = null;
-var adminPasswordSubtab = null;
 
 // current price plan
 var myPlan = null;
@@ -18,7 +16,6 @@ var editOperatorCurrentIcon = null;
 var editOperatorCurrentColor = null;
 
 $(window).bind('load', function() {
-	loginTab = $('#login_tab');
 	mainTab = $('#main_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
@@ -27,21 +24,7 @@ $(window).bind('load', function() {
 	editOperatorSubtab = $('#main_rightcell_editoperator');
 	installSubtab = $('#main_rightcell_install');
 	installButtonSubtab = $('#main_rightcell_install_button');
-	adminPasswordSubtab = $('#main_rightcell_adminpassword');
 
-	replaceImageWith('/images/lock.png', $('#login_icon'));
-
-	// login tab handlers
-
-	// clicking the OK button
-	$('#login_btn_ok').click(loginTabOkHandler);
-	// or pressing Enter inside the password box
-	$('#login_password').keypress(function(e) {
-		if (e.which == 13) { // enter
-			loginTabOkHandler();
-		}
-	});
-	
 	// main tab handlers
 	replaceImageWith('/images/admin_general.png', $('#main_btn_general'));
 	$('#main_btn_general').click(function() {
@@ -56,11 +39,6 @@ $(window).bind('load', function() {
 	replaceImageWith('/images/admin_install.png', $('#main_btn_install'));
 	$('#main_btn_install').click(function() {
 		changeSubtabTo(installSubtab);
-	});
-
-	replaceImageWith('/images/admin_security.png', $('#main_btn_adminpassword'));
-	$('#main_btn_adminpassword').click(function() {
-		changeSubtabTo(adminPasswordSubtab);
 	});
 
 	// general subtab
@@ -79,12 +57,11 @@ $(window).bind('load', function() {
 
 		function siteInfoSaveHandler() {
 			var siteName = $('#main_general_sitename');
-			var adminEmail = $('#main_general_adminemail');
 
 			// only send if currently not saved (this also prevents double-clicking the Save button)
 			if (unsaved) {
 				unsaved = false;
-				queueAjaxCommand([Messages.CSMTAdminSetSiteInfoMessage, $.trim(siteName.val()), $.trim(adminEmail.val())]);
+				queueAjaxCommand([Messages.CSMTAdminSetSiteInfoMessage, $.trim(siteName.val())]);
 
 				$('#main_general_siteinfo_savedlabel').fadeTo(500, 1);
 				$('#main_general_siteinfo_savediv').delay(1800).animate({height:'0px'}, 400);
@@ -93,13 +70,6 @@ $(window).bind('load', function() {
 
 		onChangeToFieldValue($('#main_general_sitename'), onSiteInfoChange);
 		$('#main_general_sitename').keypress(function(e) {
-			if (e.which == 13) { // enter
-				siteInfoSaveHandler();
-			}
-		});
-
-		onChangeToFieldValue($('#main_general_adminemail'), onSiteInfoChange);
-		$('#main_general_adminemail').keypress(function(e) {
 			if (e.which == 13) { // enter
 				siteInfoSaveHandler();
 			}
@@ -175,55 +145,6 @@ $(window).bind('load', function() {
 			$('#install_code_button').fadeTo(300, 1);
 		})
 	});
-
-	// admin password subtab
-	// admin password field
-	{
-		function onAdminPasswordChange(field) {
-			if (!field[0].unsaved) {
-				field[0].unsaved = true;
-
-				$('#main_adminpassword_savedlabel').fadeTo(0, 0);
-				$('#main_adminpassword_savediv').animate({height:'32px'}, 350);
-			} else {
-				// if unsaved, check if it was returned to empty
-				if (field.val().length == 0) {
-					field[0].unsaved = false;
-
-					$('#main_adminpassword_savediv').animate({height:'0px'}, 400);
-				}
-			}
-		}
-
-		function adminPasswordSaveHandler() {
-			var inputBox = $('#main_adminpassword_password');
-
-			// only send if currently not saved (this also prevents double-clicking the Save button)
-			if (inputBox[0].unsaved) {
-				inputBox[0].unsaved = false;
-
-				if (inputBox.val().length > 0) {
-					// send the update to the server
-					queueAjaxCommand([Messages.AdminSetAdminPasswordMessage, inputBox.val()]);
-					// clear the value
-					setFieldValue(inputBox, '');
-
-					$('#main_adminpassword_savedlabel').fadeTo(500, 1);
-					$('#main_adminpassword_savediv').delay(1800).animate({height:'0px'}, 400);
-				}
-			}
-		}
-
-		onChangeToFieldValue($('#main_adminpassword_password'), onAdminPasswordChange);
-		setFieldValue($('#main_adminpassword_password'), ''); // empty
-
-		$('#main_adminpassword_btn_save').click(adminPasswordSaveHandler)
-		$('#main_adminpassword_password').keypress(function(e) {
-			if (e.which == 13) { // enter
-				adminPasswordSaveHandler();
-			}
-		});
-	}
 
 	$(window).resize(onResize);
 
@@ -436,22 +357,6 @@ function getCurrentSubtabOrTarget() {
 	return (currentSubtabTarget !== undefined) ? currentSubtabTarget : currentSubtab;
 }
 
-var loginTabOkHandlerEnabled = true;
-
-function loginTabOkHandler() {
-	if (loginTabOkHandlerEnabled) {
-		var password = $.trim($('#login_password').val());
-
-		if (password.length == 0) {
-			$('#login_password').focus();
-		} else {
-			// disable the login handler to prevent double-clicks
-			loginTabOkHandlerEnabled = false;
-			queueAjaxCommand([Messages.AdminLoginRequestMessage, password]);
-		}
-	}
-}
-
 var operatorsCount = null;
 
 function handleMessage(message) {
@@ -462,14 +367,19 @@ function handleMessage(message) {
 		case Messages.UnregisteredSiteSelectedMessage:
 			var siteName = message[0];
 			var isActive = message[1]; // we don't care if it's active or not for admins
+			var isActivated = message[2];
 
-			// set the proper login box title
-			$('#login_adminloginlabel').text(siteName + ' Admin Login');
-
-			changeTabTo(loginTab, function () {
-				// focus the username box
-				$('#login_password').focus();
-			});
+			// if the account is not yet activated, login with an empty sessionId
+			if (!isActivated) {
+				queueAjaxCommand([Messages.AdminLoginRequestMessage, '']);
+			} else {
+				var sessionId = $.cookie('sessionId');
+				if (sessionId !== null) {
+					queueAjaxCommand([Messages.AdminLoginRequestMessage, sessionId]);
+				} else {
+					redirectToLoginAndBack();
+				}
+			}
 
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
@@ -488,8 +398,8 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminLoginSuccessMessage:
 			changeTabTo(mainTab);
-			log("Login successful");
 			changeSubtabTo(generalSubtab);
+			log("Login successful");
 			break;
 		case Messages.AdminLoginFailedMessage:
 			showLoginFailedScreen();
@@ -498,7 +408,9 @@ function handleMessage(message) {
 			var siteId = message[0];
 			var planId = message[1];
 			var siteName = message[2];
-			var adminEmail = message[3];
+			var isActivated = message[3];
+
+			// TODO: show a message about activation if needed
 
 			myPlan = plans[planId];
 
@@ -508,7 +420,6 @@ function handleMessage(message) {
 			$('#main_operators_login_url').attr('href', operatorsLoginUrl).attr('target', '_blank').text(operatorsLoginUrl);
 
 			setFieldValue($('#main_general_sitename'), siteName);
-			setFieldValue($('#main_general_adminemail'), adminEmail);
 			break;
 		case Messages.CSMTAdminSetSiteInfoSuccessMessage:
 			// site name set successfully
@@ -521,11 +432,10 @@ function handleMessage(message) {
 			break;
 		case Messages.AdminOperatorDetailsMessage:
 			var operatorId = message[0];
-			var username = message[1];
-			var name = message[2];
-			var color = message[3];
-			var title = message[4];
-			var iconUrl = message[5];
+			var name = message[1];
+			var color = message[2];
+			var title = message[3];
+			var iconUrl = message[4];
 
 			var listbox = $('#main_operators_listbox');
 
@@ -757,9 +667,7 @@ plans[3] = {
 };
 
 function onResize() {
-	if (currentTab == loginTab) {
-		onBasicVCenterResize('login', 600);
-	} else if (currentTab == mainTab) {
+	if (currentTab == mainTab) {
 		onBasicVCenterResizeMinPadding('main', 9);
 	} else if (currentTab == miscMessageTab) {
 		onBasicVCenterResize('miscmessage', 530);

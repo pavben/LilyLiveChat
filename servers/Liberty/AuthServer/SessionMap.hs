@@ -33,7 +33,7 @@ createSession userId email sessionMapTVar =
       if sessionCreateResult then do
         -- spawn a thread to expire the session
         _ <- forkIO $ do
-          threadDelay (24 * 60 * 60 * 1000)
+          threadDelay (24 * 60 * 60 * 1000 * 1000) -- 24 hours
           putStrLn $ "Session " ++ LT.unpack sessionId ++ " expired."
           atomically $ do
             sessionMap <- readTVar sessionMapTVar

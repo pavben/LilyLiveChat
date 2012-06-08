@@ -1,5 +1,6 @@
 module Liberty.Common.Messages.SiteDataService (
   SiteDataServiceMessageType(..),
+  SiteDataForMessage,
   GSDResult(..),
   getSiteDataFromSDS,
   SSDResult(..),
@@ -43,7 +44,9 @@ instance MessageType SiteDataServiceMessageType where
 siteDataServiceConnectionData :: ServiceConnectionData
 siteDataServiceConnectionData = getLocalServiceConnectionData "sds"
 
-data GSDResult = GSDSuccess (Text, Int, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text)
+type SiteDataForMessage = (Text, Int, Text, Int, [(Int, Text, Text, Text, Text, Maybe Text, Maybe Text)], [Text])
+
+data GSDResult = GSDSuccess SiteDataForMessage
                | GSDNotFound
                | GSDNotAuthoritative
                | GSDNotAvailable
@@ -70,7 +73,7 @@ getSiteDataFromSDS siteId = do
 
 data SSDResult = SSDSuccess | SSDNotAuthoritative | SSDNotAvailable
 
-saveSiteDataToSDS :: Text -> (Text, Int, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> IO (SSDResult)
+saveSiteDataToSDS :: Text -> SiteDataForMessage -> IO (SSDResult)
 saveSiteDataToSDS currentSiteId siteData = do
   serviceRequestResult <- serviceRequest siteDataServiceConnectionData SaveSiteDataMessage (currentSiteId, siteData, LT.pack "anivia")
   case serviceRequestResult of

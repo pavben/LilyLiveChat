@@ -6,6 +6,7 @@
 	<link href='/common.css' rel='stylesheet' type='text/css' />
 	<link href='/admin.css' rel='stylesheet' type='text/css' />
 	<script src='/jquery/jquery.min.js'></script>
+	<script src="/jquery/jquery.cookie.js"></script>
 	<script src='/common.js'></script>
 	<script src='/admin.js'></script>
 	<!-- Surprise! We use Lily too! -->
@@ -13,27 +14,6 @@
 </head>
 <body>
 	<div class="skybgdiv">
-		<div id="login_tab" class="tab">
-			<div id="login_top"></div>
-			<div id="login_middle">
-				<div id="login_box">
-					<div id="login_adminloginlabel">Admin Login</div>
-					<div class="darkinputboxwrapper">
-						<input id="login_password" type="password" value="" class="darkinputbox" />
-					</div>
-					<div class="fixedtable" style="margin-top:8px;">
-						<div class="tablerow">
-							<div class="cell"></div>
-							<div class="cell" style="width:84px;">
-								<div id="login_btn_ok" class="basicbutton">OK</div>
-							</div>
-							<div class="cell"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div id="login_bottom"></div>
-		</div>
 		<div id="main_tab" class="tab">
 			<div id="main_top"></div>
 			<div id="main_middle">
@@ -46,8 +26,6 @@
 								<div id="main_btn_operators" class="main_leftcell_button"></div>
 								<div class="main_leftcell_vspacer"></div>
 								<div id="main_btn_install" class="main_leftcell_button"></div>
-								<div class="main_leftcell_vspacer"></div>
-								<div id="main_btn_adminpassword" class="main_leftcell_button"></div>
 							</div>
 							<div class="main_hspacercell"></div>
 							<div class="vlinecell"></div>
@@ -65,17 +43,6 @@
 												<div class="cell">
 													<div class="inputboxwrapper">
 														<input id="main_general_sitename" class="inputbox" type="text" maxlength="20" autocomplete="off" />
-													</div>
-												</div>
-											</div>
-											<div class="tablerow">
-												<div class="main_rightcell_vspacer cell"></div>
-											</div>
-											<div class="tablerow">
-												<div class="main_settings_label">Admin E-mail</div>
-												<div class="cell">
-													<div class="inputboxwrapper">
-														<input id="main_general_adminemail" class="inputbox" type="text" maxlength="256" autocomplete="off" spellcheck="false" />
 													</div>
 												</div>
 											</div>
@@ -283,40 +250,6 @@
 											<p class="lastp">Did it work? Let's try it! Open the page in your browser and click the chat button. If the chat window pops up, congratulations!</p>
 										</div>
 										<!-- END LilyLiveChat button code -->
-									</div>
-								</div>
-								<div id="main_rightcell_adminpassword" class="tab">
-									<div class="main_title">Your Site Admin Password</div>
-									<ul>
-										<li>This is the password you use to login to this admin panel.</li>
-										<li>Choose a password that is secure enough for your needs.</li>
-										<li>Feel free to use as many as 100 characters (Unicode supported) to create the ultimate password.</li>
-										<li>When this password is changed, any other admins who are logged in will be kicked out. They will need the new password to regain access to the admin panel.</li>
-									</ul>
-									<div class="main_contentbox">
-										<div class="fixedtable">
-											<div class="tablerow">
-												<div class="main_settings_label">New Password</div>
-												<div class="cell">
-													<div class="inputboxwrapper">
-														<input id="main_adminpassword_password" class="inputbox" type="text" maxlength="100" autocomplete="off" />
-													</div>
-												</div>
-											</div>
-										</div>
-										<div id="main_adminpassword_savediv" class="main_savediv">
-											<div class="main_rightcell_vspacer"></div>
-											<div class="fixedtable">
-												<div class="tablerow">
-													<div class="cell">
-														<div id="main_adminpassword_savedlabel" class="main_savedlabel">Password changed!</div>
-													</div>
-													<div class="cell" style="width:70px;">
-														<div id="main_adminpassword_btn_save" class="smallbutton">Save</div>
-													</div>
-												</div>
-											</div>
-										</div>
 									</div>
 								</div>
 							</div>

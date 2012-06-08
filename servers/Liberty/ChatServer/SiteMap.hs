@@ -12,7 +12,6 @@ import Control.Monad.STM
 import Data.Map (Map)
 import Data.Maybe
 import qualified Data.Map as Map
-import Data.Text.Lazy (Text)
 import Liberty.Common.Messages.SiteDataService
 import Liberty.Common.Utils
 import Liberty.ChatServer.SiteDataSaver
@@ -84,19 +83,19 @@ lookupSiteLocal siteId siteMapTVar = do
     Just siteMapEntryTMVar -> readTMVar siteMapEntryTMVar >>= (return . eitherToMaybe)
     Nothing -> return Nothing
 
-getSiteDataFromRaw :: (Text, Int, Text, Text, Int, [(Int, Text, Text, Text, Text, Text, Text)], Text) -> SiteData
-getSiteDataFromRaw (siteId, planId, name, adminEmail, nextOperatorId, rawOperators, adminPasswordHash) =
+getSiteDataFromRaw :: SiteDataForMessage -> SiteData
+getSiteDataFromRaw (siteId, planId, name, nextOperatorId, rawOperators, adminUserIds) =
   let
     operatorsToSiteData = flip map rawOperators $ \(
       operatorId,
-      operatorUsername,
-      operatorPasswordHash,
       operatorName,
       operatorColor,
       operatorTitle,
-      operatorIconUrl
+      operatorIconUrl,
+      operatorUserId,
+      operatorActivationToken
       ) ->
-      SiteOperatorData (toInteger operatorId) operatorUsername operatorPasswordHash  operatorName  operatorColor  operatorTitle  operatorIconUrl
+      SiteOperatorData (toInteger operatorId) operatorName operatorColor operatorTitle operatorIconUrl operatorUserId operatorActivationToken
   in
-    SiteData siteId (fromMaybe FreePlan $ getPlanById planId) name adminEmail (toInteger nextOperatorId) operatorsToSiteData [] [] adminPasswordHash [] 0
+    SiteData siteId (fromMaybe FreePlan $ getPlanById planId) name (toInteger nextOperatorId) operatorsToSiteData [] adminUserIds [] 0 []
 

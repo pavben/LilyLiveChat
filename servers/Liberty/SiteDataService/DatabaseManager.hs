@@ -124,30 +124,29 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
     Just maybeSiteDoc ->
       case maybeSiteDoc of
         Just siteDoc ->
-          case (,,,,,,) <$>
+          case (,,,,,) <$>
             (asMaybeText $ lookup "siteId" siteDoc) <*>
             (ifNothingThenJustZero $ lookup "planId" siteDoc :: Maybe Int) <*>
             (asMaybeText $ lookup "name" siteDoc) <*>
-            (asMaybeText $ lookup "adminEmail" siteDoc) <*>
             (lookup "nextOperatorId" siteDoc :: Maybe Integer) <*>
             (lookup "operators" siteDoc :: Maybe [Document]) <*>
-            (asMaybeText $ lookup "adminPasswordHash" siteDoc)
+            (asMaybeTexts $ lookup "adminUserIds" siteDoc)
           of
-            Just (siteId, planId, name, adminEmail, nextOperatorId, operators, adminPasswordHash) ->
+            Just (siteId, planId, name, nextOperatorId, operators, adminUserIds) ->
               let
                 maybeOperatorDatas = mapM (\operatorDoc ->
                   SiteOperatorData <$>
                     (lookup "operatorId" operatorDoc :: Maybe Integer) <*>
-                    (asMaybeText $ lookup "username" operatorDoc) <*>
-                    (asMaybeText $ lookup "passwordHash" operatorDoc) <*>
                     (asMaybeText $ lookup "name" operatorDoc) <*>
                     (asMaybeText $ lookup "color" operatorDoc) <*>
                     (asMaybeText $ lookup "title" operatorDoc) <*>
-                    (asMaybeText $ lookup "icon" operatorDoc)
+                    (asMaybeText $ lookup "icon" operatorDoc) <*>
+                    (fmap emptyToMaybe $ asMaybeText $ lookup "userId" operatorDoc) <*>
+                    (fmap emptyToMaybe $ asMaybeText $ lookup "activationToken" operatorDoc)
                   ) operators
               in
                 case maybeOperatorDatas of
-                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId planId name adminEmail nextOperatorId siteOperatorDatas adminPasswordHash
+                  Just siteOperatorDatas -> return $ GSDRSuccess $ SiteData siteId planId name nextOperatorId siteOperatorDatas adminUserIds
                   Nothing -> return GSDRNotAvailable -- can't read operators
             Nothing -> return GSDRNotAvailable -- can't read site data
         Nothing -> return GSDRNotFound -- that siteId doesn't exist
@@ -155,6 +154,13 @@ getSiteDataFromDb siteIdToLookup databaseHandleTVar = do
 
 asMaybeText :: Maybe String -> Maybe Text
 asMaybeText maybeString = fmap LT.pack maybeString
+
+asMaybeTexts :: Maybe [String] -> Maybe [Text]
+asMaybeTexts maybeStrings = fmap (map LT.pack) maybeStrings
+
+emptyToMaybe :: Text -> Maybe Text
+emptyToMaybe "" = Nothing
+emptyToMaybe text = Just text
 
 ifNothingThenJustZero :: Maybe Int -> Maybe Int
 ifNothingThenJustZero Nothing = Just 0
@@ -171,20 +177,19 @@ saveSiteDataToDb currentSiteId siteData databaseHandleTVar = do
         "siteId" := (asStringValue $ sdSiteId siteData),
         "planId" := Int32 (fromIntegral $ sdPlanId siteData),
         "name" := (asStringValue $ sdName siteData),
-        "adminEmail" := (asStringValue $ sdAdminEmail siteData),
         "nextOperatorId" := Int32 (fromInteger $ sdNextOperatorId siteData),
         "operators" := Array (map (\siteOperatorData ->
           Doc [
             "operatorId" := Int32 (fromInteger $ sodOperatorId siteOperatorData),
-            "username" := (asStringValue $ sodUsername siteOperatorData),
-            "passwordHash" := (asStringValue $ sodPasswordHash siteOperatorData),
             "name" := (asStringValue $ sodName siteOperatorData),
             "color" := (asStringValue $ sodColor siteOperatorData),
             "title" := (asStringValue $ sodTitle siteOperatorData),
-            "icon" := (asStringValue $ sodIconUrl siteOperatorData)
+            "icon" := (asStringValue $ sodIconUrl siteOperatorData),
+            "userId" := (asStringValue $ maybeToEmpty $ sodUserId siteOperatorData),
+            "activationToken" := (asStringValue $ maybeToEmpty $ sodActivationToken siteOperatorData)
             ]
           ) (sdOperators siteData)),
-        "adminPasswordHash" := (asStringValue $ sdAdminPasswordHash siteData)
+        "adminUserIds" := Array (map asStringValue $ sdAdminUserIds siteData)
         ]
     )
 
@@ -198,4 +203,7 @@ saveSiteDataToDb currentSiteId siteData databaseHandleTVar = do
   
 asStringValue :: Text -> Value
 asStringValue text = String (u . LT.unpack $ text)
+
+maybeToEmpty :: Maybe Text -> Text
+maybeToEmpty = fromMaybe ""
 

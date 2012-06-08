@@ -45,22 +45,22 @@ siteDataSaverWorker siteDataSaverChan maybeRetrySiteData = do
           siteDataSaverWorker siteDataSaverChan (Just siteData)
     Nothing -> return () -- just exit (currently not possible)
   where
+    siteDataToMessage :: SiteData -> SiteDataForMessage
     siteDataToMessage siteData = (
       sdSiteId siteData,
       getPlanIdForPlan (sdPlan siteData),
       sdName siteData,
-      sdAdminEmail siteData,
       (fromInteger $ sdNextOperatorId siteData :: Int),
       map operatorToMessage (sdOperators siteData),
-      sdAdminPasswordHash siteData)
+      sdAdminUserIds siteData)
     operatorToMessage siteOperatorData = (
       (fromInteger $ sodOperatorId siteOperatorData :: Int),
-      sodUsername siteOperatorData,
-      sodPasswordHash siteOperatorData,
       sodName siteOperatorData,
       sodColor siteOperatorData,
       sodTitle siteOperatorData,
-      sodIconUrl siteOperatorData)
+      sodIconUrl siteOperatorData,
+      sodUserId siteOperatorData,
+      sodActivationToken siteOperatorData)
 
 queueSaveSiteData :: SiteDataTVar -> SiteDataSaverChan -> STM ()
 queueSaveSiteData siteDataTVar siteDataSaverChan = do

@@ -88,7 +88,6 @@ $(window).bind('load', function() {
 				$('#newaccount_adminpanel').empty().append(
 					$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
 				);
-				$('#newaccount_adminpassword').text(data.adminPassword);
 
 				accountCreated = true;
 			},

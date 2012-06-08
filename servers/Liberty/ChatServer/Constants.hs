@@ -2,9 +2,6 @@ module Liberty.ChatServer.Constants where
 import Data.Int
 
 -- Text value limits
-maxAdminPasswordLength :: Int64
-maxAdminPasswordLength = 100
-
 maxSiteIdLength :: Int64
 maxSiteIdLength = 20
 
@@ -13,12 +10,6 @@ maxSiteNameLength = 20
 
 maxEmailLength :: Int64
 maxEmailLength = 256
-
-maxOperatorUsernameLength :: Int64
-maxOperatorUsernameLength = 30
-
-maxOperatorPasswordLength :: Int64
-maxOperatorPasswordLength = 100
 
 maxPersonNameLength :: Int64
 maxPersonNameLength = 20
