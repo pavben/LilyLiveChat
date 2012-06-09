@@ -141,6 +141,12 @@ messageToJson CSUnavailableMessage encodedParams =
 messageToJson CSMTWrongChatServer encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTWrongChatServer)]
 
+messageToJson CSMTSuccess encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTSuccess)]
+
+messageToJson CSMTFailure encodedParams =
+  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSMTFailure)]
+
 messageToJson OperatorLoginSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \(name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId OperatorLoginSuccessMessage), J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
 

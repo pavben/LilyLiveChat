@@ -27,6 +27,7 @@ import Liberty.Common.Messages
 import Liberty.Common.Messages.AuthServer
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.RandomString
+import Liberty.Common.SendEmail
 import Liberty.ChatServer.SiteDataSaver
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
@@ -150,13 +151,13 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
         _ -> do
           putStrLn "Client (Operator) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
-    OCDClientAdminData _ ->
+    OCDClientAdminData clientAdminData ->
       case messageType of
         AdminOperatorCreateMessage -> unpackAndHandle $ \(name,color,title,iconUrl,email) -> handleAdminOperatorCreateMessage name color title iconUrl email clientDataTVar siteDataSaverChan
         AdminOperatorReplaceMessage -> unpackAndHandle $ \(operatorId :: Int,name,color,title,iconUrl) -> handleAdminOperatorReplaceMessage (toInteger operatorId) name color title iconUrl clientDataTVar siteDataSaverChan
         AdminOperatorDeleteMessage -> unpackAndHandle $ \(operatorId :: Int) -> handleAdminOperatorDeleteMessage (toInteger operatorId) clientDataTVar siteDataSaverChan
         CSMTAdminSetSiteInfoMessage -> unpackAndHandle $ \(siteName) -> handleCSMTAdminSetSiteInfoMessage siteName clientDataTVar siteDataSaverChan
-        CSMTAdminSendOperatorWelcomeEmail -> unpackAndHandle $ \(operatorId :: Int, email) -> handleCSMTAdminSendOperatorWelcomeEmail (toInteger operatorId) email clientDataTVar
+        CSMTAdminSendOperatorWelcomeEmail -> unpackAndHandle $ \(operatorId :: Int, email) -> handleCSMTAdminSendOperatorWelcomeEmail (toInteger operatorId) email clientDataTVar (cadSiteDataTVar clientAdminData)
         _ -> do
           putStrLn "Client (Admin) sent an unknown command"
           atomically $ closeClientSocket clientDataTVar
@@ -235,66 +236,89 @@ handleCSMTUnregisteredActivateOperator :: Text -> Integer -> Text -> ClientDataT
 handleCSMTUnregisteredActivateOperator sessionId operatorId activationToken clientDataTVar siteDataTVar siteDataSaverChan = do
   verifySessionIdResult <- verifySessionId sessionId
   case verifySessionIdResult of
-    VSSuccess userId email -> atomically $ do
-      siteData <- readTVar siteDataTVar
-      -- find operators matching operatorId
-      case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
-        ([oldSiteOperatorData], remainingOperators) ->
-          -- check if the activation token matches the operator with the given operatorId
-          case sodActivationToken oldSiteOperatorData of
-            Just expectedActivationToken | activationToken == expectedActivationToken ->
-              if null $ filter (\siteOperatorData -> maybe False (== userId) (sodUserId siteOperatorData)) (sdOperators siteData) then do
-                let newSiteOperatorData = oldSiteOperatorData {
-                  sodUserId = Just userId,
-                  sodActivationToken = Nothing
-                }
-                -- save siteDataTVar with the updated operator
-                writeTVar siteDataTVar $ siteData {
-                  sdOperators = newSiteOperatorData : remainingOperators
-                }
-                -- save to the database
-                queueSaveSiteData siteDataTVar siteDataSaverChan
-                -- respond with success
-                createAndSendMessage CSMTUnregisteredActivateOperatorSuccess () clientDataTVar
-                -- notify the admins with the new list
-                sendOperatorsListToAdmins siteDataTVar
-                -- TODO: send an e-mail to the operator
-              else
-                -- TODO: this is a "This account is already connected to another operator for this site" error
+    VSSuccess userId email -> do
+      maybeSendEmailFunction <- atomically $ do
+        siteData <- readTVar siteDataTVar
+        -- find operators matching operatorId
+        case partition (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
+          ([oldSiteOperatorData], remainingOperators) ->
+            -- check if the activation token matches the operator with the given operatorId
+            case sodActivationToken oldSiteOperatorData of
+              Just expectedActivationToken | activationToken == expectedActivationToken ->
+                -- make sure there are no other operators for this site with the given userId
+                if null $ filter (\siteOperatorData -> maybe False (== userId) (sodUserId siteOperatorData)) (sdOperators siteData) then do
+                  let newSiteOperatorData = oldSiteOperatorData {
+                    sodUserId = Just userId,
+                    sodActivationToken = Nothing
+                  }
+                  -- save siteDataTVar with the updated operator
+                  writeTVar siteDataTVar $ siteData {
+                    sdOperators = newSiteOperatorData : remainingOperators
+                  }
+                  -- save to the database
+                  queueSaveSiteData siteDataTVar siteDataSaverChan
+                  -- respond with success
+                  createAndSendMessage CSMTUnregisteredActivateOperatorSuccess () clientDataTVar
+                  -- notify the admins with the new list
+                  sendOperatorsListToAdmins siteDataTVar
+                  -- send an e-mail to the operator
+                  return $ Just $ sendEmail email (LT.pack "Operator Activation Successful") $ activationEmailText (sdSiteId siteData)
+                else do
+                  -- TODO: this is a "This account is already connected to another operator for this site" error
+                  createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+                  return Nothing
+              _ -> do
+                -- activation token does not match
                 createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
-            _ ->
-              -- activation token does not match
-              createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
-        _ ->
-          -- operator with that id does not exist
-          createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+                return Nothing
+          _ -> do
+            -- operator with that id does not exist
+            createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
+            return Nothing
+
+      case maybeSendEmailFunction of
+        Just sendEmailFunction -> sendEmailFunction
+        Nothing -> return ()
     VSFailure ->
       -- invalid sessionId
       atomically $ createAndSendMessage CSMTUnregisteredActivateOperatorFailure () clientDataTVar
     VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+  where
+    activationEmailText siteId = LT.concat [LT.pack "We just wanted to let you know that your LilyLiveChat operator account is now safely linked to your Google account. There are no extra usernames or passwords to remember and you'll be able to login to LilyLiveChat any time with just a single click!\n\nTo access your Admin Panel, visit http://lilylivechat.net/operator/", siteId, LT.pack "\n\nIf there is anything we can help with, don't hesitate to contact us by replying to this e-mail.\n\nCheers,\nLilyLiveChat Team"]
 
 handleCSMTUnregisteredActivateAdmin :: Text -> ClientDataTVar -> SiteDataTVar -> SiteDataSaverChan -> IO ()
 handleCSMTUnregisteredActivateAdmin sessionId clientDataTVar siteDataTVar siteDataSaverChan = do
   verifySessionIdResult <- verifySessionId sessionId
   case verifySessionIdResult of
-    VSSuccess userId email -> atomically $ do
-      siteData <- readTVar siteDataTVar
-      case sdAdminUserIds siteData of
-        [] -> do
-          writeTVar siteDataTVar $ siteData {
-            sdAdminUserIds = [userId]
-          }
-          -- save to the database
-          queueSaveSiteData siteDataTVar siteDataSaverChan
-          -- notify the admins of the change
-          sendSiteInfoToAdmins siteDataTVar
-          -- TODO: kick all other admins (add userId to the online admin structure)
-          -- TODO: send an e-mail to the admin
-          -- respond with success
-          createAndSendMessage CSMTUnregisteredActivateAdminSuccess () clientDataTVar
-        _ -> createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
+    VSSuccess userId email -> do
+      maybeEmailSubjectAndText <- atomically $ do
+        siteData <- readTVar siteDataTVar
+        case sdAdminUserIds siteData of
+          [] -> do
+            writeTVar siteDataTVar $ siteData {
+              sdAdminUserIds = [userId]
+            }
+            -- save to the database
+            queueSaveSiteData siteDataTVar siteDataSaverChan
+            -- notify the admins of the change
+            sendSiteInfoToAdmins siteDataTVar
+            -- TODO: kick all other admins (add userId to the online admin structure)
+            -- respond with success
+            createAndSendMessage CSMTUnregisteredActivateAdminSuccess () clientDataTVar
+
+            return $ Just (LT.pack "Welcome!", welcomeEmailText $ sdSiteId siteData)
+          _ -> do
+            createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
+            return Nothing
+
+      case maybeEmailSubjectAndText of
+        Just (subject, textBody) ->
+          sendEmail email (LT.pack "Welcome!") textBody
+        Nothing -> return ()
     VSFailure -> atomically $ createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
     VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
+  where
+    welcomeEmailText siteId = LT.concat [LT.pack "We just wanted to let you know that your LilyLiveChat account is now safely linked to your Google account. There are no extra usernames or passwords to remember and you'll be able to login to LilyLiveChat any time with just a single click!\n\nTo access your Admin Panel, visit http://lilylivechat.net/admin/", siteId, LT.pack "\n\nIf there is anything we can help with, don't hesitate to contact us by replying to this e-mail.\n\nCheers,\nLilyLiveChat Team"]
 
 handleCSMTUnregisteredIsOperatorActivated :: Integer -> ClientDataTVar -> SiteDataTVar -> IO ()
 handleCSMTUnregisteredIsOperatorActivated operatorId clientDataTVar siteDataTVar =
@@ -541,13 +565,13 @@ handleOperatorEndingChatMessage chatSessionId chatSessionTVars visitorClientMapT
 handleAdminOperatorCreateMessage :: Text -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
 handleAdminOperatorCreateMessage name color title iconUrl email clientDataTVar siteDataSaverChan = do
   activationToken <- getRandomAlphanumericText 16
-  atomically $ do
-    ensureTextLengthLimits [
+  maybeSendEmailFunction <- atomically $ do
+    ensureTextLengthLimitsWithReturn [
         (name, maxPersonNameLength),
         (color, maxColorLength),
         (title, maxOperatorTitleLength),
         (iconUrl, maxIconUrlLength)
-      ] clientDataTVar $ do
+      ] Nothing clientDataTVar $ do
       clientData <- readTVar clientDataTVar
       case cdOtherData clientData of
         OCDClientAdminData clientAdminData -> do
@@ -555,7 +579,8 @@ handleAdminOperatorCreateMessage name color title iconUrl email clientDataTVar s
           siteData <- readTVar siteDataTVar
           -- if there is still room for more operators under this plan
           if getMaxOperatorsForPlan (sdPlan siteData) - (length $ sdOperators siteData) > 0 then do
-            let newSiteOperatorData = SiteOperatorData (sdNextOperatorId siteData) name color title iconUrl Nothing (Just activationToken)
+            let operatorId = sdNextOperatorId siteData
+            let newSiteOperatorData = SiteOperatorData operatorId name color title iconUrl Nothing (Just activationToken)
             -- save siteDataTVar with the new operator and sdNextOperatorId
             writeTVar siteDataTVar $ siteData {
               sdOperators = newSiteOperatorData : sdOperators siteData,
@@ -567,11 +592,19 @@ handleAdminOperatorCreateMessage name color title iconUrl email clientDataTVar s
             createAndSendMessage AdminOperatorCreateSuccessMessage () clientDataTVar
             -- notify the admins with the new list
             sendOperatorsListToAdmins siteDataTVar
-            -- TODO: send an e-mail to 'email' with instructions for signing up
-          else
+            -- send an e-mail with instructions for activating the operator account
+            return $ Just $ sendEmail email (LT.pack "Your LilyLiveChat Operator Account") $ welcomeEmailText (sdSiteId siteData) operatorId activationToken
+          else do
             -- if this would mean going over the plan limits, the JS should have enforced this limit (unless dual login... unlikely)
             closeClientSocket clientDataTVar
-        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" ()
+            return Nothing
+        _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleAdminOperatorCreateMessage" Nothing
+  
+  case maybeSendEmailFunction of
+    Just sendEmailFunction -> sendEmailFunction
+    Nothing -> return ()
+  where
+    welcomeEmailText siteId operatorId activationToken = LT.concat [LT.pack "Your LilyLiveChat Operator Account has been created and can be activated here:\n\nhttps://lilylivechat.net/activateoperator/", siteId, LT.pack "?operatorId=", LT.pack $ show $ operatorId, LT.pack "&activationToken=", activationToken, LT.pack "\n\nIf there's anything we can help with, don't hesitate to contact us by replying to this e-mail.\n\nCheers,\nLilyLiveChat Team"]
 
 handleAdminOperatorReplaceMessage :: Integer -> Text -> Text -> Text -> Text -> ClientDataTVar -> SiteDataSaverChan -> IO ()
 handleAdminOperatorReplaceMessage operatorId name color title iconUrl clientDataTVar siteDataSaverChan =
@@ -677,11 +710,31 @@ handleCSMTAdminSetSiteInfoMessage siteName clientDataTVar siteDataSaverChan =
           sendSiteInfoToAdmins siteDataTVar
         _ -> return $ trace "ASSERT: Expecting OCDClientAdminData in handleCSMTAdminSetSiteInfoMessage" ()
 
-handleCSMTAdminSendOperatorWelcomeEmail :: Integer -> Text -> ClientDataTVar -> IO ()
-handleCSMTAdminSendOperatorWelcomeEmail operatorId email clientDataTVar = do
-  -- TODO: Send an operator welcome e-mail to 'email'
-  atomically $ createAndSendMessage CSMTAdminSendOperatorWelcomeEmailSuccess () clientDataTVar
-  return ()
+handleCSMTAdminSendOperatorWelcomeEmail :: Integer -> Text -> ClientDataTVar -> SiteDataTVar -> IO ()
+handleCSMTAdminSendOperatorWelcomeEmail operatorId email clientDataTVar siteDataTVar = do
+  maybeSendEmailFunction <- atomically $ do
+    ensureTextLengthLimitsWithReturn [(email, maxEmailLength)] Nothing clientDataTVar $ do
+      siteData <- readTVar siteDataTVar
+      case filter (\siteOperatorData -> sodOperatorId siteOperatorData == operatorId) (sdOperators siteData) of
+        [siteOperatorData] ->
+          case sodActivationToken siteOperatorData of
+            Just activationToken -> do
+              createAndSendMessage CSMTAdminSendOperatorWelcomeEmailSuccess () clientDataTVar
+              return $ Just $ sendEmail email (LT.pack "Your LilyLiveChat Operator Account") $ welcomeEmailText (sdSiteId siteData) activationToken
+            Nothing -> do
+              -- operator is already activated
+              createAndSendMessage CSMTFailure () clientDataTVar
+              return Nothing
+        _ -> do
+          -- operatorId not found
+          createAndSendMessage CSMTFailure () clientDataTVar
+          return Nothing
+
+  case maybeSendEmailFunction of
+    Just sendEmailFunction -> sendEmailFunction
+    Nothing -> return ()
+  where
+    welcomeEmailText siteId activationToken = LT.concat [LT.pack "We're re-sending this at the request of your LilyLiveChat site admin:\n\n\nYour LilyLiveChat Operator Account has been created and can be activated here:\n\nhttps://lilylivechat.net/activateoperator/", siteId, LT.pack "?operatorId=", LT.pack $ show $ operatorId, LT.pack "&activationToken=", activationToken, LT.pack "\n\nIf there's anything we can help with, feel free to ask!\n\nCheers,\nLilyLiveChat Team"]
 
 -- Note: Nobody uses this message yet
 handleCSMTSAGetSiteInfo :: Text -> ClientDataTVar -> SiteMapTVar -> IO ()
@@ -952,6 +1005,16 @@ ensureTextLengthLimits pairs clientDataTVar f =
     -- if the client allowed them to send excessively long values, something is wrong
     createAndSendMessage SomethingWentWrongMessage () clientDataTVar
     closeClientSocket clientDataTVar
+
+ensureTextLengthLimitsWithReturn :: [(Text, Int64)] -> a -> ClientDataTVar -> STM a -> STM a
+ensureTextLengthLimitsWithReturn pairs defaultReturn clientDataTVar f =
+  if checkTextLengthLimits pairs == True then
+    f
+  else do
+    -- if the client allowed them to send excessively long values, something is wrong
+    createAndSendMessage SomethingWentWrongMessage () clientDataTVar
+    closeClientSocket clientDataTVar
+    return defaultReturn
 
 ensureTextLengthLimitsIO :: [(Text, Int64)] -> ClientDataTVar -> IO () -> IO ()
 ensureTextLengthLimitsIO pairs clientDataTVar f =
