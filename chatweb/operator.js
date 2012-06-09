@@ -1,5 +1,4 @@
 // these will be set onload
-var loginTab = null;
 var chatTab = null;
 var miscMessageTab = null;
 
@@ -7,30 +6,12 @@ var g_myName;
 var g_myColor;
 
 $(window).bind('load', function() {
-	loginTab = $('#login_tab');
 	chatTab = $('#chat_tab');
 	miscMessageTab = $('#miscmessage_tab');
 
-	replaceImageWith('/images/operator_login.png', $('#login_icon'));
 	// default these labels
 	$('#chat_nextinlineheadertext').text('No customers waiting');
 	$('#chat_activechatsheader').text('No active chats');
-
-	// login tab handlers
-
-	// clicking the OK button
-	$('#login_btn_ok').click(loginTabOkHandler);
-	// or pressing Enter inside the name box
-	$('#login_username').keypress(function(e) {
-		if (e.which == 13) { // enter
-			loginTabOkHandler();
-		}
-	});
-	$('#login_password').keypress(function(e) {
-		if (e.which == 13) { // enter
-			loginTabOkHandler();
-		}
-	});
 
 	// chat tab handlers
 	
@@ -114,25 +95,6 @@ function initializeJplayerRingtone() {
 	return jPlayerDiv;
 }
 
-var loginTabOkHandlerEnabled = true;
-
-function loginTabOkHandler() {
-	if (loginTabOkHandlerEnabled) {
-		var username = $.trim($('#login_username').val());
-		var password = $.trim($('#login_password').val());
-
-		if (username.length == 0) {
-			$('#login_username').focus();
-		} else if (password.length == 0) {
-			$('#login_password').focus();
-		} else {
-			// disable the login handler to prevent double-clicks
-			loginTabOkHandlerEnabled = false;
-			queueAjaxCommand([Messages.OperatorLoginRequestMessage, username, password]);
-		}
-	}
-}
-
 // ringtone code
 var ringtoneActive = false;
 
@@ -162,14 +124,14 @@ function handleMessage(message) {
 		case Messages.UnregisteredSiteSelectedMessage:
 			var siteName = message[0];
 			var isActive = message[1]; // we don't care if it's active or not for operators
+			var isActivated = message[2];
 
-			// set the proper login box title
-			$('#login_operloginlabel').text(siteName + ' Operator Login');
-
-			changeTabTo(loginTab, function () {
-				// focus the username box
-				$('#login_username').focus();
-			});
+			var sessionId = $.cookie('sessionId');
+			if (sessionId !== null) {
+				queueAjaxCommand([Messages.OperatorLoginRequestMessage, sessionId]);
+			} else {
+				redirectToLoginAndBack();
+			}
 
 			break;
 		case Messages.UnregisteredSiteInvalidMessage:
@@ -187,24 +149,24 @@ function handleMessage(message) {
 			refreshThroughSiteLocator();
 			break;
 		case Messages.OperatorLoginSuccessMessage:
-			if (currentTab == loginTab) {
-				var name = message[0];
-				var color = message[1];
-				var title = message[2];
-				var iconUrl = message[3];
+			var name = message[0];
+			var color = message[1];
+			var title = message[2];
+			var iconUrl = message[3];
 
-				g_myName = name;
-				g_myColor = color;
+			g_myName = name;
+			g_myColor = color;
 
-				$('#chat_myname').css('color', color).text(name);
-				$('#chat_mytitle').text(title);
-				replaceImageWith(iconUrl, $('#chat_myicon'));
+			$('#chat_myname').css('color', color).text(name);
+			$('#chat_mytitle').text(title);
+			replaceImageWith(iconUrl, $('#chat_myicon'));
 
-				changeTabTo(chatTab);
-			}
-			log("Login successful");
 			$('#chat_namelabel').text(name);
 			$('#chat_namelabel').css('color', color);
+
+			log("Login successful");
+
+			changeTabTo(chatTab);
 			break;
 		case Messages.OperatorLoginFailedMessage:
 			showLoginFailedScreen();
@@ -855,9 +817,9 @@ function chatSessionIdToObject(prefix, chatSessionId) {
 }
 
 function showLoginFailedScreen() {
-	showMiscMessageTab('No match...',
+	showMiscMessageTab('No access...',
 		$('<div/>').addClass('miscmessage_content_textwrapper').append(
-			$('<div/>').text('Can\'t remember your password? Contact your administrator.')
+			$('<div/>').text('You don\'t seem to have permission to access the Operator Panel for this site. Did you login to the correct account?')
 		),
 		$('<div/>').addClass('fixedtable').addClass('miscmessage_buttontable').append(
 			$('<div/>').addClass('tablerow').append(
@@ -865,7 +827,7 @@ function showLoginFailedScreen() {
 			).append(
 				$('<div/>').addClass('cell').css('width', '100px').append(
 					$('<div/>').addClass('basicbutton').text('Try again').click(function() {
-						refreshThroughSiteLocator();
+						redirectToLoginAndBack();
 					})
 				)
 			)
@@ -920,9 +882,7 @@ function showCantConnectScreen() {
 }
 
 function onResize() {
-	if (currentTab == loginTab) {
-		onBasicVCenterResize('login', 600);
-	} else if (currentTab == chatTab) {
+	if (currentTab == chatTab) {
 		onChatTabResize();
 	} else if (currentTab == miscMessageTab) {
 		onBasicVCenterResize('miscmessage', 530);

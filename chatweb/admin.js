@@ -521,6 +521,8 @@ function handleMessage(message) {
 			break;
 		case Messages.CSMTAdminSendOperatorWelcomeEmailSuccess:
 			break;
+		case Messages.CSMTFailure:
+			break;
 		default:
 			log("Received an unknown message!");
 			break;
