@@ -110,7 +110,7 @@ handleChatStatusRequest siteId visitorId maybeCurrentPage handleStream = do
 
           selectSiteResponse <- receiveMessageFromService serviceHandle
           case selectSiteResponse of
-            (UnregisteredSiteSelectedMessage, unpackMessage -> Just (_ :: Text, True)) -> do
+            (UnregisteredSiteSelectedMessage, unpackMessage -> Just (_ :: Text, True, _ :: Bool)) -> do
               -- site is active
               return True
             _ ->
