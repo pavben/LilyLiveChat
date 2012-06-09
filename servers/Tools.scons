@@ -12,6 +12,5 @@ def buildBasicHaskellTool(name):
 	)
 	env.Install('../output/', name)
 
-buildBasicHaskellTool('SetSiteAdminPassword')
 buildBasicHaskellTool('SetSitePlan')
 

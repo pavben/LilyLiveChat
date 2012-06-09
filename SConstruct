@@ -49,6 +49,7 @@ sconscripts = [
 SConscript('mainweb.scons', variant_dir=variantDir, duplicate=1)
 SConscript('chatweb.scons', variant_dir=variantDir, duplicate=1)
 
+SConscript('servers/AuthServer.scons', variant_dir=variantDir + '/servers', duplicate=1)
 SConscript('servers/ChatServer.scons', variant_dir=variantDir + '/servers', duplicate=1)
 SConscript('servers/ChatStatusService.scons', variant_dir=variantDir + '/servers', duplicate=1)
 SConscript('servers/MainWebsite.scons', variant_dir=variantDir + '/servers', duplicate=1)
