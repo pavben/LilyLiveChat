@@ -222,16 +222,16 @@ a:hover, a:active {
 	vertical-align:middle;
 }
 .pt_featurecell {
-	width:165px;
+	width:169px;
 	border-right:1px solid #E0E0E0;
 	text-decoration:underline;
 }
 .pt_cell {
 	border-right:1px solid #E0E0E0;
-	width:80px;
+	width:79px;
 }
 .pt_cellright {
-	width:80px;
+	width:79px;
 }
 .pt_incell, .pt_incellbottom {
 	height:29px;

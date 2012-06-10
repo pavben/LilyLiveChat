@@ -75,7 +75,7 @@ $(window).bind('load', function() {
 	addTooltipTo($('#pricing_customeroriginlabel'), 'Want to know where your customers are coming from? Now you can! See the search keywords they use or the site that linked them to you and use this knowledge to your advantage!', 340);
 	addTooltipTo($('#pricing_tlssecuritylabel'), 'We hate to say it, but there are a few bad apples on the Internet. LilyLiveChat protects its customers with the latest and greatest TLS encryption (the successor to SSL) to ensure that your conversations are completely private.', 400);
 	addTooltipTo($('#pricing_assistedinstallationlabel'), 'No matter how technical you are, our developers will gladly walk you through setting up LilyLiveChat to integrate smoothly with your website. No one gets left behind!', 250);
-	addTooltipTo($('#pricing_exceptionalsupportlabel'), 'You can travel the world, meet all kinds of great people, but you\'ll have a hard time finding a live chat service that lets you talk to the developers who know LilyLiveChat as well as they know their own keyboard!', 390);
+	addTooltipTo($('#pricing_exceptionalsupportlabel'), 'When you have questions, you deserve answers quickly. Our support crew consists of the people who made LilyLiveChat what it is today.', 390);
 
 	$('#tryitout_btn_newaccount').click(function() {
 		$.ajax({
