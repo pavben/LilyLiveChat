@@ -265,7 +265,8 @@ var Messages = {
 	CSMTFailure : 68,
 	CSMTUnregisteredIsOperatorActivated : 69,
 	CSMTUnregisteredIsOperatorActivatedResponse : 70,
-	CSMTUnregisteredActivateAdmin : 71
+	CSMTUnregisteredActivateAdmin : 71,
+	CSMTOperatorCustomerLocation : 73
 };
 
 function initializeAutoGrowingTextArea(chatBox, appendShadowTo) {

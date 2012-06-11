@@ -195,6 +195,17 @@ function handleMessage(message) {
 			writeCustomerOnPageMessage(chatSessionId, currentPage, 'currently');
 
 			break;
+		case Messages.CSMTOperatorCustomerLocation:
+			var chatSessionId = message[0];
+			var city = message[1];
+			var regionName = message[2];
+			var countryName = message[3];
+
+			var personColor = getChatSessionData(chatSessionId).color;
+
+			chatSessionIdToObject('#chat_customerlocationlabel_', chatSessionId).text(city + ', ' + regionName + ', ' + countryName).css('color', personColor).fadeIn(400);
+
+			break;
 		case Messages.OperatorReceiveChatMessage:
 			var chatSessionId = message[0];
 			var text = message[1];
@@ -445,7 +456,9 @@ function addActiveChatSession(chatSessionId, color) {
 		$('<div/>').attr('id', 'chat_maincell_' + chatSessionId).addClass('chat_maincell_chatwindow tab').append(
 			$('<div/>').attr('id', 'chat_buttonswrapper_' + chatSessionId).append(
 				$('<div/>').addClass('fixedtable').append(
-					$('<div/>').addClass('cell')
+					$('<div/>').addClass('cell').append(
+						$('<div/>').attr('id', 'chat_customerlocationlabel_' + chatSessionId).addClass('chat_customerlocationlabel')
+					)
 				).append(
 					$('<div/>').addClass('cell').css('width', '84px').append(
 						$('<div/>').attr('id', 'chat_btn_endchat_' + chatSessionId).addClass('personmenubutton personmenubuttonenabled').text('End Chat')

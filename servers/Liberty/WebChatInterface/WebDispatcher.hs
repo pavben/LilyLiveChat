@@ -18,6 +18,7 @@ import Data.List
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Ord
+import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
 import qualified Network.BSD as BSD
@@ -27,6 +28,8 @@ import Network.Socket.ByteString.Lazy (sendAll)
 import Prelude hiding (catch)
 import Liberty.WebChatInterface.MessageFormatConverter
 import Liberty.WebChatInterface.Sessions
+import Liberty.Common.Messages
+import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Timeouts
 import Liberty.Common.Utils
 
@@ -117,15 +120,20 @@ receiveHttpRequestLoop handleStream sessionMapTVar = do
                   _ -> return () -- not a proper send or long poll request
               else
                 -- new session request
-                handleNewSession sessionMapTVar handleStream
+                case lookupHeader (HdrCustom "X-Real-IP") $ rqHeaders request of
+                  Just (LT.pack -> clientIp) ->
+                    handleNewSession sessionMapTVar handleStream clientIp
+                  Nothing ->
+                    return () -- X-Real-IP header missing
             _ -> return () -- cannot read sessionId
         Nothing -> return () -- cannot decode JSON object in request body
     Left connError -> do
       print connError
 
-handleNewSession :: SessionMapTVar -> HandleStream ByteString -> IO ()
-handleNewSession sessionMapTVar handleStream = do
+handleNewSession :: SessionMapTVar -> HandleStream ByteString -> Text -> IO ()
+handleNewSession sessionMapTVar handleStream clientIp = do
   putStrLn "Request for a new session"
+  putStrLn $ "Client's IP is: " ++ LT.unpack clientIp
   createSessionResult <- createSession sessionMapTVar
   case createSessionResult of
     Just (sessionId, sessionDataTVar) -> do
@@ -133,7 +141,25 @@ handleNewSession sessionMapTVar handleStream = do
       sendJsonResponse handleStream $ J.object [("sessionId", J.toJSON sessionId)]
       -- set the session timeout in case we don't receive any long poll requests
       resetSessionTimeout sessionDataTVar sessionId sessionMapTVar
-      return ()
+      -- send the client IP to the server
+      maybeProxySocket <- atomically $ do
+        sessionData <- readTVar sessionDataTVar
+        return $ sdProxySocket sessionData
+      case maybeProxySocket of
+        Just proxySocket ->
+          case createMessage CSMTUnregisteredClientIp (clientIp) of
+            Just encodedMessage ->
+              catch
+                (sendAll proxySocket encodedMessage)
+                (\(SomeException ex) ->
+                  putStrLn ("Exception during send to proxy socket: " ++ show ex)
+                )
+            Nothing -> do
+              putStrLn "Failed to encode message"
+              return ()
+        Nothing -> do
+          putStrLn $ "session was just created, but proxySocket is already Nothing?"
+          return ()
     Nothing -> do
       putStrLn "Failed to create a new session"
       return ()

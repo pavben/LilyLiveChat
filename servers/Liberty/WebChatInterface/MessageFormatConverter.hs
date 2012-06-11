@@ -176,6 +176,9 @@ messageToJson OperatorChatEndedMessage encodedParams =
 messageToJson CSMTOperatorCustomerOnPage encodedParams =
   unpackAndHandle encodedParams $ \(sessionId :: Int, currentPage :: Text) -> [J.toJSON (messageTypeToId CSMTOperatorCustomerOnPage), J.toJSON sessionId, J.toJSON currentPage]
 
+messageToJson CSMTOperatorCustomerLocation encodedParams =
+  unpackAndHandle encodedParams $ \(sessionId :: Int, city :: Text, regionName :: Text, countryName :: Text) -> [J.toJSON (messageTypeToId CSMTOperatorCustomerLocation), J.toJSON sessionId, J.toJSON city, J.toJSON regionName, J.toJSON countryName]
+
 messageToJson AdminLoginSuccessMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId AdminLoginSuccessMessage)]
 

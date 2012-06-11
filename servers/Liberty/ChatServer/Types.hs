@@ -41,6 +41,7 @@ import Liberty.ChatServer.Constants
 data ClientData = ClientData {
   cdSocket :: Socket,
   cdSendChan :: ClientSendChan,
+  cdClientIp :: Maybe Text,
   cdOtherData :: OtherClientData
 } deriving (Show)
 data OtherClientData = OCDClientUnregistered (Maybe SiteDataTVar) | OCDClientCustomerData ClientCustomerData | OCDClientOperatorData ClientOperatorData | OCDClientAdminData ClientAdminData | OCDClientSuperAdminData ClientSuperAdminData

@@ -47,6 +47,15 @@
 .chat_maincell_chatwindow {
 	padding:5px 9px 9px 9px;
 }
+.chat_customerlocationlabel {
+	display:none;
+	color:#454545;
+	font-size:18px;
+	line-height:24px;
+	overflow:hidden;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+}
 #chat_rightcell {
 	display:table-cell;
 	width:200px;

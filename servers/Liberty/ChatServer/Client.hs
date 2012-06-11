@@ -23,6 +23,7 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Safe
+import Liberty.Common.GeoLocation
 import Liberty.Common.Messages
 import Liberty.Common.Messages.AuthServer
 import Liberty.Common.Messages.ChatServer
@@ -37,7 +38,7 @@ import Liberty.ChatServer.VisitorClientMap
 initializeClient :: Socket -> SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
 initializeClient clientSocket siteMapTVar siteDataSaverChan visitorClientMapTVar = do
   clientSendChan <- atomically $ newTChan
-  clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan (OCDClientUnregistered Nothing))
+  clientDataTVar <- atomically $ newTVar (ClientData clientSocket clientSendChan Nothing (OCDClientUnregistered Nothing))
   finally
     (do
       _ <- forkIO $ clientSocketSendLoop clientSendChan clientDataTVar
@@ -119,6 +120,7 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
       case maybeSiteDataTVar of
         Nothing ->
           case messageType of
+            CSMTUnregisteredClientIp -> unpackAndHandle $ \clientIp -> handleCSMTUnregisteredClientIp clientIp clientDataTVar
             UnregisteredSelectSiteMessage -> unpackAndHandle $ \siteId -> handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar
             CSSALoginRequestMessage -> unpackAndHandle $ \(authToken) -> handleCSSALoginRequestMessage authToken clientDataTVar
             CSMTVisitorOnPage -> unpackAndHandle $ \(visitorId, currentPage) -> handleCSMTVisitorOnPage visitorId currentPage visitorClientMapTVar
@@ -176,6 +178,14 @@ handleMessage messageType encodedParams clientDataTVar siteMapTVar siteDataSaver
         Nothing -> do
           putStrLn "Client dropped due to message unpack failure."
           atomically $ closeClientSocket clientDataTVar
+
+handleCSMTUnregisteredClientIp :: Text -> ClientDataTVar -> IO ()
+handleCSMTUnregisteredClientIp clientIp clientDataTVar =
+  atomically $ do
+    clientData <- readTVar clientDataTVar
+    writeTVar clientDataTVar $ clientData {
+      cdClientIp = Just clientIp
+    }
 
 handleUnregisteredSelectSiteMessage :: SiteId -> ClientDataTVar -> SiteMapTVar -> IO ()
 handleUnregisteredSelectSiteMessage siteId clientDataTVar siteMapTVar = do
@@ -313,7 +323,7 @@ handleCSMTUnregisteredActivateAdmin sessionId clientDataTVar siteDataTVar siteDa
 
       case maybeEmailSubjectAndText of
         Just (subject, textBody) ->
-          sendEmail email (LT.pack "Welcome!") textBody
+          sendEmail email subject textBody
         Nothing -> return ()
     VSFailure -> atomically $ createAndSendMessage CSMTUnregisteredActivateAdminFailure () clientDataTVar
     VSNotAvailable -> atomically $ createAndSendMessage CSUnavailableMessage () clientDataTVar
@@ -364,7 +374,7 @@ handleOperatorLoginRequestMessage :: Text -> ClientDataTVar -> SiteDataTVar -> I
 handleOperatorLoginRequestMessage sessionId clientDataTVar siteDataTVar = do
   verifySessionIdResult <- verifySessionId sessionId
   case verifySessionIdResult of
-    VSSuccess userId email -> atomically $ do
+    VSSuccess userId _ -> atomically $ do
       -- read the site data
       siteData <- readTVar siteDataTVar
       -- see if any operators match this userId
@@ -437,7 +447,7 @@ handleAdminLoginRequestMessage maybeSessionId clientDataTVar siteDataTVar =
       Just sessionId -> do
         verifySessionIdResult <- verifySessionId sessionId
         case verifySessionIdResult of
-          VSSuccess userId email -> atomically $ performLogin (Just userId)
+          VSSuccess userId _ -> atomically $ performLogin (Just userId)
           VSFailure ->
             -- invalid sessionId
             -- TODO: use a special "session expired" message here and for operator login
@@ -468,8 +478,8 @@ handleCustomerEndingChatMessage :: ChatSessionTVar -> VisitorClientMapTVar -> IO
 handleCustomerEndingChatMessage chatSessionTVar visitorClientMapTVar = atomically $ endChatSession chatSessionTVar visitorClientMapTVar
 
 handleOperatorAcceptNextChatSessionMessage :: ClientDataTVar -> SiteDataTVar -> IO ()
-handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
-  atomically $ do
+handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar = do
+  maybeIoToRun <- atomically $ do
     siteData <- readTVar siteDataTVar
     case sdSessionsWaiting siteData of
       chatSessionTVar:remainingChatSessionTVars -> do
@@ -531,9 +541,34 @@ handleOperatorAcceptNextChatSessionMessage clientDataTVar siteDataTVar =
                 )
                 clientDataTVar)
 
-          _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" ()
+            -- lastly, try to get the customer's locations and send it to the operator, if available
+            case cdClientIp customerClientData of
+              Just clientIp -> do
+                -- return IO to run
+                return $ Just $ do
+                  getLocationForIpResponse <- getLocationForIp clientIp
+                  case getLocationForIpResponse of
+                    Just (city, regionName, countryName) ->
+                      atomically $ createAndSendMessage CSMTOperatorCustomerLocation
+                        (
+                          fromIntegral $ csId updatedChatSession :: Int,
+                          city,
+                          regionName,
+                          countryName
+                        )
+                        clientDataTVar
+                    Nothing ->
+                      -- if the geolocation request did not succeed, there's nothing to do
+                      return ()
+              Nothing ->
+                -- if no clientIp available, do nothing
+                return Nothing
+          _ -> return $ trace "ASSERT: clientDataTVar contains a non-operator, but should have been pattern-matched by the caller" Nothing
 
-      _ -> return () -- no waiting sessions, so do nothing
+      _ -> return Nothing -- no waiting sessions, so do nothing
+
+  -- if there is an IO function to run, do it here
+  fromMaybe (return ()) maybeIoToRun
 
 handleOperatorSendChatMessage :: Integer -> Text -> ClientDataTVar -> [ChatSessionTVar] -> IO ()
 handleOperatorSendChatMessage chatSessionId messageText clientDataTVar chatSessionTVars =

@@ -43,10 +43,11 @@ Server to Operator
 10 - OperatorLoginFailedMessage
 11 - OperatorLineStatusDetailsMessage [nextCustomerColor, i:numberOfWaiters]
 12 - OperatorLineStatusEmptyMessage
-14 - OperatorNowTalkingToMessage [sessionId, color, currentPage, referrer]
-15 - OperatorReceiveChatMessage [sessionId, text]
-18 - OperatorChatEndedMessage [sessionId]
-60 - CSMTOperatorCustomerOnPage [sessionId, currentPage]
+14 - OperatorNowTalkingToMessage [i:sessionId, color, currentPage, referrer]
+15 - OperatorReceiveChatMessage [i:sessionId, text]
+18 - OperatorChatEndedMessage [i:sessionId]
+60 - CSMTOperatorCustomerOnPage [i:sessionId, currentPage]
+73 - CSMTOperatorCustomerLocation [i:sessionId, city, regionName, countryName]
 
 Admin to Server
 ================================================================
@@ -101,3 +102,5 @@ Other Messages
 61 - CSMTWrongChatServer
 67 - CSMTSuccess
 68 - CSMTFailure
+72 - CSMTUnregisteredClientIp [ip]
+
