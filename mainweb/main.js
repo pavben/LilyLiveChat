@@ -22,9 +22,34 @@ $(window).bind('load', function() {
 		}
 	}
 
+	function newAccountHandler() {
+		if (!accountCreated) {
+			$.ajax({
+				url: '/cmd/createsite',
+				dataType: 'json',
+				data: '',
+				timeout: 5000,
+				success: function(data, textStatus, jqXHR) {
+					var adminPanelUrl = 'http://lilylivechat.net/admin/' + data.siteId;
+					$('#newaccount_adminpanel').empty().append(
+						$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
+					);
+
+					accountCreated = true;
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					$('#newaccount_tab').empty().append('We can\'t create your account right now. If you get this message after an hour, contact us and we\'ll see if we can help!');
+				}
+			});
+		}
+
+		changeTabTo(newAccountTab);
+	}
+
 	$('#menubutton_tryitout').click(tryItOutHandler);
-	$('#learnmore_createaccount1').click(tryItOutHandler);
-	$('#learnmore_createaccount2').click(tryItOutHandler);
+	$('#learnmore_createaccount1').click(newAccountHandler);
+	$('#learnmore_createaccount2').click(newAccountHandler);
+	$('#learnmore_createaccount3').click(newAccountHandler);
 
 	// pricing tooltip
 	var tooltip = $('<div/>').attr('id', 'tooltip');
@@ -59,11 +84,15 @@ $(window).bind('load', function() {
 		});
 	}
 
-	/*
-	 * processReferrer('http://www.google.ca/?q=furry+pink+leather+handbag', 2);
-	 * writeCustomerOnPageMessage(2, 'http://www.pricelesshandbags.ca/item/27801', 'currently');
-	 */
+	$('#facebookdiscount_row').hide();
 
+	switch (getUrlParameter('ref')) {
+		case "facebook":
+			$('#facebookdiscount_row').show();
+			break;
+	}
+
+	addTooltipTo($('#pricing_facebookdiscountlabel'), 'When subscribing, mention that you first heard about LilyLiveChat on Facebook and we\'ll apply this exclusive discount to your account. Offer expires June 19, 2012!', 322);
 	addTooltipTo($('#pricing_operatorallowancelabel'), 'Each plan allows adding up to this many operators. Operators are people who can answer chats from your customers.');
 	addTooltipTo($('#pricing_customermonitoringlabel'),
 		$('<div/>').append(
@@ -77,27 +106,7 @@ $(window).bind('load', function() {
 	addTooltipTo($('#pricing_assistedinstallationlabel'), 'No matter how technical you are, our developers will gladly walk you through setting up LilyLiveChat to integrate smoothly with your website. No one gets left behind!', 250);
 	addTooltipTo($('#pricing_exceptionalsupportlabel'), 'When you have questions, you deserve answers quickly. Our support crew consists of the people who made LilyLiveChat what it is today.', 390);
 
-	$('#tryitout_btn_newaccount').click(function() {
-		$.ajax({
-			url: '/cmd/createsite',
-			dataType: 'json',
-			data: '',
-			timeout: 5000,
-			success: function(data, textStatus, jqXHR) {
-				var adminPanelUrl = 'http://lilylivechat.net/admin/' + data.siteId;
-				$('#newaccount_adminpanel').empty().append(
-					$('<a/>').attr('href', adminPanelUrl).attr('target', '_blank').text(adminPanelUrl)
-				);
-
-				accountCreated = true;
-			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				$('#newaccount_tab').empty().append('We can\'t create your account right now. If you get this message after an hour, contact us and we\'ll see if we can help!');
-			}
-		});
-
-		changeTabTo(newAccountTab);
-	});
+	$('#tryitout_btn_newaccount').click(newAccountHandler);
 
 	$(window).resize(onResize);
 
@@ -175,3 +184,10 @@ function changeTabTo(tab, onTabLoadCallback) {
 		}
 	}
 }
+
+function getUrlParameter(name, queryString) {
+	queryString = (queryString !== undefined) ? queryString : location.search;
+	var v = (RegExp(name + '=' + '(.*?)(&|$)').exec(queryString)||[,null])[1];
+	return (v !== null) ? decodeURIComponent(v) : v;
+}
+

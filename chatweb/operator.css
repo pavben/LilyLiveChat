@@ -49,7 +49,7 @@
 }
 .chat_customerlocationlabel {
 	display:none;
-	color:#454545;
+	padding-left:1px;
 	font-size:18px;
 	line-height:24px;
 	overflow:hidden;
