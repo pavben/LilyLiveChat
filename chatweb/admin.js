@@ -319,7 +319,7 @@ function updateInstallCodeButton(buttonName) {
 '<!-- BEGIN LilyLiveChat button code -->',
 '<div class="lilylivechat_online" style="display:none;">',
 '	<a href="http://www.lilylivechat.net" title="Live Chat" onclick="try { lilyLiveChat_launch(); } catch(e) { alert(\'LilyLiveChat main code not linked!\'); } finally { return false; }">',
-'		<img src="//lilylivechat.net/chatbuttons/' + buttonName + '_on.png" alt="Live Chat" style="display:block; margin:0px auto 0px auto;" />',
+'		<img src="//lilylivechat.net/chatbuttons/' + buttonName + '_on.png" alt="Live Chat" style="display:block; margin:0px auto 0px auto; border:0;" />',
 '	</a>',
 '</div>',
 '<div class="lilylivechat_offline" style="display:none;">',
