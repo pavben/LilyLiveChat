@@ -43,7 +43,7 @@ data SessionData = SessionData {
   sdLastInSequence :: InSequence,
   sdLastOutSequence :: OutSequence,
   sdMessagesWaiting :: [(OutSequence, [J.Value])], -- out sequence, msg type, encoded params
-  sdLongPollRequestAbortAndTimeoutTVars :: (TVar Bool, TVar Bool),
+  sdLongPollRequestAbortAndTimeoutTVars :: (TVar Bool, TVar Bool), -- TODO: timeout tvar is not used anywhere
   sdSessionTimeoutAbortTVar :: TVar Bool
 }
 type SessionDataTVar = TVar SessionData
