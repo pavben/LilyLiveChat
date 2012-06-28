@@ -1,11 +1,4 @@
-var lilyLiveChat_launch;
-
-(function() {
-	// if the main code was loaded multiple times on the same page, ignore the second time
-	if (typeof lilyLiveChat_launch !== 'undefined') {
-		return;
-	}
-
+//(function() {
 	// extract the siteId from the script tag
 	var siteId;
 	var scriptTags = document.getElementsByTagName('script');
@@ -22,28 +15,80 @@ var lilyLiveChat_launch;
 		return;
 	}
 
-	// BEGIN getElementsByClassName
-	var getElementsByClassName;
-	if (document.getElementsByClassName) {
-		getElementsByClassName = function(cn) {
-			return document.getElementsByClassName(cn);
-		};
-	} else {
-		getElementsByClassName = function (cn) {
-			var rx = new RegExp("(?:^|\\s)" + cn+ "(?:$|\\s)");
-			var allT = document.getElementsByTagName("*"), allCN = [], ac="", i = 0, a;
-			while (a = allT[i=i+1]) {
-				ac=a.className;
-				if ( ac && ac.indexOf(cn) !==-1) {
-					if(ac===cn){ allCN[allCN.length] = a; continue; }
-					rx.test(ac) ? (allCN[allCN.length] = a) : 0;
+	// TODO: detect the presence of 'JSON' and load our own if not available
+
+	function ajaxJson(objectToSend, successFunction, failureFunction, timeoutInMillis, encryptionRequired) {
+		// set a timeout for the AJAX request
+		var xhrTimeout = setTimeout(function() {
+			xhr.abort();
+			failureFunction(true);
+		}, timeoutInMillis);
+
+		function onXhrSuccess(text) {
+			// abort the timeout since the request has completed before timing out
+			clearTimeout(xhrTimeout);
+
+			try {
+				var jsonResponseObject = JSON.parse(text);
+				setTimeout(function() {
+					successFunction(jsonResponseObject);
+				}, 0);
+			} catch(ex) {
+				// if the parse failed, this is treated as a failure of the request
+				failureFunction(false);
+			}
+		}
+
+		function onXhrFailure() {
+			// abort the timeout since the request has completed before timing out
+			clearTimeout(xhrTimeout);
+			// call the failure callback
+			failureFunction(false);
+		}
+
+		// create the main XHR object
+		var xhr;
+		if (!window.XDomainRequest)
+		{
+			// standard XHR for normal browsers
+			xhr = window.XMLHttpRequest ? new window.XMLHttpRequest() : new window.ActiveXObject('Microsoft.XMLHTTP');
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4) { // 4 is done
+					if (xhr.status == 200) {
+						onXhrSuccess(xhr.responseText);
+					} else {
+						onXhrFailure();
+					}
 				}
 			}
-			return allCN;
+		} else {
+			// XDR for IE9
+			xhr = new window.XDomainRequest();
+			xhr.onload = function() {
+				onXhrSuccess(xhr.responseText);
+			}
+			xhr.onerror = function() {
+				onXhrFailure();
+			}
 		}
+
+		// by default, we use HTTP
+		var scheme = 'http';
+
+		// if the current site is being requested with HTTPS or if the caller requested HTTPS, use it
+		if (window.location.protocol == 'https:' || encryptionRequired) {
+			scheme = 'https';
+		}
+
+		// we use POST instead of GET to avoid caching
+		xhr.open('POST', scheme + '://lilylivechat.net/vc/' + siteId, true);
+
+		// we're sending JSON in our request
+		xhr.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+
+		xhr.send(JSON.stringify(objectToSend));
 	}
-	// END getElementsByClassName
-	
+
 	// BEGIN cookie get/set code
 	var cookiePrefix = 'lily.' + siteId + '.';
 	function readPrefixedCookie(name) {
@@ -59,162 +104,123 @@ var lilyLiveChat_launch;
 		// cookie with that name was not found
 		return null;
 	}
+	// TODO: Set cookie domain using something like window.location.host.match(/([\w]+\.[\w]+)$/)
 	function setPrefixedCookie(name, val) {
 		var d = new Date();
 		d.setTime(d.getTime() + 24 * 60 * 60 * 1000);
-		document.cookie = cookiePrefix + name + '=' + encodeURIComponent(val) + '; domain=lilylivechat.net; path=/; expires=' + d.toGMTString() + ';';
+		//document.cookie = cookiePrefix + name + '=' + encodeURIComponent(val) + '; domain=lilylivechat.net; path=/; expires=' + d.toGMTString() + ';';
+		document.cookie = cookiePrefix + name + '=' + encodeURIComponent(val) + '; path=/; expires=' + d.toGMTString() + ';';
 	}
 	// END cookie get/set code
 	
-	// BEGIN originalReferrer cookie code
-	var originalReferrer = readPrefixedCookie('referrer');
-
-	// if this is their first landing on this site, store the referrer
-	if (originalReferrer === null) {
-		originalReferrer = document.referrer;
-		setPrefixedCookie('referrer', originalReferrer);
-	}
-	// END originalReferrer cookie code
-	
-	// BEGIN visitorId
-	function generateRandomVisitorId() {
-		function generateRandomString(length, chars) {
-			var result = '';
-			for (var i = length; i > 0; --i) {
-				result += chars[Math.round(Math.random() * (chars.length - 1))];
-			}
-			return result;
-		}
-
-		return generateRandomString(32, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-	}
-
+	// BEGIN session code
 	var visitorId = readPrefixedCookie('visitorId');
+	var visitorSessionId;
+	var lastInSequence;
+	var nextOutSequence;
 
-	if (visitorId === null) {
-		visitorId = generateRandomVisitorId();
-		setPrefixedCookie('visitorId', visitorId);
-	}
-	// END visitorId
-	
-	// BEGIN code to display the appropriate buttons by class name
-	// Parts adapted from jQuery
+	var ajaxCommandQueue;
+	var ajaxCommandSendInProgress;
 
-	var domContentLoadedCallback;
+	resetSession();
 
-	// Cleanup functions for the document ready method
-	if (document.addEventListener) {
-		domContentLoadedCallback = function() {
-			document.removeEventListener("DOMContentLoaded", domContentLoadedCallback, false);
-			displayChatElements();
-		};
-	} else if (document.attachEvent) {
-		domContentLoadedCallback = function() {
-			// Make sure body exists, at least, in case IE gets a little overzealous (ticket #5443).
-			if (document.readyState === "complete") {
-				document.detachEvent("onreadystatechange", domContentLoadedCallback);
-				displayChatElements();
-			}
-		};
+	function resetSession() {
+		visitorSessionId = null;
+		lastInSequence = 0;
+		nextOutSequence = 1;
+		ajaxCommandQueue = [];
+		ajaxCommandSendInProgress = false;
 	}
 
-	function setChatStatus(chatStatus) {
-		// Catch cases where $(document).ready() is called after the
-		// browser event has already occurred.
-		if (document.readyState === "complete") {
-			displayChatElements(chatStatus);
-		}
-		// Mozilla, Opera and webkit nightlies currently support this event
-		else if (document.addEventListener) {
-			// Use the handy event callback
-			document.addEventListener("DOMContentLoaded", domContentLoadedCallback, false);
+	function sessionEnded() {
+		log("Session ended");
+		resetSession();
 
-			// A fallback to window.onload, that will always work
-			window.addEventListener("load", function() { displayChatElements(chatStatus); }, false);
+		handleSessionEnded();
+	}
 
-		// If IE event model is used
-		} else if (document.attachEvent) {
-			// ensure firing before onload,
-			// maybe late but safe also for iframes
-			document.attachEvent("onreadystatechange", domContentLoadedCallback);
-
-			// A fallback to window.onload, that will always work
-			window.attachEvent("onload", function() {
-				displayChatElements(chatStatus);
-			});
+	function handleMessage(message) {
+		messageTypeId = message.shift();
+		log("Msg Type Id: " + messageTypeId);
+		log(message);
+		switch (messageTypeId) {
+			default:
+				window.console.log('in handleMessage');
 		}
 	}
 
-	function displayChatElements(chatStatus) {
-		var elementsToDisplay = getElementsByClassName('lilylivechat_' + (chatStatus ? 'online' : 'offline'));
-		for (var i = 0; i < elementsToDisplay.length; i++) {
-			elementsToDisplay[i].style.display = 'block';
+	var consecutiveLongPollFailures = 0;
+
+	function ajaxJsonLongPoll() {
+		if (visitorId === null || visitorSessionId === null) {
+			log("ajaxJsonLongPoll not allowed due to no visitorId or visitorSessionId");
+			return;
 		}
 
-		if (typeof lilyLiveChat_ready !== 'undefined') {
-			lilyLiveChat_ready(chatStatus);
+		var longPollRequestObject = { i: lastInSequence };
+		if (visitorId !== null) {
+			longPollRequestObject.v = visitorId;
 		}
-	}
+		if (visitorSessionId !== null) {
+			longPollRequestObject.s = visitorSessionId;
+		}
 
-	// END code to display the appropriate buttons by class name
-	
-	// BEGIN get site chat status and call setChatStatus
+		ajaxJson(
+			longPollRequestObject,
+			function(data) {
+				// since this request succeeded, reset the number of consecutive failures
+				consecutiveLongPollFailures = 0;
 
-	// set a timeout for the AJAX request
-	var xhrTimeout = setTimeout(function() {
-		// on timeout, we consider the chat to be down and abort the request
-		setChatStatus(false);
-		xhr.abort();
-	}, 4000);
+				window.console.log(data);
 
-	function onXhrSuccess(text) {
-		clearTimeout(xhrTimeout); // abort the timeout since the request has completed before timing out
-		setChatStatus(xhr.responseText == '1');
-	}
-
-	function onXhrFailure() {
-		clearTimeout(xhrTimeout);
-		setChatStatus(false);
-	}
-
-	// create the main XHR object
-	var xhr;
-	if (!window.XDomainRequest)
-	{
-		// standard XHR for normal browsers
-		xhr = window.XMLHttpRequest ? new window.XMLHttpRequest() : new window.ActiveXObject('Microsoft.XMLHTTP');
-		xhr.onreadystatechange = function() {
-			if (xhr.readyState == 4) { // 4 is done
-				if (xhr.status == 200) {
-					onXhrSuccess(xhr.responseText);
-				} else {
-					onXhrFailure();
+				// if the server is asking us to change our visitorId
+				if (typeof data.v !== 'undefined') {
+					visitorId = data.v;
 				}
-			}
-		}
-	} else {
-		// XDR for IE9
-		xhr = new window.XDomainRequest();
-		xhr.onload = function() {
-			onXhrSuccess(xhr.responseText);
-		}
-		xhr.onerror = function() {
-			onXhrFailure();
-		}
+
+				// if the server is asking us to change our visitorSessionId
+				if (typeof data.s !== 'undefined') {
+					visitorSessionId = data.s;
+				}
+
+				var messages = data.m;
+				for (var i in messages) {
+					var message = messages[i];
+
+					if (parseInt(message[0]) <= lastInSequence) {
+						alert("lastInSequence is " + lastInSequence + ", but message[0] is " + message[0]);
+					}
+
+					lastInSequence = parseInt(message.shift());
+
+					handleMessage(message);
+				}
+
+				// terminate long polling if the session has ended
+				if (!data.sessionEnded) {
+					setTimeout(ajaxJsonLongPoll, 0);
+				} else {
+					sessionEnded();
+				}
+			},
+			function (isTimeout) {
+				log('Long Poll Error. isTimeout = ' + isTimeout);
+
+				consecutiveLongPollFailures++;
+				if (consecutiveLongPollFailures < 10) {
+					setTimeout(ajaxJsonLongPoll, 1000); // schedule a retry in 1 second
+				} else {
+					sessionEnded();
+				}
+			},
+			65000
+		);
 	}
-
-	// we use POST instead of GET to avoid caching
-	xhr.open('POST', '//lilylivechat.net/chatstatus/' + siteId + '/' + visitorId, true);
-	xhr.send(null);
+	// END session code
 	
-	// END get site chat status and call setChatStatus
+	// start with a clean session
+	resetSession();
 
-	// CONSIDER: can detect if the previously-opened window is now closed to avoid letting the user accidentally open 5 sessions, but be careful about stuff like popup blockers
-	lilyLiveChat_launch = function() {
-		var wW = 659;
-		var wH = 659;
-		var wL = (window.screen.width - wW) / 2;
-		var wT = (window.screen.height - wH) / 3;
-		window.open('http://lilylivechat.net/launchchat/' + siteId + '?visitorId=' + visitorId + '&currentPage=' + window.location.href + (originalReferrer ? '&originalReferrer=' + encodeURIComponent(originalReferrer) : ''), '_blank', 'width=' + wW + ',height=' + wH + ',left=' + wL + ',top=' + wT + ',location=no,menubar=no,status=no,toolbar=no').focus();
-	};
-})();
+	// start long polling
+	ajaxJsonLongPoll();
+//})();
