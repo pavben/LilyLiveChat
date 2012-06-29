@@ -33,6 +33,7 @@ data VisitorSessionData = VisitorSessionData {
   vsdInSequence :: Integer,
   vsdOutSequence :: Integer,
   vsdOutgoingMessages :: [(Integer, [J.Value])],
+  vsdLongPollAbortTVar :: TVar Bool,
   vsdVisitorSessionExpiryAbortTVar :: TVar Bool
 } deriving (Show)
 

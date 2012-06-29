@@ -160,5 +160,5 @@ saveUserDataToDb userData databaseHandleTVar = do
       return False
   
 asStringValue :: Text -> Value
-asStringValue text = String (u . LT.unpack $ text)
+asStringValue text = String (LT.toStrict $ text)
 

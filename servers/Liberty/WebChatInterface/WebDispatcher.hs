@@ -42,7 +42,7 @@ runWebDispatcher sessionMapTVar = do
       (finally
         (do
           hostEntry <- BSD.getHostByName $ getLocalServiceHost "anivia"
-          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9700
+          initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9701
           acceptLoop listenerSocket sessionMapTVar
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised

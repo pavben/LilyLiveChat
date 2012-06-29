@@ -133,10 +133,10 @@
 	}
 
 	function sessionEnded() {
-		log("Session ended");
+		window.console.log("Session ended");
 		resetSession();
 
-		handleSessionEnded();
+		//handleSessionEnded();
 	}
 
 	function handleMessage(message) {
@@ -152,13 +152,9 @@
 	var consecutiveLongPollFailures = 0;
 
 	function ajaxJsonLongPoll() {
-		if (visitorId === null || visitorSessionId === null) {
-			log("ajaxJsonLongPoll not allowed due to no visitorId or visitorSessionId");
-			return;
-		}
-
 		var longPollRequestObject = { i: lastInSequence };
 		if (visitorId !== null) {
+			window.console.log('setting visitorId to ' + visitorId);
 			longPollRequestObject.v = visitorId;
 		}
 		if (visitorSessionId !== null) {
@@ -204,7 +200,7 @@
 				}
 			},
 			function (isTimeout) {
-				log('Long Poll Error. isTimeout = ' + isTimeout);
+				window.console.log('Long Poll Error. isTimeout = ' + isTimeout);
 
 				consecutiveLongPollFailures++;
 				if (consecutiveLongPollFailures < 10) {

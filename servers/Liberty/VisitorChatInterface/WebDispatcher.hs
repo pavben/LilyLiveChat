@@ -16,7 +16,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HMS
 import Data.List
 import qualified Data.Map as Map
-import Data.Maybe (isJust)
+import Data.Maybe
 import Data.Ord
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
@@ -108,59 +108,150 @@ receiveHttpRequestLoop handleStream visitorMapTVar = do
                 (Just (J.String (LT.fromStrict -> visitorId)), Just (J.Number (DAN.I sessionId)), Just (J.Number (DAN.I inSequence)), Just (J.Array messageArray), _) ->
                   return ()
                 -- long poll request
-                (readMaybeString -> maybeVisitorId, readMaybeInteger -> maybeSessionId, Nothing, Just (J.Array messageArray), Just (J.Number (DAN.I outSequence))) -> do
+                (readMaybeString -> maybeVisitorId, readMaybeInteger -> maybeVisitorSessionId, Nothing, Nothing, Just (J.Number (DAN.I outSequence))) -> do
+                  -- TODO ULTRALOW: The above lookup is not atomic. We might end up creating a visitor session for a visitor that's been pulled from the map
                   maybeVisitorAndVisitorSession <- do
                     visitorMap <- atomically $ readTVar visitorMapTVar
                     case maybeVisitorId of
                       Just visitorId ->
                         case Map.lookup visitorId visitorMap of
                           Just visitorDataTVar -> do
-                            -- TODO ULTRALOW: The above lookup is not atomic. We might end up creating a visitor session for a visitor that's been pulled from the map.
-                            (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar
-                            return $ Just (visitorId, visitorDataTVar, visitorSessionId, visitorSessionDataTVar)
+                            -- valid visitorId
+                            visitorData <- atomically $ readTVar visitorDataTVar
+                            case maybeVisitorSessionId of
+                              Just visitorSessionId ->
+                                case Map.lookup visitorSessionId (vdSessions visitorData) of
+                                  Just visitorSessionDataTVar ->
+                                    -- valid visitorId and visitorSessionId
+                                    return $ Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, False)
+                                  Nothing ->
+                                    -- valid visitorId, but invalid visitorSessionId
+                                    return Nothing
+                              Nothing -> do
+                                (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar
+                                return $ Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, True)
                           Nothing ->
-                            -- visitorId provided, is invalid
+                            -- visitorId provided is invalid
                             -- in this case, treat is as no visitorId as long as there's also no visitorSessionId
-                            case maybeSessionId of
+                            case maybeVisitorSessionId of
                               Just _ -> return Nothing
                               Nothing -> do
                                 (visitorId, visitorDataTVar) <- createVisitor visitorMapTVar
-                                (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar
-                                return $ Just (visitorId, visitorDataTVar, visitorSessionId, visitorSessionDataTVar)
+                                (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar
+                                return $ Just (visitorId, visitorDataTVar, True, visitorSessionId, visitorSessionDataTVar, True)
                       Nothing -> do
+                        -- no visitorId provided
                         (visitorId, visitorDataTVar) <- createVisitor visitorMapTVar
-                        (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar
-                        return $ Just (visitorId, visitorDataTVar, visitorSessionId, visitorSessionDataTVar)
+                        (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar
+                        return $ Just (visitorId, visitorDataTVar, True, visitorSessionId, visitorSessionDataTVar, True)
+
+                  print maybeVisitorAndVisitorSession
 
                   case maybeVisitorAndVisitorSession of
-                    Just (visitorId, visitorDataTVar, visitorSessionId, visitorSessionDataTVar) -> return () -- TODO
-                    Nothing -> return () -- invalid visitorSessionId
+                    Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, False) ->
+                      handleLongPoll handleStream visitorSessionDataTVar outSequence visitorSessionId visitorDataTVar visitorId visitorMapTVar
+                    Just (visitorId, visitorDataTVar, isNewVisitor, visitorSessionId, visitorSessionDataTVar, _) ->
+                      let
+                        visitorIdJson = if isNewVisitor then [("v", J.toJSON visitorId)] else []
+                      in
+                        sendJsonResponse handleStream $ J.object $ visitorIdJson ++ [
+                          ("s", J.toJSON visitorSessionId),
+                          ("m", J.toJSON ([] :: [()]))
+                          ]
+                    Nothing ->
+                      -- invalid visitorSessionId? tell the client that their session has ended
+                      sendLongPollJsonResponse handleStream [] False
               where
                 readMaybeString (Just (J.String (LT.fromStrict -> s))) = Just s
                 readMaybeString _ = Nothing
                 readMaybeInteger (Just (J.Number (DAN.I i))) = Just i
                 readMaybeInteger _ = Nothing
             Nothing -> return () -- cannot decode JSON object in request body
-      {-
-                -- new session request
-                case lookupHeader (HdrCustom "X-Real-IP") $ rqHeaders request of
-                  Just (LT.pack -> clientIp) ->
-                    handleNewSession sessionMapTVar handleStream clientIp
-                  Nothing ->
-                    return () -- X-Real-IP header missing
-      -}
         OPTIONS ->
           let
             headers = [
               mkHeader (HdrCustom "Access-Control-Allow-Origin") "*",
               mkHeader (HdrCustom "Access-Control-Allow-Methods") "POST",
               mkHeader (HdrCustom "Access-Control-Allow-Headers") "Content-Type",
-              mkHeader (HdrCustom "Access-Control-Max-Age") "10"
+              mkHeader (HdrCustom "Access-Control-Max-Age") "300"
               ]
           in
             respondHTTP handleStream $ Response (2,0,0) "OK" headers LBS.empty
     Left connError -> do
       print connError
+
+data LongPollWaitResult = LongPollWaitResultAborted | LongPollWaitResultActivity | LongPollWaitResultTimeout | LongPollWaitResultSuccess [(Integer, [J.Value])]
+
+handleLongPoll :: HandleStream ByteString -> VisitorSessionDataTVar -> Integer -> Integer -> VisitorDataTVar -> Text -> VisitorMapTVar -> IO ()
+handleLongPoll handleStream visitorSessionDataTVar outSequence visitorSessionId visitorDataTVar visitorId visitorMapTVar = do
+  (myLongPollAbortTVar, myLongPollTimeoutTVar, myLongPollActivityTVar, previousLongPollAbortTVar, visitorSessionExpiryAbortTVar) <- atomically $ do
+    visitorSessionData <- readTVar visitorSessionDataTVar
+    myLongPollAbortTVar' <- newTVar False
+    myLongPollTimeoutTVar' <- newTVar False
+    myLongPollActivityTVar' <- newTVar False
+    writeTVar visitorSessionDataTVar $ visitorSessionData { vsdLongPollAbortTVar = myLongPollAbortTVar' }
+    let previousLongPollAbortTVar' = vsdLongPollAbortTVar visitorSessionData
+    let visitorSessionExpiryAbortTVar' = vsdVisitorSessionExpiryAbortTVar visitorSessionData
+    return (myLongPollAbortTVar', myLongPollTimeoutTVar', myLongPollActivityTVar', previousLongPollAbortTVar', visitorSessionExpiryAbortTVar')
+
+  -- try to abort, even if there is nothing to
+  void $ abortTimeout previousLongPollAbortTVar
+
+  -- we also need to abort the visitor session timeout as we don't want the visitor session cleaned up
+  -- note: this aborts the visitor session timeout that was there when we took the snapshot, not
+  --   necessarily the current visitor session timeout
+  --   this avoids the race condition of aborting a visitor session timeout created by a more recent request
+  void $ abortTimeout visitorSessionExpiryAbortTVar
+
+  -- set the long poll timeout
+  -- TODO: set the long poll timeout higher
+  setTimeout 10 myLongPollAbortTVar $ do
+    putStrLn "Long poll timeout!"
+    -- set myLongPollTimeoutTVar to True, signalling that this long poll request has timed out
+    atomically $ writeTVar myLongPollTimeoutTVar True
+
+  -- spawn a thread to set the activity tvar if the connection is closed or sends any extra data
+  void $ forkIO $ setTVarOnConnectionActivity handleStream myLongPollActivityTVar
+
+  waitResult <- atomically $ do
+    visitorSessionData <- readTVar visitorSessionDataTVar
+    -- filter the list to contain only the messages the client has not yet acknowledged receiving
+    let filteredMessageList = filter (\p -> fst p > outSequence) (vsdOutgoingMessages visitorSessionData)
+
+    abortedFlag <- readTVar myLongPollAbortTVar
+    timeoutFlag <- readTVar myLongPollTimeoutTVar
+    activityFlag <- readTVar myLongPollActivityTVar
+
+    case (filteredMessageList, abortedFlag, timeoutFlag, activityFlag) of
+      -- if this request has been replaced by a newer one
+      (_, True, _, _) -> return LongPollWaitResultAborted
+      -- if there was activity, we assume the client closed their browser
+      (_, False, _, True) -> return LongPollWaitResultActivity
+      -- if this request has timed out (and was not aborted)
+      (_, False, True, False) -> return LongPollWaitResultTimeout
+      -- if there is nothing to send, wait until there is
+      ([], False, False, False) -> retry
+      -- and in all other cases, there are messages to send
+      _ -> do
+        writeTVar visitorSessionDataTVar $ visitorSessionData { vsdOutgoingMessages = [] }
+        return $ LongPollWaitResultSuccess filteredMessageList
+
+  case waitResult of
+    LongPollWaitResultSuccess filteredMessageList -> do
+      sendLongPollJsonResponse handleStream filteredMessageList True
+      putStrLn "Long poll response sent (if socket was open)"
+      -- set a new session cleanup timeout
+      resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVar visitorId visitorMapTVar
+    LongPollWaitResultTimeout -> do
+      putStrLn "Long poll aborted by timeout"
+      -- set a new session cleanup timeout, because this session has timed out and was not replaced by a newer one which would have to set the session timeout on its' exit
+      sendLongPollJsonResponse handleStream [] True
+      resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVar visitorId visitorMapTVar
+    LongPollWaitResultAborted -> putStrLn "Long poll aborted without timeout set"
+    LongPollWaitResultActivity -> do
+      putStrLn "Long poll aborted by client socket activity (likely disconnect)"
+      deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar
+  return ()
 
 {-
 handleNewSession :: SessionMapTVar -> HandleStream ByteString -> Text -> IO ()

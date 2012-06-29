@@ -9,5 +9,8 @@ library
     network,
     random,
     aeson,
-    HTTP
+    HTTP,
+    safe,
+    mongoDB,
+    authenticate
 

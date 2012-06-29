@@ -27,18 +27,23 @@ type ProxySendChan = TChan ProxySendChanMessage
 
 type MessageHandlerFunction a b = a -> ByteString -> ProxySendChan -> b -> IO ()
 
-initializeProxyConnection :: MessageType a => Socket -> MessageHandlerFunction a b -> b -> IO ()
-initializeProxyConnection proxySocket messageHandlerFunction paramsFromMain = do
+initializeProxyConnection :: MessageType a => Socket -> MessageHandlerFunction a b -> b -> IO () -> IO ProxySendChan
+initializeProxyConnection proxySocket messageHandlerFunction paramsFromMain onCloseCallback = do
   proxySendChan <- atomically $ newTChan
-  finally
-    (do
-      _ <- forkIO $ proxySocketSendLoop proxySocket proxySendChan
-      proxySocketReadLoop proxySocket LBS.empty proxySendChan messageHandlerFunction paramsFromMain
-    )
-    (do
-      atomically $ writeTChan proxySendChan $ CloseSocket
-      sClose proxySocket
-    )
+  _ <- forkIO $ do
+    finally
+      (do
+        _ <- forkIO $ proxySocketSendLoop proxySocket proxySendChan
+        proxySocketReadLoop proxySocket LBS.empty proxySendChan messageHandlerFunction paramsFromMain
+      )
+      (do
+        atomically $ writeTChan proxySendChan $ CloseSocket
+        sClose proxySocket
+      )
+
+    onCloseCallback
+
+  return proxySendChan
 
 proxySocketSendLoop :: Socket -> ProxySendChan -> IO ()
 proxySocketSendLoop proxySocket proxySendChan = do

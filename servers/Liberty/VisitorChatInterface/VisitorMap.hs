@@ -1,17 +1,21 @@
 module Liberty.VisitorChatInterface.VisitorMap (
   createVisitorMapTVar,
   createVisitor,
-  createVisitorSession
+  createVisitorSession,
+  resetVisitorSessionExpiry,
+  deleteVisitorSession
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Monad
 import Control.Monad.STM
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (recv)
+import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.RandomString
 import Liberty.Common.ServiceClient
@@ -24,7 +28,7 @@ createVisitorMapTVar = atomically $ newTVar Map.empty
 
 createVisitor :: VisitorMapTVar -> IO (Text, VisitorDataTVar)
 createVisitor visitorMapTVar = do
-  newVisitorId <- getRandomAlphanumericText 32
+  newVisitorId <- getRandomAlphanumericText 10
   maybeVisitorDataTVar <- atomically $ do
     visitorMap <- readTVar visitorMapTVar
     case Map.lookup newVisitorId visitorMap of
@@ -78,11 +82,12 @@ deleteVisitor visitorDataTVar visitorId visitorMapTVar = do
 
   return ()
 
-createVisitorSession :: VisitorDataTVar -> IO (Integer, VisitorSessionDataTVar)
-createVisitorSession visitorDataTVar = do
+createVisitorSession :: VisitorDataTVar -> Text -> VisitorMapTVar -> IO (Integer, VisitorSessionDataTVar)
+createVisitorSession visitorDataTVar visitorId visitorMapTVar = do
   (visitorSessionId, visitorSessionDataTVar, mustInitiateConnection) <- atomically $ do
-    visitorSessionExpiryAbortTVar <- newTVar True
-    visitorSessionDataTVar' <- newTVar $ VisitorSessionData 0 0 [] visitorSessionExpiryAbortTVar
+    longPollAbortTVar <- newTVar False
+    visitorSessionExpiryAbortTVar <- newTVar False
+    visitorSessionDataTVar' <- newTVar $ VisitorSessionData 0 0 [] longPollAbortTVar visitorSessionExpiryAbortTVar
     visitorData <- readTVar visitorDataTVar
     let
       (newProxyStatus, mustInitiateConnection') =
@@ -100,6 +105,28 @@ createVisitorSession visitorDataTVar = do
   when mustInitiateConnection $ void $ forkIO $ do
     -- TODO PL: server "anivia" is hardcoded
     maybeProxySocket <- establishServiceConnection (getServiceConnectionDataForChatServer (LT.pack "anivia"))
+    case maybeProxySocket of
+      Just proxySocket ->
+        let
+          onCloseCallback =
+            atomically $ do
+              visitorData <- readTVar visitorDataTVar
+              writeTVar visitorDataTVar $ visitorData { vdProxyStatus = VDPSClosed }
+        in do
+          proxySendChan <- initializeProxyConnection proxySocket handleMessageFromProxy visitorDataTVar onCloseCallback
+          return ()
+          -- TODO: Send the client's IP
+          {-
+            -- new session request
+            case lookupHeader (HdrCustom "X-Real-IP") $ rqHeaders request of
+              Just (LT.pack -> clientIp) ->
+                handleNewSession sessionMapTVar handleStream clientIp
+              Nothing ->
+                return () -- X-Real-IP header missing
+          -}
+      Nothing -> return ()
+
+    -- update vdProxyStatus with the appropriate value based on maybeProxySocket
     atomically $ do
       visitorData <- readTVar visitorDataTVar
       writeTVar visitorDataTVar $ visitorData {
@@ -108,11 +135,12 @@ createVisitorSession visitorDataTVar = do
           Nothing -> VDPSClosed
       }
 
-  resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVar
+  resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVar visitorId visitorMapTVar
+
   return (visitorSessionId, visitorSessionDataTVar)
 
-resetVisitorSessionExpiry :: VisitorSessionDataTVar -> Integer -> VisitorDataTVar -> IO ()
-resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVar = do
+resetVisitorSessionExpiry :: VisitorSessionDataTVar -> Integer -> VisitorDataTVar -> Text -> VisitorMapTVar -> IO ()
+resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVar visitorId visitorMapTVar = do
   (oldVisitorSessionExpiryAbortTVar, newVisitorSessionExpiryAbortTVar) <- atomically $ do
     visitorSessionData <- readTVar visitorSessionDataTVar
     let oldVisitorSessionExpiryAbortTVar' = vsdVisitorSessionExpiryAbortTVar visitorSessionData
@@ -126,9 +154,19 @@ resetVisitorSessionExpiry visitorSessionDataTVar visitorSessionId visitorDataTVa
   -- create the new timeout
   setTimeout 20 newVisitorSessionExpiryAbortTVar $ deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar
 
+  -- also reset the visitor expiry
+  resetVisitorExpiry visitorDataTVar visitorId visitorMapTVar
+
 deleteVisitorSession :: VisitorSessionDataTVar -> Integer -> VisitorDataTVar -> IO ()
 deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar = do
   putStrLn "Visitor session cleanup triggered"
+  xxx <- atomically $ do
+    visitorData <- readTVar visitorDataTVar
+    visitorSessionData <- readTVar visitorSessionDataTVar
+    return (visitorData, visitorSessionData)
+  print xxx
+  -- TODO remove
+
   maybeProxySocketToClose <- atomically $ do
     -- remove the visitor session from the visitor sessions map
     visitorData <- readTVar visitorDataTVar
@@ -146,3 +184,17 @@ deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar = d
     Just proxySocket -> sClose proxySocket
     Nothing -> return ()
 
+handleMessageFromProxy :: ChatServerMessageType -> ByteString -> ProxySendChan -> VisitorDataTVar -> IO ()
+handleMessageFromProxy messageType encodedParams proxySendChan visitorDataTVar = do
+  case messageType of
+    --LocateSiteMessage -> unpackAndHandle $ \(siteId) -> handleLocateSiteMessage siteId proxySendChan siteMapTVar
+    _ -> do
+      putStrLn "Proxy sent an unknown command"
+      atomically $ closeProxySocket proxySendChan
+  where
+    unpackAndHandle handleFunction =
+      case unpackMessage encodedParams of
+        Just params -> handleFunction params
+        Nothing -> do
+          putStrLn "Proxy connection dropped due to message unpack failure."
+          atomically $ closeProxySocket proxySendChan
