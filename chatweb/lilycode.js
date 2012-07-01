@@ -154,10 +154,12 @@
 	function ajaxJsonLongPoll() {
 		var longPollRequestObject = { i: lastInSequence };
 		if (visitorId !== null) {
-			window.console.log('setting visitorId to ' + visitorId);
 			longPollRequestObject.v = visitorId;
 		}
-		if (visitorSessionId !== null) {
+		if (visitorSessionId === null) {
+			// if we're creating a new session, send siteId
+			longPollRequestObject.siteId = siteId;
+		} else {
 			longPollRequestObject.s = visitorSessionId;
 		}
 

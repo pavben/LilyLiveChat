@@ -41,20 +41,6 @@ jsonToMP CSMTUnregisteredActivateAdmin [J.String sessionId] =
 jsonToMP CSMTUnregisteredIsOperatorActivated [J.Number (DAN.I operatorId)] =
   createMessage CSMTUnregisteredIsOperatorActivated (fromInteger operatorId :: Int)
 
-jsonToMP CustomerJoinMessage [J.String visitorId, J.String currentPage, J.String referrer] =
-  let
-    maybeVisitorId = if not $ T.null visitorId then Just visitorId else Nothing
-    maybeCurrentPage = if not $ T.null currentPage then Just currentPage else Nothing
-    maybeReferrer = if not $ T.null referrer then Just referrer else Nothing
-  in
-    createMessage CustomerJoinMessage (maybeVisitorId, maybeCurrentPage, maybeReferrer)
-
-jsonToMP CustomerSendChatMessage [J.String text] =
-  createMessage CustomerSendChatMessage (text)
-
-jsonToMP CustomerEndingChatMessage [] =
-  createMessage CustomerEndingChatMessage ()
-
 jsonToMP OperatorLoginRequestMessage [J.String sessionId] =
   createMessage OperatorLoginRequestMessage (sessionId)
 
@@ -114,26 +100,8 @@ messageToJson CSMTUnregisteredActivateAdminFailure encodedParams =
 messageToJson CSMTUnregisteredIsOperatorActivatedResponse encodedParams =
   unpackAndHandle encodedParams $ \(isActivated :: Bool) -> [J.toJSON (messageTypeToId CSMTUnregisteredIsOperatorActivatedResponse), J.toJSON isActivated]
 
-messageToJson CustomerJoinSuccessMessage encodedParams =
-  unpackAndHandle encodedParams $ \(color :: Text) -> [J.toJSON (messageTypeToId CustomerJoinSuccessMessage), J.toJSON color]
-
-messageToJson CustomerInLinePositionMessage encodedParams =
-  unpackAndHandle encodedParams $ \(position :: Int) -> [J.toJSON (messageTypeToId CustomerInLinePositionMessage), J.toJSON position]
-
-messageToJson CustomerNowTalkingToMessage encodedParams =
-  unpackAndHandle encodedParams $ \(name :: Text, color :: Text, title :: Text, iconUrl :: Text) -> [J.toJSON (messageTypeToId CustomerNowTalkingToMessage), J.toJSON name, J.toJSON color, J.toJSON title, J.toJSON iconUrl]
-
-messageToJson CustomerReceiveChatMessage encodedParams =
-  unpackAndHandle encodedParams $ \(text :: Text) -> [J.toJSON (messageTypeToId CustomerReceiveChatMessage), J.toJSON text]
-
 messageToJson SomethingWentWrongMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId SomethingWentWrongMessage)]
-
-messageToJson CustomerChatEndedMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CustomerChatEndedMessage)]
-
-messageToJson CustomerNoOperatorsAvailableMessage encodedParams =
-  unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CustomerNoOperatorsAvailableMessage)]
 
 messageToJson CSUnavailableMessage encodedParams =
   unpackAndHandle encodedParams $ \() -> [J.toJSON (messageTypeToId CSUnavailableMessage)]

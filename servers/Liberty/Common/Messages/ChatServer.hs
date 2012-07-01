@@ -65,7 +65,7 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSSASiteCreateUnavailableMessage
                            | CSMTAdminSendOperatorWelcomeEmail
                            | CSMTUnregisteredActivateAdminFailure
-                           | CustomerJoinSuccessMessage
+                           | CSMTVisitorJoinSuccess
                            | CSUnavailableMessage
                            | CSMTVisitorOnPage
                            | CSMTOperatorCustomerOnPage
@@ -82,6 +82,7 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSMTUnregisteredActivateAdmin
                            | CSMTUnregisteredClientIp
                            | CSMTOperatorCustomerLocation
+                           | CSMTVisitorJoin
   deriving (Show, Eq, Ord)
 
 messageIdsAndTypes :: [(Int, ChatServerMessageType)]
@@ -142,7 +143,7 @@ messageIdsAndTypes = [
     (54, CSSASiteCreateUnavailableMessage),
     (55, CSMTAdminSendOperatorWelcomeEmail),
     (56, CSMTUnregisteredActivateAdminFailure),
-    (57, CustomerJoinSuccessMessage),
+    (57, CSMTVisitorJoinSuccess),
     (58, CSUnavailableMessage),
     (59, CSMTVisitorOnPage),
     (60, CSMTOperatorCustomerOnPage),
@@ -158,7 +159,8 @@ messageIdsAndTypes = [
     (70, CSMTUnregisteredIsOperatorActivatedResponse),
     (71, CSMTUnregisteredActivateAdmin),
     (72, CSMTUnregisteredClientIp),
-    (73, CSMTOperatorCustomerLocation)
+    (73, CSMTOperatorCustomerLocation),
+    (74, CSMTVisitorJoin)
   ]
 
 instance MessageType ChatServerMessageType where

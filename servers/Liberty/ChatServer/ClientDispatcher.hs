@@ -9,11 +9,10 @@ import Prelude hiding (catch)
 import Liberty.ChatServer.Client
 import Liberty.ChatServer.SiteMap
 import Liberty.ChatServer.Types
-import Liberty.ChatServer.VisitorClientMap
 import Liberty.Common.Utils
 
-runClientDispatcher :: SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
-runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar = do
+runClientDispatcher :: SiteMapTVar -> SiteDataSaverChan -> IO ()
+runClientDispatcher siteMapTVar siteDataSaverChan = do
   eitherListenerSocket <- try $ socket AF_INET Stream 0 -- create the socket
   case eitherListenerSocket of
     Right listenerSocket ->
@@ -22,7 +21,7 @@ runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar = do
         (do
           hostEntry <- BSD.getHostByName $ getLocalServiceHost "anivia"
           initializeListenerSocket listenerSocket (BSD.hostAddress hostEntry) 9800
-          acceptLoop listenerSocket siteMapTVar siteDataSaverChan visitorClientMapTVar
+          acceptLoop listenerSocket siteMapTVar siteDataSaverChan
         )
         (sClose listenerSocket) -- close the listener socket regardless of exception being raised
       )
@@ -35,7 +34,7 @@ runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar = do
       putStrLn "Retrying in 5 seconds..."
       -- on failure, wait and try binding again
       threadDelay (5000 * 1000)
-      runClientDispatcher siteMapTVar siteDataSaverChan visitorClientMapTVar
+      runClientDispatcher siteMapTVar siteDataSaverChan
 
 -- Exceptions handled by caller
 initializeListenerSocket :: Socket -> HostAddress -> PortNumber -> IO ()
@@ -46,11 +45,11 @@ initializeListenerSocket listenerSocket hostAddress portNumber = do
   listen listenerSocket 1000
 
 -- Exceptions handled by caller
-acceptLoop :: Socket -> SiteMapTVar -> SiteDataSaverChan -> VisitorClientMapTVar -> IO ()
-acceptLoop listenerSocket siteMapTVar siteDataSaverChan visitorClientMapTVar = do
+acceptLoop :: Socket -> SiteMapTVar -> SiteDataSaverChan -> IO ()
+acceptLoop listenerSocket siteMapTVar siteDataSaverChan = do
   (clientSocket, clientSockAddr) <- accept listenerSocket
   putStrLn $ "Client connected with address: " ++ show clientSockAddr
-  _ <- forkIO $ initializeClient clientSocket siteMapTVar siteDataSaverChan visitorClientMapTVar
+  _ <- forkIO $ initializeClient clientSocket siteMapTVar siteDataSaverChan
   -- and loop around
-  acceptLoop listenerSocket siteMapTVar siteDataSaverChan visitorClientMapTVar
+  acceptLoop listenerSocket siteMapTVar siteDataSaverChan
 

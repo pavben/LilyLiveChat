@@ -24,7 +24,8 @@ data VisitorData = VisitorData {
   vdNextSessionId :: Integer,
   vdChatSessions :: [ChatSessionDataTVar],
   vdProxyStatus :: VisitorDataProxyStatus,
-  vdVisitorExpiryAbortTVar :: TVar Bool
+  vdConnectionExpiryAbortTVar :: TVar Bool, -- timeout to make the visitor inactive when no sessions for some time
+  vdVisitorExpiryAbortTVar :: TVar Bool -- this one expires the visitor completely
 } deriving (Show)
 
 type VisitorDataTVar = TVar VisitorData

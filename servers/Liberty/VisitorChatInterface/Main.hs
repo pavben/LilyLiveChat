@@ -3,7 +3,6 @@ module Main (
 ) where
 import Control.Concurrent
 import Control.Monad (forever)
-import Liberty.VisitorChatInterface.Types
 import Liberty.VisitorChatInterface.VisitorMap
 import Liberty.VisitorChatInterface.WebDispatcher
 

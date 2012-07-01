@@ -34,9 +34,6 @@ import Data.Text.Lazy (Text)
 import Network.Socket (Socket)
 import Liberty.ChatServer.Constants
 
--- CONSIDER: Get rid of OtherClientData and ClientDataTVar in favor of UnregisteredDataTVar, CustomerDataTVar, OperatorDataTVar
--- Note: Think about how createAndSendMessage will be done in this case
-
 -- Client
 data ClientData = ClientData {
   cdSocket :: Socket,
@@ -48,7 +45,6 @@ data OtherClientData = OCDClientUnregistered (Maybe SiteDataTVar) | OCDClientCus
   deriving (Show)
 data ClientCustomerData = ClientCustomerData {
   ccdColor :: Text,
-  ccdVisitorId :: Maybe Text,
   ccdCurrentPage :: Maybe Text,
   ccdReferrer :: Maybe Text,
   ccdSiteDataTVar :: SiteDataTVar,
@@ -93,7 +89,8 @@ data SiteData = SiteData {
   sdAdminUserIds :: [Text],
   sdOnlineAdmins :: [ClientDataTVar],
   sdNextSessionId :: Integer,
-  sdSessionsWaiting :: [ChatSessionTVar]
+  sdSessionsWaiting :: [ChatSessionTVar],
+  sdVisitors :: [ClientDataTVar]
 } deriving (Show)
 data SiteOperatorData = SiteOperatorData {
   sodOperatorId :: Integer,

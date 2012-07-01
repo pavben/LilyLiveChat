@@ -17,13 +17,14 @@ Server to Unregistered
 
 Customer to Server
 ================================================================
+74 - CSMTVisitorJoin
 1  - CustomerJoinMessage [visitorId, referrer]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
 
 Server to Customer
 ================================================================
-57 - CustomerJoinSuccessMessage [color]
+57 - CSMTVisitorJoinSuccess
 2  - CustomerInLinePositionMessage [i:position]
 3  - CustomerNowTalkingToMessage [name, color, iconUrl]
 5  - CustomerReceiveChatMessage [text]
@@ -79,7 +80,7 @@ SA to Server
 41 - CSSALoginRequestMessage
 42 - CSSASiteCreateMessage [siteId, name]
 43 - CSSASiteDeleteMessage [siteId]
-59 - CSMTVisitorOnPage [visitorId, url]
+-59 - CSMTVisitorOnPage [visitorId, url]
 44 - CSMTSAGetSiteInfo [siteId]
 66 - CSMTSASetSitePlan [siteId, planId]
 

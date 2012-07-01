@@ -20,16 +20,12 @@ import Data.Maybe
 import Data.Ord
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
-import qualified Data.Vector as V
 import qualified Network.BSD as BSD
 import Network.HTTP
 import Network.Socket
-import Network.Socket.ByteString.Lazy (sendAll)
 import Prelude hiding (catch)
 import Liberty.VisitorChatInterface.Types
 import Liberty.VisitorChatInterface.VisitorMap
-import Liberty.Common.Messages
-import Liberty.Common.Messages.ChatServer
 import Liberty.Common.Timeouts
 import Liberty.Common.Utils
 
@@ -108,59 +104,84 @@ receiveHttpRequestLoop handleStream visitorMapTVar = do
                 (Just (J.String (LT.fromStrict -> visitorId)), Just (J.Number (DAN.I sessionId)), Just (J.Number (DAN.I inSequence)), Just (J.Array messageArray), _) ->
                   return ()
                 -- long poll request
-                (readMaybeString -> maybeVisitorId, readMaybeInteger -> maybeVisitorSessionId, Nothing, Nothing, Just (J.Number (DAN.I outSequence))) -> do
-                  -- TODO ULTRALOW: The above lookup is not atomic. We might end up creating a visitor session for a visitor that's been pulled from the map
-                  maybeVisitorAndVisitorSession <- do
-                    visitorMap <- atomically $ readTVar visitorMapTVar
-                    case maybeVisitorId of
-                      Just visitorId ->
-                        case Map.lookup visitorId visitorMap of
-                          Just visitorDataTVar -> do
-                            -- valid visitorId
-                            visitorData <- atomically $ readTVar visitorDataTVar
-                            case maybeVisitorSessionId of
-                              Just visitorSessionId ->
-                                case Map.lookup visitorSessionId (vdSessions visitorData) of
-                                  Just visitorSessionDataTVar ->
-                                    -- valid visitorId and visitorSessionId
-                                    return $ Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, False)
-                                  Nothing ->
-                                    -- valid visitorId, but invalid visitorSessionId
-                                    return Nothing
-                              Nothing -> do
-                                (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar
-                                return $ Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, True)
-                          Nothing ->
-                            -- visitorId provided is invalid
-                            -- in this case, treat is as no visitorId as long as there's also no visitorSessionId
-                            case maybeVisitorSessionId of
-                              Just _ -> return Nothing
-                              Nothing -> do
-                                (visitorId, visitorDataTVar) <- createVisitor visitorMapTVar
-                                (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar
-                                return $ Just (visitorId, visitorDataTVar, True, visitorSessionId, visitorSessionDataTVar, True)
-                      Nothing -> do
-                        -- no visitorId provided
-                        (visitorId, visitorDataTVar) <- createVisitor visitorMapTVar
-                        (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar
-                        return $ Just (visitorId, visitorDataTVar, True, visitorSessionId, visitorSessionDataTVar, True)
+                (readMaybeString -> maybeVisitorId, readMaybeInteger -> maybeVisitorSessionId, Nothing, Nothing, Just (J.Number (DAN.I outSequence))) ->
+                  let
+                    maybeSiteId = readMaybeString $ HMS.lookup "siteId" requestJsonObject
+                    maybeClientIp = fmap LT.pack $ lookupHeader (HdrCustom "X-Real-IP") $ rqHeaders request
+                    maybeSiteIdAndClientIp =
+                      case (maybeSiteId, maybeClientIp) of
+                        (Just siteId, Just clientIp) -> Just (siteId, clientIp)
+                        _ -> Nothing
+                  in do
+                    -- TODO ULTRALOW: The above lookup is not atomic. We might end up creating a visitor session for a visitor that's been pulled from the map
+                    maybeVisitorAndVisitorSession <- do
+                      visitorMap <- atomically $ readTVar visitorMapTVar
+                      case maybeVisitorId of
+                        Just providedVisitorId ->
+                          case Map.lookup providedVisitorId visitorMap of
+                            Just visitorDataTVar -> do
+                              -- valid providedVisitorId
+                              visitorData <- atomically $ readTVar visitorDataTVar
+                              case maybeVisitorSessionId of
+                                Just visitorSessionId ->
+                                  case Map.lookup visitorSessionId (vdSessions visitorData) of
+                                    Just visitorSessionDataTVar ->
+                                      -- valid providedVisitorId and visitorSessionId
+                                      return $ Just (providedVisitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, False)
+                                    Nothing ->
+                                      -- valid providedVisitorId, but invalid visitorSessionId
+                                      return Nothing
+                                Nothing ->
+                                  case maybeSiteIdAndClientIp of
+                                    Just (siteId, clientIp) -> do
+                                      (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar providedVisitorId visitorMapTVar siteId clientIp
+                                      return $ Just (providedVisitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, True)
+                                    Nothing ->
+                                      -- session create request without siteId or clientIp
+                                      return Nothing
+                            Nothing ->
+                              -- visitorId provided is invalid
+                              -- in this case, treat is as no visitorId as long as there's also no visitorSessionId
+                              case maybeVisitorSessionId of
+                                Just _ -> return Nothing
+                                Nothing ->
+                                  case maybeSiteIdAndClientIp of
+                                    Just (siteId, clientIp) -> do
+                                      (visitorId, visitorDataTVar) <- createVisitor visitorMapTVar
+                                      (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar siteId clientIp
+                                      return $ Just (visitorId, visitorDataTVar, True, visitorSessionId, visitorSessionDataTVar, True)
+                                    Nothing ->
+                                      -- session create request without siteId or clientIp
+                                      return Nothing
+                        Nothing ->
+                          -- no visitorId provided
+                          case maybeSiteIdAndClientIp of
+                            Just (siteId, clientIp) -> do
+                              (visitorId, visitorDataTVar) <- createVisitor visitorMapTVar
+                              (visitorSessionId, visitorSessionDataTVar) <- createVisitorSession visitorDataTVar visitorId visitorMapTVar siteId clientIp
+                              return $ Just (visitorId, visitorDataTVar, True, visitorSessionId, visitorSessionDataTVar, True)
+                            Nothing ->
+                              -- session create request without siteId or clientIp
+                              return Nothing
 
-                  print maybeVisitorAndVisitorSession
+                    print maybeVisitorAndVisitorSession
 
-                  case maybeVisitorAndVisitorSession of
-                    Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, False) ->
-                      handleLongPoll handleStream visitorSessionDataTVar outSequence visitorSessionId visitorDataTVar visitorId visitorMapTVar
-                    Just (visitorId, visitorDataTVar, isNewVisitor, visitorSessionId, visitorSessionDataTVar, _) ->
-                      let
-                        visitorIdJson = if isNewVisitor then [("v", J.toJSON visitorId)] else []
-                      in
-                        sendJsonResponse handleStream $ J.object $ visitorIdJson ++ [
-                          ("s", J.toJSON visitorSessionId),
-                          ("m", J.toJSON ([] :: [()]))
-                          ]
-                    Nothing ->
-                      -- invalid visitorSessionId? tell the client that their session has ended
-                      sendLongPollJsonResponse handleStream [] False
+                    case maybeVisitorAndVisitorSession of
+                      Just (visitorId, visitorDataTVar, False, visitorSessionId, visitorSessionDataTVar, False) ->
+                        handleLongPoll handleStream visitorSessionDataTVar outSequence visitorSessionId visitorDataTVar visitorId visitorMapTVar
+                      Just (visitorId, _, isNewVisitor, visitorSessionId, _, _) ->
+                        let
+                          visitorIdJson = if isNewVisitor then [("v", J.toJSON visitorId)] else []
+                        in
+                          sendJsonResponse handleStream $ J.object $ visitorIdJson ++ [
+                            ("s", J.toJSON visitorSessionId),
+                            ("m", J.toJSON ([] :: [()]))
+                            ]
+                      Nothing ->
+                        -- invalid visitorSessionId? tell the client that their session has ended
+                        sendLongPollJsonResponse handleStream [] False
+                _ ->
+                  return ()
               where
                 readMaybeString (Just (J.String (LT.fromStrict -> s))) = Just s
                 readMaybeString _ = Nothing
@@ -168,15 +189,10 @@ receiveHttpRequestLoop handleStream visitorMapTVar = do
                 readMaybeInteger _ = Nothing
             Nothing -> return () -- cannot decode JSON object in request body
         OPTIONS ->
-          let
-            headers = [
-              mkHeader (HdrCustom "Access-Control-Allow-Origin") "*",
-              mkHeader (HdrCustom "Access-Control-Allow-Methods") "POST",
-              mkHeader (HdrCustom "Access-Control-Allow-Headers") "Content-Type",
-              mkHeader (HdrCustom "Access-Control-Max-Age") "300"
-              ]
-          in
-            respondHTTP handleStream $ Response (2,0,0) "OK" headers LBS.empty
+          sendOptionsResponse handleStream
+        _ ->
+          -- invalid HTTP method
+          return ()
     Left connError -> do
       print connError
 
@@ -403,7 +419,7 @@ standardHeaders = [
   mkHeader (HdrCustom "Access-Control-Allow-Origin") "*",
   mkHeader (HdrCustom "Access-Control-Allow-Methods") "POST",
   mkHeader (HdrCustom "Access-Control-Allow-Headers") "Content-Type",
-  mkHeader (HdrCustom "Access-Control-Max-Age") "10"
+  mkHeader (HdrCustom "Access-Control-Max-Age") "300"
   ]
 
 sendOptionsResponse :: HandleStream ByteString -> IO ()

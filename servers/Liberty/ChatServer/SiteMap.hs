@@ -97,5 +97,5 @@ getSiteDataFromRaw (siteId, planId, name, nextOperatorId, rawOperators, adminUse
       ) ->
       SiteOperatorData (toInteger operatorId) operatorName operatorColor operatorTitle operatorIconUrl operatorUserId operatorActivationToken
   in
-    SiteData siteId (fromMaybe FreePlan $ getPlanById planId) name (toInteger nextOperatorId) operatorsToSiteData [] adminUserIds [] 0 []
+    SiteData siteId (fromMaybe FreePlan $ getPlanById planId) name (toInteger nextOperatorId) operatorsToSiteData [] adminUserIds [] 0 [] []
 

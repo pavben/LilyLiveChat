@@ -9,6 +9,9 @@ import Control.Monad.STM
 
 setTimeout :: Int -> TVar Bool -> IO () -> IO ()
 setTimeout seconds abortTVar timeoutAction = do
+  -- reset the abort tvar to avoid an instant abort
+  atomically $ writeTVar abortTVar False
+
   timeoutTVar <- atomically $ newTVar False
   -- timeout notification thread
   -- TODO PL: possibly add killThread to terminate the wait if abortTriggered becomes true before timeoutTriggered
