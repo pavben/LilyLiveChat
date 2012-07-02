@@ -83,6 +83,7 @@ data ChatServerMessageType = CustomerJoinMessage
                            | CSMTUnregisteredClientIp
                            | CSMTOperatorCustomerLocation
                            | CSMTVisitorJoin
+                           | CSMTVisitorSetChatWindowStatus
   deriving (Show, Eq, Ord)
 
 messageIdsAndTypes :: [(Int, ChatServerMessageType)]
@@ -160,7 +161,8 @@ messageIdsAndTypes = [
     (71, CSMTUnregisteredActivateAdmin),
     (72, CSMTUnregisteredClientIp),
     (73, CSMTOperatorCustomerLocation),
-    (74, CSMTVisitorJoin)
+    (74, CSMTVisitorJoin),
+    (75, CSMTVisitorSetChatWindowStatus)
   ]
 
 instance MessageType ChatServerMessageType where

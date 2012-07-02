@@ -3,7 +3,7 @@ module Main (
 ) where
 import Control.Concurrent
 import Control.Monad (forever)
-import Liberty.VisitorChatInterface.VisitorMap
+import Liberty.VisitorChatInterface.Visitor
 import Liberty.VisitorChatInterface.WebDispatcher
 
 main :: IO ()

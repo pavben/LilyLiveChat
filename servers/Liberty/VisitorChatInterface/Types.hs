@@ -8,15 +8,19 @@ module Liberty.VisitorChatInterface.Types (
   VisitorSessionDataTVar,
   ChatSessionData(..),
   ChatSessionDataTVar,
-  VisitorMapTVar
+  VisitorMapTVar,
+  ProxySendChanMessage(..),
+  ProxySendChan,
+  MessageHandlerFunction
 ) where
+import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import qualified Data.Aeson as J
+import Data.ByteString.Lazy (ByteString)
 import Data.Text.Lazy (Text)
 import Data.Map (Map)
-import Network.Socket (Socket)
 
-data VisitorDataProxyStatus = VDPSClosed | VDPSConnecting | VDPSConnected Socket
+data VisitorDataProxyStatus = VDPSClosed | VDPSConnecting | VDPSConnected ProxySendChan
   deriving (Show)
 
 data VisitorData = VisitorData {
@@ -24,8 +28,9 @@ data VisitorData = VisitorData {
   vdNextSessionId :: Integer,
   vdChatSessions :: [ChatSessionDataTVar],
   vdProxyStatus :: VisitorDataProxyStatus,
+  vdChatWindowOpen :: Bool, -- true if the visitor has the chat window expanded
   vdConnectionExpiryAbortTVar :: TVar Bool, -- timeout to make the visitor inactive when no sessions for some time
-  vdVisitorExpiryAbortTVar :: TVar Bool -- this one expires the visitor completely
+  vdVisitorExpiryAbortTVar :: TVar Bool -- this timeout expires the visitor completely, including the cached chat logs
 } deriving (Show)
 
 type VisitorDataTVar = TVar VisitorData
@@ -49,7 +54,16 @@ type ChatSessionDataTVar = TVar ChatSessionData
 type VisitorMap = Map Text VisitorDataTVar
 type VisitorMapTVar = TVar VisitorMap
 
+-- ProxySendChan
+data ProxySendChanMessage = SendMessage ByteString | CloseSocket
+type ProxySendChan = TChan ProxySendChanMessage
+
+type MessageHandlerFunction a b = a -> ByteString -> ProxySendChan -> b -> IO ()
+
 -- Show instances
+instance Show (TChan a) where
+  show _ = "TChan"
+
 instance Show (TVar a) where
   show _ = "TVar"
 

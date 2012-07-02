@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Liberty.VisitorChatInterface.VisitorMap (
+module Liberty.VisitorChatInterface.Visitor (
   createVisitorMapTVar,
   createVisitor,
   createVisitorSession,
@@ -13,10 +13,8 @@ import Control.Monad
 import Control.Monad.STM
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map as Map
-import Data.Maybe
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
-import Network.Socket hiding (recv)
 import Liberty.Common.Messages
 import Liberty.Common.Messages.ChatServer
 import Liberty.Common.RandomString
@@ -38,7 +36,7 @@ createVisitor visitorMapTVar = do
       Nothing -> do
         connectionExpiryAbortTVar <- newTVar True
         visitorExpiryAbortTVar <- newTVar True
-        newVisitorDataTVar <- newTVar $ VisitorData Map.empty 0 [] VDPSClosed connectionExpiryAbortTVar visitorExpiryAbortTVar
+        newVisitorDataTVar <- newTVar $ VisitorData Map.empty 0 [] VDPSClosed False connectionExpiryAbortTVar visitorExpiryAbortTVar
         writeTVar visitorMapTVar $ Map.insert newVisitorId newVisitorDataTVar visitorMap
         return $ Just newVisitorDataTVar
 
@@ -66,22 +64,16 @@ resetVisitorExpiry visitorDataTVar visitorId visitorMapTVar = do
 deleteVisitor :: VisitorDataTVar -> Text -> VisitorMapTVar -> IO ()
 deleteVisitor visitorDataTVar visitorId visitorMapTVar = do
   putStrLn "Visitor cleanup triggered"
-  maybeProxySocket <- atomically $ do
+  atomically $ do
     visitorData <- readTVar visitorDataTVar
 
     -- remove the visitor from the visitor map
     visitorMap <- readTVar visitorMapTVar
     writeTVar visitorMapTVar $ Map.delete visitorId visitorMap
     
-    -- return the proxy socket so that it can be closed
-    return $ case vdProxyStatus visitorData of
-      VDPSConnected proxySocket -> Just proxySocket
-      _ -> Nothing
-
-  -- close the proxy socket, if any
-  case maybeProxySocket of
-    Just proxySocket -> sClose proxySocket
-    Nothing -> return ()
+    case vdProxyStatus visitorData of
+      VDPSConnected proxySendChan -> closeProxySocket proxySendChan
+      _ -> return ()
 
   return ()
 
@@ -121,17 +113,15 @@ createVisitorSession visitorDataTVar visitorId visitorMapTVar siteId clientIp = 
           atomically $ do
             createAndSendMessage CSMTUnregisteredClientIp (clientIp) proxySendChan
             createAndSendMessage UnregisteredSelectSiteMessage (siteId) proxySendChan
-          return ()
-      Nothing -> return ()
 
-    -- update vdProxyStatus with the appropriate value based on maybeProxySocket
-    atomically $ do
-      visitorData <- readTVar visitorDataTVar
-      writeTVar visitorDataTVar $ visitorData {
-        vdProxyStatus = case maybeProxySocket of
-          Just proxySocket -> VDPSConnected proxySocket
-          Nothing -> VDPSClosed
-      }
+            -- update vdProxyStatus with proxySendChan
+            visitorData <- readTVar visitorDataTVar
+            writeTVar visitorDataTVar $ visitorData { vdProxyStatus = VDPSConnected proxySendChan }
+      Nothing ->
+        atomically $ do
+          -- update vdProxyStatus with proxySendChan
+          visitorData <- readTVar visitorDataTVar
+          writeTVar visitorDataTVar $ visitorData { vdProxyStatus = VDPSClosed }
 
   -- if this is the first session being created, abort the connection expiry timeout (if one exists) because the visitor returned within the allowed time to avoid losing the connection to the chat server
   when isFirstSession $ void $ abortTimeout $ connectionExpiryAbortTVar
@@ -186,20 +176,17 @@ deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar = d
     putStrLn "Setting connectionExpiry timeout"
     setTimeout 20 connectionExpiryAbortTVar $ do
       putStrLn "Closing proxy connection due to visitor inactivity"
-      maybeIoToRun <- atomically $ do
+      atomically $ do
         visitorData <- readTVar visitorDataTVar
 
         case vdProxyStatus visitorData of
-          VDPSConnected proxySocket -> do
+          VDPSConnected proxySendChan -> do
             -- if we are connected, mark that the socket has been closed and return the socket to be closed
             writeTVar visitorDataTVar $ visitorData {
               vdProxyStatus = VDPSClosed
             }
-            return $ Just $ sClose proxySocket
-          _ -> return Nothing
-
-      -- if there is an IO function to run, do it here
-      fromMaybe (return ()) maybeIoToRun
+            closeProxySocket proxySendChan
+          _ -> return ()
   else
     -- no need to set connection expiry timeout
     return ()
@@ -213,7 +200,7 @@ handleMessageFromProxy messageType encodedParams proxySendChan visitorDataTVar =
       atomically $ createAndSendMessage CSMTVisitorJoin () proxySendChan
     UnregisteredSiteInvalidMessage -> unpackAndHandle $ \() -> do
       putStrLn "Invalid siteId"
-    CSMTVisitorJoinSuccess -> unpackAndHandle $ \() -> do
+    CSMTVisitorJoinSuccess -> unpackAndHandle $ \(isOperatorAvailable :: Bool) -> do
       putStrLn "Visitor joined successfully"
     CSUnavailableMessage -> unpackAndHandle $ \() -> do
       putStrLn "Service unavailable"

@@ -18,12 +18,7 @@ import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (sendAll, recv)
 import Prelude hiding (catch)
 import Liberty.Common.Messages
-
--- ProxySendChan
-data ProxySendChanMessage = SendMessage ByteString | CloseSocket
-type ProxySendChan = TChan ProxySendChanMessage
-
-type MessageHandlerFunction a b = a -> ByteString -> ProxySendChan -> b -> IO ()
+import Liberty.VisitorChatInterface.Types
 
 initializeProxyConnection :: MessageType a => Socket -> MessageHandlerFunction a b -> b -> IO () -> IO ProxySendChan
 initializeProxyConnection proxySocket messageHandlerFunction paramsFromMain onCloseCallback = do

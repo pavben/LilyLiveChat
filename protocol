@@ -21,6 +21,7 @@ Customer to Server
 1  - CustomerJoinMessage [visitorId, referrer]
 4  - CustomerSendChatMessage [text]
 6  - CustomerEndingChatMessage
+75 - CSMTVisitorSetChatWindowStatus [b:isOpen]
 
 Server to Customer
 ================================================================

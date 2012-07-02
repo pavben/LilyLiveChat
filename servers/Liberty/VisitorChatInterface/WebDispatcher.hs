@@ -25,7 +25,7 @@ import Network.HTTP
 import Network.Socket
 import Prelude hiding (catch)
 import Liberty.VisitorChatInterface.Types
-import Liberty.VisitorChatInterface.VisitorMap
+import Liberty.VisitorChatInterface.Visitor
 import Liberty.Common.Timeouts
 import Liberty.Common.Utils
 

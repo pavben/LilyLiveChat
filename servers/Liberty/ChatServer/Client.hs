@@ -350,8 +350,10 @@ handleCSMTVisitorJoin clientDataTVar siteDataTVar = do
       sdVisitors = clientDataTVar : sdVisitors siteData
     }
 
+    let isOperatorAvailable = not $ null $ sdOnlineOperators siteData
+
     -- notify the client that they've joined successfully and tell them their color
-    createAndSendMessage CSMTVisitorJoinSuccess () clientDataTVar
+    createAndSendMessage CSMTVisitorJoinSuccess (isOperatorAvailable) clientDataTVar
 
     -- TODO: notify all who are concerned about this visitor joining
     return ()
