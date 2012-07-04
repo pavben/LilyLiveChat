@@ -144,8 +144,61 @@
 	}
 
 	var Messages = {
-		VMTJoinSuccess : 1
+		VMTJoinSuccess : 1,
+		VMTSetChatWindowStatus : 2
 	};
+
+	function queueAjaxCommand(data) {
+		ajaxCommandQueue.push({
+			o: nextOutSequence++,
+			m: data
+		});
+
+		if (!ajaxCommandSendInProgress) {
+			setTimeout(sendAjaxCommands, 0);
+		}
+	}
+
+	function sendAjaxCommands() {
+		// these aren't required to queue, but they are required to send
+		if (visitorId === null || visitorSessionId === null) {
+			return;
+		}
+
+		if (!ajaxCommandSendInProgress && ajaxCommandQueue.length > 0) {
+			ajaxCommandSendInProgress = true;
+
+			var currentMessageObject = ajaxCommandQueue.shift();
+
+			// add/update visitorId/visitorSessionId
+			currentMessageObject.v = visitorId;
+			currentMessageObject.s = visitorSessionId;
+
+			/* we now have:
+			 * v: ...,      visitorId
+			 * s: ...,		visitorSessionId
+			 * o: ...,		out sequence
+			 * m: [...]		message data
+			 */
+
+			ajaxJson(
+				currentMessageObject,
+				function(data) {
+					ajaxCommandSendInProgress = false;
+					// immediately after, send the next entry (if any)
+					setTimeout(sendAjaxCommands, 0);
+				},
+				function (isTimeout) {
+					log('Send error: isTimeout = ' + isTimeout);
+					// re-add the command to the beginning to retry when possible
+					ajaxCommandQueue.unshift(currentMessageObject);
+					ajaxCommandSendInProgress = false;
+					setTimeout(sendAjaxCommands, 1000); // schedule a retry in 1 second
+				},
+				5000
+			);
+		}
+	}
 
 	function handleMessage(message) {
 		messageTypeId = message.shift();
@@ -156,6 +209,8 @@
 				var isOperatorOnline = message[0];
 
 				log('VMTJoinSuccess, operator online = ' + isOperatorOnline);
+
+				queueAjaxCommand([Messages.VMTSetChatWindowStatus, true]);
 				break;
 			default:
 				window.console.log('in handleMessage');

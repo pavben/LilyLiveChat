@@ -213,13 +213,15 @@ handleSendCommand jValues visitorId visitorSessionId visitorMapTVar inSequence h
                 if inSequence == (vsdLastInSequence visitorSessionData) + 1 then do
                   -- parse and handle the message
                   case jValues of
-                    J.Number (DAN.I (visitorMessageIdToType . fromIntegral -> maybeVisitorMessageType)) : messageParamsAsJson ->
+                    J.Number (DAN.I (visitorMessageIdToType . fromIntegral -> maybeVisitorMessageType)) : messageParamsAsJson -> do
                       case maybeVisitorMessageType of
                         Just visitorMessageType -> do
                           writeTVar visitorSessionDataTVar $ visitorSessionData {
                             vsdLastInSequence = inSequence
                           }
-                          return $ Just $ handleMessageFromVisitor visitorMessageType messageParamsAsJson visitorDataTVar
+                          return $ Just $ do
+                            handleMessageFromVisitor visitorMessageType messageParamsAsJson visitorDataTVar
+                            sendJsonResponse handleStream $ J.toJSON (1 :: Int)
                         Nothing ->
                           -- invalid visitor message type
                           return Nothing
@@ -314,151 +316,6 @@ handleLongPoll handleStream visitorSessionDataTVar outSequence visitorSessionId 
       putStrLn "Long poll aborted by client socket activity (likely disconnect)"
       deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar
   return ()
-
-{-
-handleNewSession :: SessionMapTVar -> HandleStream ByteString -> Text -> IO ()
-handleNewSession sessionMapTVar handleStream clientIp = do
-  putStrLn "Request for a new session"
-  putStrLn $ "Client's IP is: " ++ LT.unpack clientIp
-  createSessionResult <- createSession sessionMapTVar
-  case createSessionResult of
-    Just (sessionId, sessionDataTVar) -> do
-      putStrLn "Created new session"
-      sendJsonResponse handleStream $ J.object [("sessionId", J.toJSON sessionId)]
-      -- set the session timeout in case we don't receive any long poll requests
-      resetSessionTimeout sessionDataTVar sessionId sessionMapTVar
-      -- send the client IP to the server
-      maybeProxySocket <- atomically $ do
-        sessionData <- readTVar sessionDataTVar
-        return $ sdProxySocket sessionData
-      case maybeProxySocket of
-        Just proxySocket ->
-          case createMessage CSMTUnregisteredClientIp (clientIp) of
-            Just encodedMessage ->
-              catch
-                (sendAll proxySocket encodedMessage)
-                (\(SomeException ex) ->
-                  putStrLn ("Exception during send to proxy socket: " ++ show ex)
-                )
-            Nothing -> do
-              putStrLn "Failed to encode message"
-              return ()
-        Nothing -> do
-          putStrLn $ "session was just created, but proxySocket is already Nothing?"
-          return ()
-    Nothing -> do
-      putStrLn "Failed to create a new session"
-      return ()
-
-handleSendCommand :: [J.Value] -> SessionDataTVar -> InSequence -> HandleStream ByteString -> IO ()
-handleSendCommand jValues sessionDataTVar inSequence handleStream = do
-  -- first, make sure lastInSequence is inSequence - 1
-  initialSessionData <- atomically $ readTVar sessionDataTVar
-  case sdProxySocket initialSessionData of
-    Just proxySocket ->
-      if inSequence == (sdLastInSequence initialSessionData) + 1 then do
-        print jValues
-        case createMessageFromJson jValues of
-          Just encodedMessage -> do
-            sendSuccess <- catch
-              (sendAll proxySocket encodedMessage >> return True)
-              (\(SomeException ex) -> putStrLn ("Exception during send to proxy socket: " ++ show ex) >> return False)
-
-            case sendSuccess of
-              True ->
-                -- if written successfully, update lastInSequence
-                atomically $ do
-                  sessionData <- readTVar sessionDataTVar
-                  writeTVar sessionDataTVar $ sessionData { sdLastInSequence = inSequence }
-              False -> do
-                -- set proxySocket to Nothing to indicate that this connection is dead
-                sClose proxySocket
-                atomically $ do
-                  sessionData <- readTVar sessionDataTVar
-                  writeTVar sessionDataTVar $ sessionData { sdProxySocket = Nothing }
-            -- regardless of whether or not the send was successful, acknowledge receipt
-            sendJsonResponse handleStream (J.toJSON ())
-          Nothing -> do
-            putStrLn "Failed to encode message"
-            return ()
-      else
-        -- invalid inSequence
-        putStrLn "Closing proxy socket due to invalid inSequence from the client"
-    Nothing -> putStrLn "No proxy socket available."
-
-data LongPollWaitResult = LongPollWaitResultAborted | LongPollWaitResultActivity | LongPollWaitResultTimeout | LongPollWaitResultSuccess [(OutSequence, [J.Value])] Bool
-
-handleLongPoll :: SessionDataTVar -> OutSequence -> HandleStream ByteString -> SessionMapTVar -> SessionId -> IO ()
-handleLongPoll sessionDataTVar outSequence handleStream sessionMapTVar sessionId = do
-  (myLongPollAbortTVar, myLongPollTimeoutTVar, myLongPollActivityTVar, previousLongPollAbortTVar, sessionTimeoutAbortTVar) <- atomically $ do
-    sessionData <- readTVar sessionDataTVar
-    myLongPollAbortTVar' <- newTVar False
-    myLongPollTimeoutTVar' <- newTVar False
-    myLongPollActivityTVar' <- newTVar False
-    writeTVar sessionDataTVar $ sessionData { sdLongPollRequestAbortAndTimeoutTVars = (myLongPollAbortTVar', myLongPollTimeoutTVar') }
-    let (previousLongPollAbortTVar', _) = sdLongPollRequestAbortAndTimeoutTVars sessionData
-    let sessionTimeoutAbortTVar' = sdSessionTimeoutAbortTVar sessionData
-    return (myLongPollAbortTVar', myLongPollTimeoutTVar', myLongPollActivityTVar', previousLongPollAbortTVar', sessionTimeoutAbortTVar')
-
-  -- try to abort, even if there is nothing to
-  void $ abortTimeout previousLongPollAbortTVar
-
-  -- we also need to abort the session timeout as we don't want the session cleaned up
-  -- note: this aborts the session timeout that was there when we took the snapshot, not
-  --   necessarily the current session timeout
-  --   this avoids the race condition of aborting a session timeout created by a more recent request
-  void $ abortTimeout sessionTimeoutAbortTVar
-
-  -- set the long poll timeout
-  setTimeout 60 myLongPollAbortTVar $ do
-    putStrLn "Long poll timeout!"
-    -- set myLongPollTimeoutTVar to True, signalling that this long poll request has timed out
-    atomically $ writeTVar myLongPollTimeoutTVar True
-
-  -- spawn a thread to set the activity tvar if the connection is closed or sends any extra data
-  _ <- forkIO $ setTVarOnConnectionActivity handleStream myLongPollActivityTVar
-
-  waitResult <- atomically $ do
-    sessionData <- readTVar sessionDataTVar
-    -- filter the list to contain only the messages the client has not yet acknowledged receiving
-    let filteredMessageList = filter (\p -> fst p > outSequence) (sdMessagesWaiting sessionData)
-        sessionActive = isJust $ sdProxySocket sessionData
-
-    abortedFlag <- readTVar myLongPollAbortTVar
-    timeoutFlag <- readTVar myLongPollTimeoutTVar
-    activityFlag <- readTVar myLongPollActivityTVar
-
-    case (filteredMessageList, sessionActive, abortedFlag, timeoutFlag, activityFlag) of
-      -- if this request has been replaced by a newer one
-      (_, _, True, _, _) -> return LongPollWaitResultAborted
-      -- if there was activity, we assume the client closed their browser
-      (_, _, False, _, True) -> return LongPollWaitResultActivity
-      -- if this request has timed out (and was not aborted)
-      (_, _, False, True, False) -> return LongPollWaitResultTimeout
-      -- if there is nothing to send, wait until there is
-      ([], True, False, False, False) -> retry
-      -- and in all other cases, there is something to send (the list or sessionActive or both)
-      _ -> do
-        writeTVar sessionDataTVar $ sessionData { sdMessagesWaiting = [] }
-        return $ LongPollWaitResultSuccess filteredMessageList sessionActive
-
-  case waitResult of
-    LongPollWaitResultSuccess filteredMessageList sessionActive -> do
-      sendLongPollJsonResponse handleStream filteredMessageList sessionActive
-      putStrLn "Long poll response sent (if socket was open)"
-      -- set a new session cleanup timeout
-      resetSessionTimeout sessionDataTVar sessionId sessionMapTVar
-    LongPollWaitResultTimeout -> do
-      putStrLn "Long poll aborted by timeout"
-      -- set a new session cleanup timeout, because this session has timed out and was not replaced by a newer one which would have to set the session timeout on its' exit
-      sendLongPollJsonResponse handleStream [] True
-      resetSessionTimeout sessionDataTVar sessionId sessionMapTVar
-    LongPollWaitResultAborted -> putStrLn "Long poll aborted without timeout set"
-    LongPollWaitResultActivity -> do
-      putStrLn "Long poll aborted by client socket activity (likely disconnect)"
-      deleteSession sessionDataTVar sessionId sessionMapTVar
-  return ()
--}
 
 standardHeaders :: [Header]
 standardHeaders = [

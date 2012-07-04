@@ -12,11 +12,13 @@ import Data.Tuple
 import Liberty.VisitorChatInterface.Types
 
 data VisitorMessageType = VMTJoinSuccess
+                        | VMTSetChatWindowStatus
   deriving (Show, Eq, Ord)
 
 visitorMessageIdsAndTypes :: [(Int, VisitorMessageType)]
 visitorMessageIdsAndTypes = [
-    (1, VMTJoinSuccess)
+    (1, VMTJoinSuccess),
+    (2, VMTSetChatWindowStatus)
   ]
 
 visitorMessageTypeById :: Map.Map Int VisitorMessageType
