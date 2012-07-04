@@ -36,8 +36,8 @@ data VisitorData = VisitorData {
 type VisitorDataTVar = TVar VisitorData
 
 data VisitorSessionData = VisitorSessionData {
-  vsdInSequence :: Integer,
-  vsdOutSequence :: Integer,
+  vsdLastInSequence :: Integer,
+  vsdLastOutSequence :: Integer,
   vsdOutgoingMessages :: [(Integer, [J.Value])],
   vsdLongPollAbortTVar :: TVar Bool,
   vsdVisitorSessionExpiryAbortTVar :: TVar Bool

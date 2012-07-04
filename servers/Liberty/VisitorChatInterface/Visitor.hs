@@ -5,12 +5,14 @@ module Liberty.VisitorChatInterface.Visitor (
   createVisitor,
   createVisitorSession,
   resetVisitorSessionExpiry,
-  deleteVisitorSession
+  deleteVisitorSession,
+  handleMessageFromVisitor
 ) where
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
 import Control.Monad
 import Control.Monad.STM
+import qualified Data.Aeson as J
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map as Map
 import Data.Text.Lazy (Text)
@@ -22,6 +24,7 @@ import Liberty.Common.ServiceClient
 import Liberty.Common.Timeouts
 import Liberty.VisitorChatInterface.ProxyConnection
 import Liberty.VisitorChatInterface.Types
+import Liberty.VisitorChatInterface.VisitorMessage
 
 createVisitorMapTVar :: IO VisitorMapTVar
 createVisitorMapTVar = atomically $ newTVar Map.empty
@@ -190,7 +193,6 @@ deleteVisitorSession visitorSessionDataTVar visitorSessionId visitorDataTVar = d
   else
     -- no need to set connection expiry timeout
     return ()
-        
 
 handleMessageFromProxy :: ChatServerMessageType -> ByteString -> ProxySendChan -> VisitorDataTVar -> IO ()
 handleMessageFromProxy messageType encodedParams proxySendChan visitorDataTVar = do
@@ -202,6 +204,7 @@ handleMessageFromProxy messageType encodedParams proxySendChan visitorDataTVar =
       putStrLn "Invalid siteId"
     CSMTVisitorJoinSuccess -> unpackAndHandle $ \(isOperatorAvailable :: Bool) -> do
       putStrLn "Visitor joined successfully"
+      atomically $ sendMessageToVisitor VMTJoinSuccess [J.toJSON isOperatorAvailable] visitorDataTVar
     CSUnavailableMessage -> unpackAndHandle $ \() -> do
       putStrLn "Service unavailable"
     _ -> do
@@ -214,4 +217,9 @@ handleMessageFromProxy messageType encodedParams proxySendChan visitorDataTVar =
         Nothing -> do
           putStrLn "Proxy connection dropped due to message unpack failure."
           atomically $ closeProxySocket proxySendChan
+
+handleMessageFromVisitor :: VisitorMessageType -> [J.Value] -> VisitorDataTVar -> IO ()
+handleMessageFromVisitor visitorMessageType messageParamsAsJson visitorDataTVar = do
+  putStrLn $ "Received message from visitor: " ++ show visitorMessageType
+  return ()
 

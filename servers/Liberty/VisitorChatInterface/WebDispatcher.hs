@@ -20,12 +20,14 @@ import Data.Maybe
 import Data.Ord
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
+import qualified Data.Vector as V
 import qualified Network.BSD as BSD
 import Network.HTTP
 import Network.Socket
 import Prelude hiding (catch)
 import Liberty.VisitorChatInterface.Types
 import Liberty.VisitorChatInterface.Visitor
+import Liberty.VisitorChatInterface.VisitorMessage
 import Liberty.Common.Timeouts
 import Liberty.Common.Utils
 
@@ -101,8 +103,8 @@ receiveHttpRequestLoop handleStream visitorMapTVar = do
                 ) of
                 -- command
                 -- Note: Client's outSequence is our inSequence
-                (Just (J.String (LT.fromStrict -> visitorId)), Just (J.Number (DAN.I sessionId)), Just (J.Number (DAN.I inSequence)), Just (J.Array messageArray), _) ->
-                  return ()
+                (Just (J.String (LT.fromStrict -> visitorId)), Just (J.Number (DAN.I visitorSessionId)), Just (J.Number (DAN.I inSequence)), Just (J.Array messageArray), _) ->
+                  handleSendCommand (V.toList messageArray) visitorId visitorSessionId visitorMapTVar inSequence handleStream
                 -- long poll request
                 (readMaybeString -> maybeVisitorId, readMaybeInteger -> maybeVisitorSessionId, Nothing, Nothing, Just (J.Number (DAN.I outSequence))) ->
                   let
@@ -196,6 +198,51 @@ receiveHttpRequestLoop handleStream visitorMapTVar = do
     Left connError -> do
       print connError
 
+handleSendCommand :: [J.Value] -> Text -> Integer -> VisitorMapTVar -> Integer -> HandleStream ByteString -> IO ()
+handleSendCommand jValues visitorId visitorSessionId visitorMapTVar inSequence handleStream = do
+  maybeIoToRun <- atomically $ do
+    visitorMap <- readTVar visitorMapTVar
+    case Map.lookup visitorId visitorMap of
+      Just visitorDataTVar -> do
+        visitorData <- readTVar visitorDataTVar
+        case vdProxyStatus visitorData of
+          VDPSConnected proxySendChan -> do
+            case Map.lookup visitorSessionId (vdSessions visitorData) of
+              Just visitorSessionDataTVar -> do
+                visitorSessionData <- readTVar visitorSessionDataTVar
+                if inSequence == (vsdLastInSequence visitorSessionData) + 1 then do
+                  -- parse and handle the message
+                  case jValues of
+                    J.Number (DAN.I (visitorMessageIdToType . fromIntegral -> maybeVisitorMessageType)) : messageParamsAsJson ->
+                      case maybeVisitorMessageType of
+                        Just visitorMessageType -> do
+                          writeTVar visitorSessionDataTVar $ visitorSessionData {
+                            vsdLastInSequence = inSequence
+                          }
+                          return $ Just $ handleMessageFromVisitor visitorMessageType messageParamsAsJson visitorDataTVar
+                        Nothing ->
+                          -- invalid visitor message type
+                          return Nothing
+                    _ ->
+                      -- unexpected message format
+                      return Nothing
+                else
+                  -- invalid inSequence
+                  -- TODO ULTRALOW: Should we ignore the request instead of failing it? This might be a retransmission of what we've already received and processed.
+                  return Nothing
+              Nothing ->
+                -- invalid visitorSessionId
+                return Nothing
+          _ ->
+            -- invalid proxy status
+            return Nothing
+      Nothing ->
+        -- invalid visitorId
+        return Nothing
+
+  -- if there was some IO for us to run, do it
+  fromMaybe (return ()) maybeIoToRun
+
 data LongPollWaitResult = LongPollWaitResultAborted | LongPollWaitResultActivity | LongPollWaitResultTimeout | LongPollWaitResultSuccess [(Integer, [J.Value])]
 
 handleLongPoll :: HandleStream ByteString -> VisitorSessionDataTVar -> Integer -> Integer -> VisitorDataTVar -> Text -> VisitorMapTVar -> IO ()
@@ -220,8 +267,7 @@ handleLongPoll handleStream visitorSessionDataTVar outSequence visitorSessionId 
   void $ abortTimeout visitorSessionExpiryAbortTVar
 
   -- set the long poll timeout
-  -- TODO: set the long poll timeout higher
-  setTimeout 10 myLongPollAbortTVar $ do
+  setTimeout 60 myLongPollAbortTVar $ do
     putStrLn "Long poll timeout!"
     -- set myLongPollTimeoutTVar to True, signalling that this long poll request has timed out
     atomically $ writeTVar myLongPollTimeoutTVar True

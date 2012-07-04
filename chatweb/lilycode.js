@@ -139,11 +139,24 @@
 		//handleSessionEnded();
 	}
 
+	function log(x) {
+		window.console.log(x);
+	}
+
+	var Messages = {
+		VMTJoinSuccess : 1
+	};
+
 	function handleMessage(message) {
 		messageTypeId = message.shift();
-		log("Msg Type Id: " + messageTypeId);
+		window.console.log("Msg Type Id: " + messageTypeId);
 		log(message);
 		switch (messageTypeId) {
+			case Messages.VMTJoinSuccess:
+				var isOperatorOnline = message[0];
+
+				log('VMTJoinSuccess, operator online = ' + isOperatorOnline);
+				break;
 			default:
 				window.console.log('in handleMessage');
 		}
